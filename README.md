@@ -1,2 +1,2 @@
 # HypertritonML
-Repository for the ML tools used for the analysis of the Hypertriton 
+Repository for the ML tools used for the analysis of the Hypertriton.
