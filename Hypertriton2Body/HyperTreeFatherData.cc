@@ -85,7 +85,7 @@ void HyperTreeFatherData()
     tree->Branch("V0CosPA", &V0CosPA);
     tree->Branch("V0Chi2", &V0Chi2);
     tree->Branch("PiProngPt", &PiProngPt);
-    tree->Branch("He3ProngPt", &PiProngPt);
+    tree->Branch("He3ProngPt", &He3ProngPt);
     tree->Branch("ProngsDCA", &ProngsDCA);
     tree->Branch("He3ProngPvDCA", &He3ProngPvDCA);
     tree->Branch("PiProngPvDCA", &PiProngPvDCA);
