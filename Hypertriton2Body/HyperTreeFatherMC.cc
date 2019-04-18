@@ -89,8 +89,8 @@ void HyperTreeFatherMC()
     float ProngsDCA;
     float PiProngPvDCA;
     float He3ProngPvDCA;
-    float LeastXedRowsOverFindable;
-    float MaxChi2perCluster;
+    float NpidClustersHe3;
+    float TPCnSigmaPi;
     tree->Branch("V0pt", &V0pt);
     tree->Branch("TPCnSigmaHe3", &TPCnSigmaHe3);
     tree->Branch("DistOverP", &DistOverP);
@@ -103,8 +103,8 @@ void HyperTreeFatherMC()
     tree->Branch("ProngsDCA", &ProngsDCA);
     tree->Branch("He3ProngPvDCA", &He3ProngPvDCA);
     tree->Branch("PiProngPvDCA", &PiProngPvDCA);
-    tree->Branch("LeastXedRowsOverFindable", &LeastXedRowsOverFindable);
-    tree->Branch("MaxChi2perCluster", &MaxChi2perCluster);
+    tree->Branch("NpidClustersHe3", &NpidClustersHe3);
+    tree->Branch("TPCnSigmaPi", &TPCnSigmaPi);
 
     while (fReader.Next())
     {
@@ -170,8 +170,8 @@ void HyperTreeFatherMC()
                 ProngsDCA = RHyper.fDcaV0daughters;
                 PiProngPvDCA = RHyper.fDcaPi2PrimaryVertex;
                 He3ProngPvDCA = RHyper.fDcaHe32PrimaryVertex;
-                LeastXedRowsOverFindable = RHyper.fLeastXedOverFindable;
-                MaxChi2perCluster = RHyper.fMaxChi2PerCluster;
+                NpidClustersHe3 = RHyper.fNpidClustersHe3;
+                TPCnSigmaPi = RHyper.fTPCnSigmaPi;
                 TPCnSigmaHe3 = RHyper.fTPCnSigmaHe3;
                 V0pt = hyperVector.Pt();
 
