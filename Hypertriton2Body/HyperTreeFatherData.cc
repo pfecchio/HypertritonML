@@ -77,6 +77,7 @@ void HyperTreeFatherData()
     float He3ProngPvDCA;
     float NpidClustersHe3;
     float TPCnSigmaPi;
+    float Lrec;
     tree->Branch("V0pt", &V0pt);
     tree->Branch("TPCnSigmaHe3", &TPCnSigmaHe3);
     tree->Branch("DistOverP", &DistOverP);
@@ -91,6 +92,7 @@ void HyperTreeFatherData()
     tree->Branch("PiProngPvDCA", &PiProngPvDCA);
     tree->Branch("NpidClustersHe3", &NpidClustersHe3);
     tree->Branch("TPCnSigmaPi", &TPCnSigmaPi);
+    tree->Branch("Lrec", &Lrec);    
 
     while (fReader.Next())
     {
@@ -122,7 +124,8 @@ void HyperTreeFatherData()
             }
 
             float alpha = (qP - qN) / (qP + qN);
-            DistOverP = Hypot(RHyper.fDecayX, RHyper.fDecayY, RHyper.fDecayZ) / hyperVector.P();
+            Lrec = Hypot(RHyper.fDecayX, RHyper.fDecayY, RHyper.fDecayZ);
+            DistOverP = Lrec / hyperVector.P();
             InvMass = hyperVector.M();
             ArmenterosAlpha = alpha;
             V0CosPA = CosPA;

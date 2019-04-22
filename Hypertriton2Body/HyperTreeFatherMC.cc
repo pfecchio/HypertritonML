@@ -53,7 +53,7 @@ double Hypot(F a, F b, F c, F d)
     return std::sqrt(a * a + b * b + c * c + d * d);
 }
 
-void HyperTreeFatherMC()
+void HyperTreeFatherMC(bool fRejec = true)
 {
     TFile *file = TFile::Open("fitsM.root", "r");
     TDirectoryFile *dir = (TDirectoryFile *)file->Get("BlastWave");
@@ -68,7 +68,7 @@ void HyperTreeFatherMC()
     float max0 = BlastWave0->GetMaximum();
     float max1 = BlastWave0->GetMaximum();
     float max2 = BlastWave0->GetMaximum();
-    TFile *myFile = TFile::Open("HyperTritonTree_16h7a.root", "r");
+    TFile *myFile = TFile::Open("HyperTritonTree_16h7c.root", "r");
     TDirectoryFile *mydir = (TDirectoryFile *)myFile->Get("_default");
     TTreeReader fReader("fTreeV0", mydir);
     TTreeReaderArray<RHyperTritonHe3pi> RHyperVec = {fReader, "RHyperTriton"};
@@ -91,6 +91,7 @@ void HyperTreeFatherMC()
     float He3ProngPvDCA;
     float NpidClustersHe3;
     float TPCnSigmaPi;
+    float Lrec;
     tree->Branch("V0pt", &V0pt);
     tree->Branch("TPCnSigmaHe3", &TPCnSigmaHe3);
     tree->Branch("DistOverP", &DistOverP);
@@ -105,7 +106,7 @@ void HyperTreeFatherMC()
     tree->Branch("PiProngPvDCA", &PiProngPvDCA);
     tree->Branch("NpidClustersHe3", &NpidClustersHe3);
     tree->Branch("TPCnSigmaPi", &TPCnSigmaPi);
-
+    tree->Branch("Lrec", &Lrec);
     while (fReader.Next())
     {
         if (RColl->fCent <= 10)
@@ -130,8 +131,11 @@ void HyperTreeFatherMC()
 
             float mc_pt = Hypot(SHyper.fPxHe3 + SHyper.fPxPi, SHyper.fPyHe3 + SHyper.fPyPi);
             float BlastWaveNum = (BlastWave->Eval(mc_pt)) / max;
-            if (BlastWaveNum < gRandom->Rndm())
-                continue;
+            if (fRejec == true)
+            {
+                if (BlastWaveNum < gRandom->Rndm())
+                    continue;
+            }
             int ind = SHyper.fRecoIndex;
             if (SHyper.fFake == false)
             {
@@ -160,6 +164,7 @@ void HyperTreeFatherMC()
                 }
 
                 float alpha = (qP - qN) / (qP + qN);
+                Lrec = Hypot(RHyper.fDecayX, RHyper.fDecayY, RHyper.fDecayZ);
                 DistOverP = Hypot(RHyper.fDecayX, RHyper.fDecayY, RHyper.fDecayZ) / hyperVector.P();
                 InvMass = hyperVector.M();
                 ArmenterosAlpha = alpha;
