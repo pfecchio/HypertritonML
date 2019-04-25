@@ -23,8 +23,6 @@
 
 #include "AliAnalysisTaskHyperTriton2He3piML.h"
 
-using namespace std;
-
 template <typename T> double Pot2(T a) { return a * a; }
 
 template <typename T> double Hypot(T a, T b, T c, T d) { return std::sqrt(Pot2(a) + Pot2(b) + Pot2(c) + Pot2(d)); }
@@ -93,9 +91,9 @@ void eff2body() {
     fHistRec[iMatter]->SetDirectory(0);
   }
 
-  fHistGenCT = new TH1D("fHistGenCT", "", 10, 0, 100);
+  fHistGenCT = new TH1D("fHistGenCT", "", 100, 0, 100);
   fHistGenCT->SetDirectory(0);
-  fHistRecCT = new TH1D("fHistRecCT", "", 10, 0, 100);
+  fHistRecCT = new TH1D("fHistRecCT", "", 100, 0, 100);
   fHistRecCT->SetDirectory(0);
 
   TH1D *fEfficiency[3];
@@ -108,8 +106,13 @@ void eff2body() {
   fEfficiency[2] = new TH1D("fEfficiency_tot", "", 40, 0, 10);
   fEfficiency[2]->SetDirectory(0);
 
-  fEfficiencyCT = new TH1D("fEfficiencyCT", "", 10, 0, 100);
+  fEfficiencyCT = new TH1D("fEfficiencyCT", "", 100, 0, 100);
   fEfficiencyCT->SetDirectory(0);
+
+  TH2D *fHistDeltaCT;
+
+  fHistDeltaCT = new TH2D("fHistDeltaCT", ";#Delta#it{c}t (cm) ;#it{c}t (cm)", 200, -5, 5, 100, 0, 100);
+  fHistDeltaCT->SetDirectory(0);
 
   //------------------------------------------------------------
   // main loop on the tree
@@ -158,9 +161,13 @@ void eff2body() {
       fHistRec[matter]->Fill(pt_rec);
 
       /// compute the ct
-      auto d_rec  = Distance(RColl->fX, RColl->fY, RColl->fZ, rHyper.fDecayX, rHyper.fDecayY, rHyper.fDecayZ);
+      auto d_rec  = std::sqrt(Pot2(rHyper.fDecayX) + Pot2(rHyper.fDecayY) + Pot2(rHyper.fDecayZ));
       auto ct_rec = rMother.M() * d_rec / rMother.P();
       fHistRecCT->Fill(ct_rec);
+
+      // fill the delta ct vs ct histo
+      auto delta_ct = ct_gen - ct_rec;
+      fHistDeltaCT->Fill(delta_ct, ct_gen);
     }
   }
 
@@ -221,8 +228,9 @@ void eff2body() {
 
   TFile fOutput("efficiency.root", "RECREATE");
 
-  // fHistGenCT->Write();
-  // fHistRecCT->Write();
+  fHistGenCT->Write();
+  fHistRecCT->Write();
+  fHistDeltaCT->Write();
 
   //------------------------------------------------------------
   // efficiency vs pT plots
