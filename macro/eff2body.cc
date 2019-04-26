@@ -91,9 +91,9 @@ void eff2body() {
     fHistRec[iMatter]->SetDirectory(0);
   }
 
-  fHistGenCT = new TH1D("fHistGenCT", "", 100, 0, 100);
+  fHistGenCT = new TH1D("fHistGenCT", "", 20, 0, 40);
   fHistGenCT->SetDirectory(0);
-  fHistRecCT = new TH1D("fHistRecCT", "", 100, 0, 100);
+  fHistRecCT = new TH1D("fHistRecCT", "", 20, 0, 40);
   fHistRecCT->SetDirectory(0);
 
   TH1D *fEfficiency[3];
@@ -106,12 +106,12 @@ void eff2body() {
   fEfficiency[2] = new TH1D("fEfficiency_tot", "", 40, 0, 10);
   fEfficiency[2]->SetDirectory(0);
 
-  fEfficiencyCT = new TH1D("fEfficiencyCT", "", 100, 0, 100);
+  fEfficiencyCT = new TH1D("fEfficiencyCT", "", 20, 0, 40);
   fEfficiencyCT->SetDirectory(0);
 
   TH2D *fHistDeltaCT;
 
-  fHistDeltaCT = new TH2D("fHistDeltaCT", ";#Delta#it{c}t (cm) ;#it{c}t (cm)", 200, -5, 5, 100, 0, 100);
+  fHistDeltaCT = new TH2D("fHistDeltaCT", ";#Delta#it{c}t (cm) ;#it{c}t (cm)", 200, -5, 5, 20, 0, 40);
   fHistDeltaCT->SetDirectory(0);
 
   //------------------------------------------------------------
@@ -138,7 +138,7 @@ void eff2body() {
       fHistGen[matter]->Fill(pt_gen);
 
       /// compute the ct
-      auto d_gen  = Distance(RColl->fX, RColl->fY, RColl->fZ, sHyper.fDecayX, sHyper.fDecayY, sHyper.fDecayZ);
+      auto d_gen  = std::sqrt(Pot2(sHyper.fDecayX) + Pot2(sHyper.fDecayY) + Pot2(sHyper.fDecayZ));
       auto ct_gen = 2.992 * d_gen / sMother.P();
       fHistGenCT->Fill(ct_gen);
 
