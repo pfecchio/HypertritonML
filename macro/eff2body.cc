@@ -117,9 +117,7 @@ void eff2body() {
   //------------------------------------------------------------
   // main loop on the tree
   //------------------------------------------------------------
-  int controllo = 0;
   while (fReader.Next()) {
-    controllo++;
     for (int i = 0; i < (static_cast<int>(SHyperVec.GetSize())); i++) {
 
       /// generated hypertritons
