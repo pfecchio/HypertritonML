@@ -141,7 +141,7 @@ void eff2body() {
 
       /// compute the ct
       auto d_gen  = Distance(RColl->fX, RColl->fY, RColl->fZ, sHyper.fDecayX, sHyper.fDecayY, sHyper.fDecayZ);
-      auto ct_gen = sMother.M() * d_gen / sMother.P();
+      auto ct_gen = 2.992 * d_gen / sMother.P();
       fHistGenCT->Fill(ct_gen);
 
       if (sHyper.fFake) continue;
@@ -162,7 +162,7 @@ void eff2body() {
 
       /// compute the ct
       auto d_rec  = std::sqrt(Pot2(rHyper.fDecayX) + Pot2(rHyper.fDecayY) + Pot2(rHyper.fDecayZ));
-      auto ct_rec = rMother.M() * d_rec / rMother.P();
+      auto ct_rec = 2.992 * d_rec / rMother.P();
       fHistRecCT->Fill(ct_rec);
 
       // fill the delta ct vs ct histo
