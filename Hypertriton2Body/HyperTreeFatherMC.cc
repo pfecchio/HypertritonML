@@ -92,6 +92,7 @@ void HyperTreeFatherMC(bool fRejec = true)
     float NpidClustersHe3;
     float TPCnSigmaPi;
     float Lrec;
+    float Centrality;
     tree->Branch("V0pt", &V0pt);
     tree->Branch("TPCnSigmaHe3", &TPCnSigmaHe3);
     tree->Branch("DistOverP", &DistOverP);
@@ -107,8 +108,10 @@ void HyperTreeFatherMC(bool fRejec = true)
     tree->Branch("NpidClustersHe3", &NpidClustersHe3);
     tree->Branch("TPCnSigmaPi", &TPCnSigmaPi);
     tree->Branch("Lrec", &Lrec);
+    tree->Branch("Centrality", &Centrality);
     while (fReader.Next())
     {
+        Centrality = RColl->fCent;
         if (RColl->fCent <= 10)
         {
             BlastWave = BlastWave0;
