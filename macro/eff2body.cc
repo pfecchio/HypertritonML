@@ -65,12 +65,13 @@ void eff2body() {
 
   const int colors[9] = {kBlack, kBlueC, kRedC, kPurpleC, kOrangeC, kGreenC, kMagentaC, kYellowC, kBrownC};
 
-  const char lAM[4]{"AMT"};
+  const char lAM[3]{"AM"};
+  const char *lCent[3]{"010", "1030", "3050"};
 
   //______________________________________________________________________________
 
   /// open input file and get the tree
-  TFile *myFile         = TFile::Open("~/2body_workspace/tree/HyperTritonTree_lhc16h7abc_MCvert.root", "r");
+  TFile *myFile         = TFile::Open("~/data/hyper2body_data/HyperTritonTree_lhc16h7abc_MCvert.root", "r");
   TDirectoryFile *mydir = (TDirectoryFile *)myFile->Get("_default");
 
   TTreeReader fReader("fTreeV0", mydir);
@@ -80,6 +81,9 @@ void eff2body() {
 
   TH1D *fHistGen[2];
   TH1D *fHistRec[2];
+
+  TH1D *fHistGenCent[3];
+  TH1D *fHistRecCent[3];
 
   TH1D *fHistGenCT;
   TH1D *fHistRecCT;
@@ -91,12 +95,20 @@ void eff2body() {
     fHistRec[iMatter]->SetDirectory(0);
   }
 
+  for (int iCent = 0; iCent < 3; iCent++) {
+    fHistGenCent[iCent] = new TH1D(Form("fHistCentGen_%s", lCent[iCent]), "", 40, 0, 10);
+    // fHistGenCent[iCent]->SetDirectory(0);
+    fHistRecCent[iCent] = new TH1D(Form("fHistCentRec_%s", lCent[iCent]), "", 40, 0, 10);
+    // fHistRecCent[iCent]->SetDirectory(0);
+  }
+
   fHistGenCT = new TH1D("fHistGenCT", "", 20, 0, 40);
   fHistGenCT->SetDirectory(0);
   fHistRecCT = new TH1D("fHistRecCT", "", 20, 0, 40);
   fHistRecCT->SetDirectory(0);
 
   TH1D *fEfficiency[3];
+  TH1D *fEfficiencyCent[3];
   TH1D *fEfficiencyCT;
 
   fEfficiency[0] = new TH1D("fEfficiencyA", "", 40, 0, 10);
@@ -105,6 +117,11 @@ void eff2body() {
   fEfficiency[1]->SetDirectory(0);
   fEfficiency[2] = new TH1D("fEfficiency_tot", "", 40, 0, 10);
   fEfficiency[2]->SetDirectory(0);
+
+  for (int iCent = 0; iCent < 3; iCent++) {
+    fEfficiencyCent[iCent] = new TH1D(Form("fEffCent_%s", lCent[iCent]), "", 40, 0, 10);
+    fEfficiencyCent[iCent]->SetDirectory(0);
+  }
 
   fEfficiencyCT = new TH1D("fEfficiencyCT", "", 20, 0, 40);
   fEfficiencyCT->SetDirectory(0);
@@ -118,6 +135,7 @@ void eff2body() {
   // main loop on the tree
   //------------------------------------------------------------
   while (fReader.Next()) {
+    auto cent = RColl->fCent;
     for (int i = 0; i < (static_cast<int>(SHyperVec.GetSize())); i++) {
 
       /// generated hypertritons
@@ -136,6 +154,10 @@ void eff2body() {
 
       auto pt_gen = sMother.Pt();
       fHistGen[matter]->Fill(pt_gen);
+
+      if (cent <= 10.0) fHistGenCent[0]->Fill(pt_gen);
+      if (cent > 10.0 && cent <= 30.0) fHistGenCent[1]->Fill(pt_gen);
+      if (cent > 30.0 && cent <= 50.0) fHistGenCent[2]->Fill(pt_gen);
 
       /// compute the ct
       auto d_gen  = std::sqrt(Pot2(sHyper.fDecayX) + Pot2(sHyper.fDecayY) + Pot2(sHyper.fDecayZ));
@@ -157,6 +179,10 @@ void eff2body() {
 
       auto pt_rec = rMother.Pt();
       fHistRec[matter]->Fill(pt_rec);
+
+      if (cent <= 10.0) fHistRecCent[0]->Fill(pt_rec);
+      if (cent > 10.0 && cent <= 30.0) fHistRecCent[1]->Fill(pt_rec);
+      if (cent > 30.0 && cent <= 50.0) fHistRecCent[2]->Fill(pt_rec);
 
       /// compute the ct
       auto d_rec  = std::sqrt(Pot2(rHyper.fDecayX) + Pot2(rHyper.fDecayY) + Pot2(rHyper.fDecayZ));
@@ -184,7 +210,7 @@ void eff2body() {
       counts_p[iMatter][iPt] = fHistRec[iMatter]->GetBinContent(iPt + 1);
 
       eff_p[iMatter][iPt] = counts_p[iMatter][iPt] / ref_p[iMatter][iPt];
-      err_p[iMatter][iPt] = sqrt(counts_p[iMatter][iPt] * (1. - eff_p[iMatter][iPt])) / ref_p[iMatter][iPt];
+      err_p[iMatter][iPt] = std::sqrt(counts_p[iMatter][iPt] * (1. - eff_p[iMatter][iPt])) / ref_p[iMatter][iPt];
 
       fEfficiency[iMatter]->SetBinContent(iPt + 1, eff_p[iMatter][iPt]);
       fEfficiency[iMatter]->SetBinError(iPt + 1, err_p[iMatter][iPt]);
@@ -196,7 +222,7 @@ void eff2body() {
     counts_p[2][iPt] = counts_p[0][iPt] + counts_p[1][iPt];
 
     eff_p[2][iPt] = counts_p[2][iPt] / ref_p[2][iPt];
-    err_p[2][iPt] = sqrt(counts_p[2][iPt] * (1. - eff_p[2][iPt])) / ref_p[2][iPt];
+    err_p[2][iPt] = std::sqrt(counts_p[2][iPt] * (1. - eff_p[2][iPt])) / ref_p[2][iPt];
 
     fEfficiency[2]->SetBinContent(iPt + 1, eff_p[2][iPt]);
     fEfficiency[2]->SetBinError(iPt + 1, err_p[2][iPt]);
@@ -216,19 +242,47 @@ void eff2body() {
     counts_c[iCt] = fHistRecCT->GetBinContent(iCt + 1);
 
     eff_c[iCt] = counts_c[iCt] / ref_c[iCt];
-    err_c[iCt] = sqrt(counts_c[iCt] * (1. - eff_c[iCt])) / ref_c[iCt];
+    err_c[iCt] = std::sqrt(counts_c[iCt] * (1. - eff_c[iCt])) / ref_c[iCt];
 
     fEfficiencyCT->SetBinContent(iCt + 1, eff_c[iCt]);
     fEfficiencyCT->SetBinError(iCt + 1, err_c[iCt]);
   }
 
+  //------------------------------------------------------------
+  // efficiency vs pT calculation for 3 Centrality class
+  //------------------------------------------------------------
+
+  double counts_cent[3][40];
+  double ref_cent[3][40];
+  double eff_cent[3][40];
+  double err_cent[3][40];
+
+  double num_cent[3];
+  double den_cent[3];
+
+  for (int iCent = 0; iCent < 3; iCent++) {
+    for (int iPt = 0; iPt < 40; iPt++) {
+      ref_cent[iCent][iPt]    = fHistGenCent[iCent]->GetBinContent(iPt + 1);
+      counts_cent[iCent][iPt] = fHistRecCent[iCent]->GetBinContent(iPt + 1);
+
+      num_cent[iCent] += counts_cent[iCent][iPt];
+      den_cent[iCent] += ref_cent[iCent][iPt];
+
+      eff_cent[iCent][iPt] = counts_cent[iCent][iPt] / ref_cent[iCent][iPt];
+      err_cent[iCent][iPt] = std::sqrt(counts_cent[iCent][iPt] * (1. - eff_cent[iCent][iPt])) / ref_cent[iCent][iPt];
+
+      fEfficiencyCent[iCent]->SetBinContent(iPt + 1, eff_cent[iCent][iPt]);
+      fEfficiencyCent[iCent]->SetBinError(iPt + 1, err_cent[iCent][iPt]);
+    }
+  }
+
+  std::cout << "Eff:  0-10%  --> " << num_cent[0] / den_cent[0] << std::endl;
+  std::cout << "Eff: 10-30%  --> " << num_cent[1] / den_cent[1] << std::endl;
+  std::cout << "Eff: 30-50%  --> " << num_cent[2] / den_cent[2] << std::endl;
+
   //______________________________________________________________________________
 
   TFile fOutput("efficiency.root", "RECREATE");
-
-  fHistGenCT->Write();
-  fHistRecCT->Write();
-  fHistDeltaCT->Write();
 
   //------------------------------------------------------------
   // efficiency vs pT plots
@@ -274,6 +328,31 @@ void eff2body() {
   l->Draw();
   c.Write();
   c.Close();
+
+  //------------------------------------------------------------
+  // efficiency vs pT plots
+  //------------------------------------------------------------
+  histo_makeup(fEfficiencyCent[0], kRedC, "#it{p}_{T} (GeV/#it{c} )", "efficiency #it{x} acceptance");
+  histo_makeup(fEfficiencyCent[1], kBlueC, "#it{p}_{T} (GeV/#it{c} )", "efficiency #it{x} acceptance");
+  histo_makeup(fEfficiencyCent[2], kGreenC, "#it{p}_{T} (GeV/#it{c} )", "efficiency #it{x} acceptance");
+  fEfficiencyCent[0]->Write();
+  fEfficiencyCent[1]->Write();
+  fEfficiencyCent[2]->Write();
+
+  TLegend *l_cent = new TLegend(0.225, 0.626, 0.540, 0.840);
+  l_cent->SetFillStyle(0);
+  l_cent->SetTextSize(18);
+  l_cent->SetHeader("   {}^{3}_{#Lambda}H + {}^{3}_{#bar{#Lambda}}#bar{H}");
+  l_cent->AddEntry(fEfficiencyCent[0], "0-10 %");
+  l_cent->AddEntry(fEfficiencyCent[1], "10-30 %");
+  l_cent->AddEntry(fEfficiencyCent[2], "30-50 %");
+  TCanvas cCent("c_Cent", "", 700, 500);
+  fEfficiencyCent[0]->Draw();
+  fEfficiencyCent[1]->Draw("HESAME");
+  fEfficiencyCent[2]->Draw("HESAME");
+  l_cent->Draw();
+  cCent.Write();
+  cCent.Close();
 
   fOutput.Close();
 
