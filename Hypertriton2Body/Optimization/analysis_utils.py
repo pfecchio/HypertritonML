@@ -9,7 +9,7 @@ from sklearn.metrics import roc_curve, auc
 
 # Data Visualization Functions
 ###########################################################################################
-def plot_distr(df, column=None, figsize=None, bins=50, **kwds):
+def plot_distr(df, column=None, figsize=None, bins=25, **kwds):
     """Build a DataFrame and create two dataset for signal and bkg
 
     Draw histogram of the DataFrame's series comparing the distribution
