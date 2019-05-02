@@ -22,6 +22,7 @@
 #include <TStyle.h>
 
 #include "AliAnalysisTaskHyperTriton2He3piML.h"
+#include "AliPID.h"
 
 template <typename T> double Pot2(T a) { return a * a; }
 
@@ -32,7 +33,7 @@ template <typename T> double Distance(T pX, T pY, T pZ, T dX, T dY, T dZ) {
 }
 
 void histo_makeup(TH1 *h, int color, string xTitle = "", string yTitle = "", int lWidth = 2, int mSize = 1,
-                  int mStyle = 0, string opt = "HE", Bool_t stat = kFALSE);
+                  int mStyle = 0, string opt = "E", Bool_t stat = kFALSE);
 
 void ratio_plot(TH1 *h1, TH1 *h2, TLegend *l, string mode, float lRange, float uRange, string cName = "c",
                 int cXSize = 700, int cYSize = 500, int fColor = TColor::GetColor("#911eb4"));
@@ -66,7 +67,7 @@ void eff2body() {
   const int colors[9] = {kBlack, kBlueC, kRedC, kPurpleC, kOrangeC, kGreenC, kMagentaC, kYellowC, kBrownC};
 
   const char lAM[3]{"AM"};
-  const char *lCent[3]{"010", "1030", "3050"};
+  const char *lCent[4]{"010", "1030", "3050", "1040"};
 
   //______________________________________________________________________________
 
@@ -95,7 +96,7 @@ void eff2body() {
     fHistRec[iMatter]->SetDirectory(0);
   }
 
-  for (int iCent = 0; iCent < 3; iCent++) {
+  for (int iCent = 0; iCent < 4; iCent++) {
     fHistGenCent[iCent] = new TH1D(Form("fHistCentGen_%s", lCent[iCent]), "", 40, 0, 10);
     // fHistGenCent[iCent]->SetDirectory(0);
     fHistRecCent[iCent] = new TH1D(Form("fHistCentRec_%s", lCent[iCent]), "", 40, 0, 10);
@@ -107,9 +108,10 @@ void eff2body() {
   fHistRecCT = new TH1D("fHistRecCT", "", 20, 0, 40);
   fHistRecCT->SetDirectory(0);
 
-  TH1D *fEfficiency[3];
-  TH1D *fEfficiencyCent[3];
+  TH1D *fEfficiency[4];
+  TH1D *fEfficiencyCent[4];
   TH1D *fEfficiencyCT;
+  TH1D *fEfficiencyCentComp;
 
   fEfficiency[0] = new TH1D("fEfficiencyA", "", 40, 0, 10);
   fEfficiency[0]->SetDirectory(0);
@@ -118,13 +120,20 @@ void eff2body() {
   fEfficiency[2] = new TH1D("fEfficiency_tot", "", 40, 0, 10);
   fEfficiency[2]->SetDirectory(0);
 
-  for (int iCent = 0; iCent < 3; iCent++) {
+  fEfficiency[3] = new TH1D("fEfficiency_tot_1040", "", 40, 0, 10);
+  fEfficiency[3]->SetDirectory(0);
+
+  for (int iCent = 0; iCent < 4; iCent++) {
     fEfficiencyCent[iCent] = new TH1D(Form("fEffCent_%s", lCent[iCent]), "", 40, 0, 10);
     fEfficiencyCent[iCent]->SetDirectory(0);
   }
 
   fEfficiencyCT = new TH1D("fEfficiencyCT", "", 20, 0, 40);
   fEfficiencyCT->SetDirectory(0);
+
+  const float bin[7]  = {0, 1, 2, 3, 4, 5, 9};
+  fEfficiencyCentComp = new TH1D("fEfficiency1040", "", 6, bin);
+  fEfficiencyCentComp->SetDirectory(0);
 
   TH2D *fHistDeltaCT;
 
@@ -134,7 +143,9 @@ void eff2body() {
   //------------------------------------------------------------
   // main loop on the tree
   //------------------------------------------------------------
+  int controllo = 0;
   while (fReader.Next()) {
+    controllo++;
     auto cent = RColl->fCent;
     for (int i = 0; i < (static_cast<int>(SHyperVec.GetSize())); i++) {
 
@@ -158,6 +169,7 @@ void eff2body() {
       if (cent <= 10.0) fHistGenCent[0]->Fill(pt_gen);
       if (cent > 10.0 && cent <= 30.0) fHistGenCent[1]->Fill(pt_gen);
       if (cent > 30.0 && cent <= 50.0) fHistGenCent[2]->Fill(pt_gen);
+      if (cent > 10.0 && cent <= 40.0) fHistGenCent[3]->Fill(pt_gen);
 
       /// compute the ct
       auto d_gen  = std::sqrt(Pot2(sHyper.fDecayX) + Pot2(sHyper.fDecayY) + Pot2(sHyper.fDecayZ));
@@ -183,6 +195,7 @@ void eff2body() {
       if (cent <= 10.0) fHistRecCent[0]->Fill(pt_rec);
       if (cent > 10.0 && cent <= 30.0) fHistRecCent[1]->Fill(pt_rec);
       if (cent > 30.0 && cent <= 50.0) fHistRecCent[2]->Fill(pt_rec);
+      if (cent > 10.0 && cent <= 40.0) fHistRecCent[3]->Fill(pt_rec);
 
       /// compute the ct
       auto d_rec  = std::sqrt(Pot2(rHyper.fDecayX) + Pot2(rHyper.fDecayY) + Pot2(rHyper.fDecayZ));
@@ -249,18 +262,18 @@ void eff2body() {
   }
 
   //------------------------------------------------------------
-  // efficiency vs pT calculation for 3 Centrality class
+  // efficiency vs pT calculation for 4 Centrality classes
   //------------------------------------------------------------
 
-  double counts_cent[3][40];
-  double ref_cent[3][40];
-  double eff_cent[3][40];
-  double err_cent[3][40];
+  double counts_cent[4][40];
+  double ref_cent[4][40];
+  double eff_cent[4][40];
+  double err_cent[4][40];
 
-  double num_cent[3];
-  double den_cent[3];
+  double num_cent[4];
+  double den_cent[4];
 
-  for (int iCent = 0; iCent < 3; iCent++) {
+  for (int iCent = 0; iCent < 4; iCent++) {
     for (int iPt = 0; iPt < 40; iPt++) {
       ref_cent[iCent][iPt]    = fHistGenCent[iCent]->GetBinContent(iPt + 1);
       counts_cent[iCent][iPt] = fHistRecCent[iCent]->GetBinContent(iPt + 1);
@@ -280,15 +293,62 @@ void eff2body() {
   std::cout << "Eff: 10-30%  --> " << num_cent[1] / den_cent[1] << std::endl;
   std::cout << "Eff: 30-50%  --> " << num_cent[2] / den_cent[2] << std::endl;
 
+  //------------------------------------------------------------
+  // efficiency in 10-40 for comparison with Stefano
+  //------------------------------------------------------------
+
+  double n_num[10];
+  double n_den[10];
+  double eff[10];
+  double err[10];
+
+  for (int iPt = 0; iPt < 10; iPt++) {
+    n_num[iPt] = fHistRecCent[3]->Integral((4 * iPt) + 1, (iPt + 1) * 4);
+    n_den[iPt] = fHistGenCent[3]->Integral((4 * iPt) + 1, (iPt + 1) * 4);
+    eff[iPt]   = n_num[iPt] / n_den[iPt];
+    err[iPt]   = std::sqrt(n_num[iPt] * (1. - eff[iPt])) / n_den[iPt];
+    if (iPt < 5) {
+      std::cout << "Efficiency " << iPt << "" << iPt + 1 << " --> " << eff[iPt] << " +- " << err[iPt] << std::endl;
+      fEfficiencyCentComp->SetBinContent(iPt + 1, eff[iPt]);
+      fEfficiencyCentComp->SetBinError(iPt + 1, err[iPt]);
+    }
+  }
+  double num_59 = n_num[5] + n_num[6] + n_num[7] + n_num[8];
+  double den_59 = n_den[5] + n_den[6] + n_den[7] + n_den[8];
+  double eff_59 = num_59 / den_59;
+  double err_59 = std::sqrt(num_59 * (1. - eff_59)) / den_59;
+  std::cout << "Efficiency " << 5 << "-" << 9 << " --> " << eff_59 << " +- " << err_59 << std::endl;
+  fEfficiencyCentComp->SetBinContent(6, eff_59);
+  fEfficiencyCentComp->SetBinError(6, err_59);
+  std::cout << std::endl;
+
   //______________________________________________________________________________
 
   TFile fOutput("efficiency.root", "RECREATE");
+
+  //------------------------------------------------------------
+  // efficiency vs pT Centrality 10-40 plot
+  //------------------------------------------------------------
+
+  histo_makeup(fEfficiencyCentComp, kGreenC, "#it{p}_{T} (GeV/#it{c} )", "efficiency #it{x} acceptance");
+  fEfficiencyCentComp->GetYaxis()->SetRangeUser(-0.01, 0.41);
+  TLegend *le = new TLegend(0.225, 0.626, 0.540, 0.840);
+  le->SetFillStyle(0);
+  le->SetTextSize(18);
+  le->SetHeader("10-40 %", "C");
+  le->AddEntry(fEfficiencyCentComp, "{}^{3}_{#Lambda}H + {}^{3}_{#bar{#Lambda}}#bar{H}");
+  TCanvas ce("c_10-40", "", 700, 500);
+  fEfficiencyCentComp->Draw();
+  le->Draw();
+  ce.Write();
+  ce.Close();
 
   //------------------------------------------------------------
   // efficiency vs pT plots
   //------------------------------------------------------------
   for (int iMatter = 0; iMatter < 3; iMatter++) {
     histo_makeup(fEfficiency[iMatter], kGreenC, "#it{p}_{T} (GeV/#it{c} )", "efficiency #it{x} acceptance");
+    fEfficiency[iMatter]->GetXaxis()->SetRangeUser(0.0, 9.0);
     // fEfficiency[iMatter]->Write();
     TLegend *l = new TLegend(0.225, 0.626, 0.540, 0.840);
     l->SetFillStyle(0);
@@ -335,6 +395,9 @@ void eff2body() {
   histo_makeup(fEfficiencyCent[0], kRedC, "#it{p}_{T} (GeV/#it{c} )", "efficiency #it{x} acceptance");
   histo_makeup(fEfficiencyCent[1], kBlueC, "#it{p}_{T} (GeV/#it{c} )", "efficiency #it{x} acceptance");
   histo_makeup(fEfficiencyCent[2], kGreenC, "#it{p}_{T} (GeV/#it{c} )", "efficiency #it{x} acceptance");
+  fEfficiencyCent[0]->GetXaxis()->SetRangeUser(0.0, 9.0);
+  fEfficiencyCent[1]->GetXaxis()->SetRangeUser(0.0, 9.0);
+  fEfficiencyCent[2]->GetXaxis()->SetRangeUser(0.0, 9.0);
   fEfficiencyCent[0]->Write();
   fEfficiencyCent[1]->Write();
   fEfficiencyCent[2]->Write();
