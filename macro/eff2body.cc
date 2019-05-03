@@ -143,9 +143,7 @@ void eff2body() {
   //------------------------------------------------------------
   // main loop on the tree
   //------------------------------------------------------------
-  int controllo = 0;
   while (fReader.Next()) {
-    controllo++;
     auto cent = RColl->fCent;
     for (int i = 0; i < (static_cast<int>(SHyperVec.GetSize())); i++) {
 
@@ -289,9 +287,9 @@ void eff2body() {
     }
   }
 
-  std::cout << "Eff:  0-10%  --> " << num_cent[0] / den_cent[0] << std::endl;
-  std::cout << "Eff: 10-30%  --> " << num_cent[1] / den_cent[1] << std::endl;
-  std::cout << "Eff: 30-50%  --> " << num_cent[2] / den_cent[2] << std::endl;
+  // std::cout << "Eff:  0-10%  --> " << num_cent[0] / den_cent[0] << std::endl;
+  // std::cout << "Eff: 10-30%  --> " << num_cent[1] / den_cent[1] << std::endl;
+  // std::cout << "Eff: 30-50%  --> " << num_cent[2] / den_cent[2] << std::endl;
 
   //------------------------------------------------------------
   // efficiency in 10-40 for comparison with Stefano
