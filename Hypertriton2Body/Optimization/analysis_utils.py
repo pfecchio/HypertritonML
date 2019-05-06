@@ -227,8 +227,11 @@ def gs_2par(gs_dict, par_dict, train_data, num_rounds, seed, folds, metrics, n_e
             best_params = (first_val, second_val,boost_rounds)
     return (best_params)
 
-def EfficiencyVsCuts(df):
-    cuts=np.linspace(-3,9,100)
+def EfficiencyVsCuts(df,plot_ext=False):
+    if plot_ext==True:
+        cuts=np.linspace(-10,10,200)
+    else:    
+        cuts=np.linspace(-3,9,100)
     eff_s=[]
     eff_b=[]
     den_s=sum(df['y'])
@@ -249,5 +252,5 @@ def EfficiencyVsCuts(df):
     plt.ylabel('Efficiency')
     plt.title('Efficiency vs Score')
     plt.grid()
-    return eff_s
-    
+    if plot_ext==False:
+        return eff_s
