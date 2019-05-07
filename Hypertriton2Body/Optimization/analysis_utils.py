@@ -242,9 +242,6 @@ def EfficiencyVsCuts(df,plot_ext=False):
         num_b=len(cut_df)-num_s
         eff_s.append(num_s/den_s)
         eff_b.append(num_b/den_b)
-    h=np.polyfit(cuts,eff_s,7)
-    y=np.polyval(h,cuts)
-    plt.plot(cuts,y,'b-',label='Fit efficiency')
     plt.plot(cuts,eff_s,'r.',label='Signal efficiency')
     #plt.plot(cuts,eff_b,'b.-',label='bkg_dist')
     plt.legend()
