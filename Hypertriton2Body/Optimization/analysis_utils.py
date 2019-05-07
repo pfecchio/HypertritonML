@@ -229,9 +229,9 @@ def gs_2par(gs_dict, par_dict, train_data, num_rounds, seed, folds, metrics, n_e
 
 def EfficiencyVsCuts(df,plot_ext=False):
     if plot_ext==True:
-        cuts=np.linspace(-10,10,200)
+        cuts=np.linspace(-15,15,200)
     else:    
-        cuts=np.linspace(-3,9,100)
+        cuts=np.linspace(-3,12.5,100)
     eff_s=[]
     eff_b=[]
     den_s=sum(df['y'])
