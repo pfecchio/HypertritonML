@@ -3,8 +3,6 @@
 #include "Math/Vector4D.h"
 #include "TH1D.h"
 #include <Riostream.h>
-#include <iostream>
-#include <fstream>
 #include <TCanvas.h>
 #include <TDirectoryFile.h>
 #include <TFile.h>
@@ -16,6 +14,8 @@
 #include <TTreeReader.h>
 #include <TTreeReaderArray.h>
 #include <TTreeReaderValue.h>
+#include <fstream>
+#include <iostream>
 #include <vector>
 
 using namespace std;
@@ -43,6 +43,17 @@ void HyperTreeFatherData() {
   TTreeReader fReader("fTreeV0", mydir);
   TTreeReaderArray<RHyperTritonHe3pi> RHyperVec = {fReader, "RHyperTriton"};
   TTreeReaderValue<RCollision> RColl            = {fReader, "RCollision"};
+
+  // TH1D *fHistCent = new TH1D("fHistCent", "", 1000, 0, 100);
+  // fHistCent->SetDirectory(0);
+
+  TFile tfileHist("~/data/hyper2body_data/CentHist.root", "READ");
+  TH1D *fHistCent = (TH1D *)tfileHist.Get("fHistCent");
+  fHistCent->SetDirectory(0);
+  tfileHist.Close();
+
+  double fMin = (double)fHistCent->GetBinContent(280);
+  cout << fMin << endl;
 
   TFile tfile("~/data/hyper2body_data/HyperTree_Data.root", "RECREATE");
   TTree *tree = new TTree("HyperTree_Data", "An example of a ROOT tree");
@@ -85,8 +96,15 @@ void HyperTreeFatherData() {
 
   while (fReader.Next()) {
     Centrality = RColl->fCent;
-    if (10.0 <= Centrality && Centrality <= 40.0) Nev1040++;
+    if (Centrality < 10.051 || Centrality > 40.05) continue;
     for (int i = 0; i < (static_cast<int>(RHyperVec.GetSize())); i++) {
+
+      int bin = (int)(Centrality * 10.);
+      double height = (double)fHistCent->GetBinContent(bin);
+
+      if ((gRandom->Rndm() * height) > fMin) continue;
+
+      Nev1040++;
 
       auto RHyper = RHyperVec[i];
       double eHe3 = Hypot(RHyper.fPxHe3, RHyper.fPyHe3, RHyper.fPzHe3, AliPID::ParticleMass(AliPID::kHe3));
@@ -100,14 +118,13 @@ void HyperTreeFatherData() {
       TVector3 v(RHyper.fDecayX, RHyper.fDecayY, RHyper.fDecayZ);
       float pointAngle = hyperVector.Angle(v);
       float CosPA      = std::cos(pointAngle);
-      
+
       float qP, qN, qT;
       if (RHyper.fMatter == true) {
         qP = SProd(hyperVector, he3Vector) / fabs(hyperVector.P());
         qN = SProd(hyperVector, piVector) / fabs(hyperVector.P());
         qT = VProd(hyperVector, he3Vector) / fabs(hyperVector.P());
-      }
-      else {
+      } else {
         qN = SProd(hyperVector, he3Vector) / fabs(hyperVector.P());
         qP = SProd(hyperVector, piVector) / fabs(hyperVector.P());
         qT = VProd(hyperVector, piVector) / fabs(hyperVector.P());
@@ -132,6 +149,10 @@ void HyperTreeFatherData() {
       tree->Fill();
     }
   }
+
+  // TFile tfileHist("~/data/hyper2body_data/CentHist.root", "RECREATE");
+  // fHistCent->Write();
+  // tfileHist.Close();
 
   tfile.Write("", TObject::kOverwrite);
   myFile->Close();

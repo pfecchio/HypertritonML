@@ -15,6 +15,22 @@
 #include <TLorentzVector.h>
 #include <TRandom3.h>
 #include <Riostream.h>
+#include <TF1.h>
+
+struct SumTF1 { 
+
+   SumTF1(const std::vector<TF1 *> & flist) : fFuncList(flist) {}
+   
+   double operator() (const double * x, const double *p) {
+      double result = 0;
+      for (unsigned int i = 0; i < fFuncList.size(); ++i) 
+         result += fFuncList[i]->EvalPar(x,p); 
+      return result; 
+   } 
+   
+   std::vector<TF1*> fFuncList; 
+      
+};
 
 float SProd(TLorentzVector a1, TLorentzVector a2)
 {
@@ -55,27 +71,40 @@ double Hypot(F a, F b, F c, F d)
 
 void HyperTreeFatherMC(bool fRejec = true)
 {
-    TFile *file = TFile::Open("fitsM.root", "r");
+    TFile *file = TFile::Open("~/data/hyper2body_data/fitsM.root", "r");
     TDirectoryFile *dir = (TDirectoryFile *)file->Get("BlastWave");
     TF1 *BlastWave;
     TF1 *BlastWave0;
     TF1 *BlastWave1;
     TF1 *BlastWave2;
+
     dir->GetObject("BlastWave0", BlastWave0);
     dir->GetObject("BlastWave1", BlastWave1);
     dir->GetObject("BlastWave2", BlastWave2);
+    BlastWave0->SetNormalized(1);
+    BlastWave1->SetNormalized(1);
+    BlastWave2->SetNormalized(1);
+
+    std::vector<TF1 *> v;
+    v.push_back(BlastWave1);
+    v.push_back(BlastWave2);
+
+    TF1 *BlastWave1040 = new TF1("BlastWave1040",SumTF1(v),0,10,0);
+
     float max;
     float max0 = BlastWave0->GetMaximum();
-    float max1 = BlastWave0->GetMaximum();
-    float max2 = BlastWave0->GetMaximum();
-    TFile *myFile = TFile::Open("HyperTritonTree_16h7c.root", "r");
+    float max1 = BlastWave1->GetMaximum();
+    float max2 = BlastWave2->GetMaximum();
+    float max1040 = BlastWave1040->GetMaximum();
+
+    TFile *myFile = TFile::Open("~/data/hyper2body_data/HyperTritonTree_lhc16h7abc_MCvert.root", "r");
     TDirectoryFile *mydir = (TDirectoryFile *)myFile->Get("_default");
     TTreeReader fReader("fTreeV0", mydir);
     TTreeReaderArray<RHyperTritonHe3pi> RHyperVec = {fReader, "RHyperTriton"};
     TTreeReaderArray<SHyperTritonHe3pi> SHyperVec = {fReader, "SHyperTriton"};
     TTreeReaderValue<RCollision> RColl = {fReader, "RCollision"};
 
-    TFile tfile("HyperTree_MC_Signal.root", "RECREATE");
+    TFile tfile("~/data/hyper2body_data/HyperTree_MC_Signal.root", "RECREATE");
     TTree *tree = new TTree("HyperTree_MC_Signal", "An example of a ROOT tree");
     float V0pt;
     float TPCnSigmaHe3;
@@ -117,15 +146,21 @@ void HyperTreeFatherMC(bool fRejec = true)
             BlastWave = BlastWave0;
             max = max0;
         }
-        else if (RColl->fCent > 10 && RColl->fCent <= 20)
+        // else if (RColl->fCent > 10 && RColl->fCent <= 20)
+        // {
+        //     BlastWave = BlastWave1;
+        //     max = max1;
+        // }
+        // else
+        // {
+        //     BlastWave = BlastWave2;
+        //     max = max2;
+        // }
+
+        if (RColl->fCent < 10.051 && RColl->fCent < 40.05)
         {
-            BlastWave = BlastWave1;
-            max = max1;
-        }
-        else
-        {
-            BlastWave = BlastWave2;
-            max = max2;
+            BlastWave = BlastWave1040;
+            max = max1040;
         }
         for (int i = 0; i < (static_cast<int>(SHyperVec.GetSize())); i++)
         {
