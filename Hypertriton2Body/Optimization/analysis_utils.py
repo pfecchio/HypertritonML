@@ -6,6 +6,7 @@ from pandas.core.index import Index
 import matplotlib.pyplot as plt
 import xgboost as xgb
 from sklearn.metrics import roc_curve, auc
+from mpl_toolkits.axes_grid1 import ImageGrid
 
 # Data Visualization Functions
 ###########################################################################################
@@ -49,39 +50,66 @@ def plot_distr(df, column=None, figsize=None, bins=25, **kwds):
         a.set_ylabel("Arbitrary Units")
 
 
-def plot_corr(df, columns, title, figsize=(6, 6), **kwds):
+def plot_corr(df, columns, **kwds):
     """Calculate pairwise correlation between features.
-
     Extra arguments are passed on to DataFrame.corr()
     """
     col=columns+['y']
     df=df[col]
-    if title == "Signal":
-        data = df[df.y > 0.5].drop('y', 1)
-    elif title == "Background":
-        data = df[df.y < 0.5].drop('y', 1)
+    
+    data_sig = df[df.y > 0.5].drop('y', 1)
+    data_bkg = df[df.y < 0.5].drop('y', 1)
 
-    corrmat = data.corr(**kwds)
-    _, ax1 = plt.subplots(ncols=1, figsize=figsize)
+    corrmat_sig = data_sig.corr(**kwds)
+    corrmat_bkg = data_bkg.corr(**kwds)
+
+    t=r'$\mathrm{\ \ \ ALICE \ Simulation}$ Pb-Pb $\sqrt{s_{\mathrm{NN}}}$ = 5.02 TeV'
+    fig = plt.figure(figsize=(10.7, 6.6))
+    # plt.title(t,y=1.08,fontsize=16)
+    plt.suptitle(t,fontsize=18,ha='center')
+    grid = ImageGrid(fig,111,nrows_ncols(1,2),axes_pad=0.15,share_all=True,cbar_location="right",cbar_mode="single",cbar_size="7%",cbar_pad=0.15)
+
     opts = {'cmap': plt.get_cmap("coolwarm"), 'vmin': -1, 'vmax': +1, 'snap': True}
-    heatmap1 = ax1.pcolor(corrmat, **opts)
-    plt.colorbar(heatmap1, ax=ax1)
-    ax1.set_title(title, fontsize=22)
 
-    labels = corrmat.columns.values
+    ax1 = grid[0]
+    ax2 = grid[1]
+    heatmap1 = ax1.pcolor(corrmat_sig, **opts)
+    heatmap2 = ax2.pcolor(corrmat_bkg, **opts)
+    ax1.set_title('Signal', fontsize=14,fontweight='bold')
+    ax2.set_title('Background', fontsize=14,fontweight='bold')
+
+    labels = corrmat_sig.columns.values
+    lab = [r'$\it{M}_{\mathrm{He}^{3}\pi^{-}}$',r'n$\sigma_{\mathrm{TPC}}\ \mathrm{He}^{3}$',r'$\mathrm{V}_{0} \ p_{\mathrm{T}}\ (\mathrm{GeV}/c)$',r'n$_{cluster\ \mathrm{TPC}}\ \mathrm{He}^{3}$',r'$\alpha$-armenteros',r'L/$p$ ($\frac{cm}{\mathrm{Gev}/c}$)',r'$\mathrm{DCA}_{\mathrm{V_{0}\ tracks}} ($cm$)$',r'$\cos{(\theta_{pointing})}$']
     for ax in (ax1,):
         # shift location of ticks to center of the bins
-        ax.set_xticks(np.arange(len(labels)), minor=False)
-        ax.set_yticks(np.arange(len(labels)), minor=False)
-        ax.set_xticklabels(labels, minor=False, ha='left', rotation=90, fontsize=15)
-        ax.set_yticklabels(labels, minor=False, va='bottom', fontsize=15)
+        ax.set_xticks(np.arange(len(lab)), minor=False)
+        ax.set_yticks(np.arange(len(lab)), minor=False)
+        ax.set_xticklabels(lab, minor=False, ha='left', rotation=90, fontsize=15)
+        ax.set_yticklabels(lab, minor=False, va='bottom', fontsize=15)
+        ax.tick_params(axis='both',which='both',direction="in")
 
         for tick in ax.xaxis.get_minor_ticks():
             tick.tick1line.set_markersize(0)
             tick.tick2line.set_markersize(0)
             tick.label1.set_horizontalalignment('center')
 
-    plt.tight_layout()
+    for ax in (ax2,):
+        # shift location of ticks to center of the bins
+        ax.set_xticks(np.arange(len(lab)), minor=False)
+        ax.set_yticks(np.arange(len(lab)), minor=False)
+        ax.set_xticklabels(lab, minor=False, ha='left', rotation=90, fontsize=15)
+        ax.tick_params(axis='both',which='both',direction="in")
+
+        for tick in ax.xaxis.get_minor_ticks():
+            tick.tick1line.set_markersize(0)
+            tick.tick2line.set_markersize(0)
+            tick.label1.set_horizontalalignment('center')
+
+    ax1.cax.colorbar(heatmap1)
+    ax1.cax.toggle_label(True)
+
+    # plt.tight_layout()
+plt.savefig('correlations.eps', dpi=500, transparent=True)
 
 
 def plot_roc(y_truth, model_decision):

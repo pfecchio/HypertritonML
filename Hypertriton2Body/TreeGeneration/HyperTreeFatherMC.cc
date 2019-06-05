@@ -17,19 +17,20 @@
 #include <Riostream.h>
 #include <TF1.h>
 
-struct SumTF1 { 
+struct SumTF1
+{
 
-   SumTF1(const std::vector<TF1 *> & flist) : fFuncList(flist) {}
-   
-   double operator() (const double * x, const double *p) {
-      double result = 0;
-      for (unsigned int i = 0; i < fFuncList.size(); ++i) 
-         result += fFuncList[i]->EvalPar(x,p); 
-      return result; 
-   } 
-   
-   std::vector<TF1*> fFuncList; 
-      
+    SumTF1(const std::vector<TF1 *> &flist) : fFuncList(flist) {}
+
+    double operator()(const double *x, const double *p)
+    {
+        double result = 0;
+        for (unsigned int i = 0; i < fFuncList.size(); ++i)
+            result += fFuncList[i]->EvalPar(x, p);
+        return result;
+    }
+
+    std::vector<TF1 *> fFuncList;
 };
 
 float SProd(TLorentzVector a1, TLorentzVector a2)
@@ -71,7 +72,7 @@ double Hypot(F a, F b, F c, F d)
 
 void HyperTreeFatherMC(bool fRejec = true)
 {
-    TFile *file = TFile::Open("~/data/hyper2body_data/fitsM.root", "r");
+    TFile *file = TFile::Open("~/HypertritonData/fitsM.root", "r");
     TDirectoryFile *dir = (TDirectoryFile *)file->Get("BlastWave");
     TF1 *BlastWave;
     TF1 *BlastWave0;
@@ -89,7 +90,7 @@ void HyperTreeFatherMC(bool fRejec = true)
     v.push_back(BlastWave1);
     v.push_back(BlastWave2);
 
-    TF1 *BlastWave1040 = new TF1("BlastWave1040",SumTF1(v),0,10,0);
+    TF1 *BlastWave1040 = new TF1("BlastWave1040", SumTF1(v), 0, 10, 0);
 
     float max;
     float max0 = BlastWave0->GetMaximum();
@@ -97,14 +98,14 @@ void HyperTreeFatherMC(bool fRejec = true)
     float max2 = BlastWave2->GetMaximum();
     float max1040 = BlastWave1040->GetMaximum();
 
-    TFile *myFile = TFile::Open("~/data/hyper2body_data/HyperTritonTree_lhc16h7abc_MCvert.root", "r");
+    TFile *myFile = TFile::Open("~/HypertritonData/HyperTritonTree_19d2.root", "r");
     TDirectoryFile *mydir = (TDirectoryFile *)myFile->Get("_default");
     TTreeReader fReader("fTreeV0", mydir);
     TTreeReaderArray<RHyperTritonHe3pi> RHyperVec = {fReader, "RHyperTriton"};
     TTreeReaderArray<SHyperTritonHe3pi> SHyperVec = {fReader, "SHyperTriton"};
     TTreeReaderValue<RCollision> RColl = {fReader, "RCollision"};
-
-    TFile tfile("~/data/hyper2body_data/HyperTree_MC_Signal.root", "RECREATE");
+    cout << "ciao" << endl;
+    TFile tfile("~/HypertritonData/HyperTree_MC_Signal.root", "RECREATE");
     TTree *tree = new TTree("HyperTree_MC_Signal", "An example of a ROOT tree");
     float V0pt;
     float TPCnSigmaHe3;
@@ -140,6 +141,7 @@ void HyperTreeFatherMC(bool fRejec = true)
     tree->Branch("Centrality", &Centrality);
     while (fReader.Next())
     {
+
         Centrality = RColl->fCent;
         if (RColl->fCent <= 10)
         {
@@ -157,7 +159,7 @@ void HyperTreeFatherMC(bool fRejec = true)
         //     max = max2;
         // }
 
-        if (RColl->fCent < 10.051 && RColl->fCent < 40.05)
+        if (RColl->fCent > 10.051 && RColl->fCent < 40.05)
         {
             BlastWave = BlastWave1040;
             max = max1040;
@@ -174,9 +176,12 @@ void HyperTreeFatherMC(bool fRejec = true)
                 if (BlastWaveNum < gRandom->Rndm())
                     continue;
             }
+
             int ind = SHyper.fRecoIndex;
+
             if (SHyper.fFake == false)
             {
+
                 auto RHyper = RHyperVec[ind];
                 double eHe3 = Hypot(RHyper.fPxHe3, RHyper.fPyHe3, RHyper.fPzHe3, AliPID::ParticleMass(AliPID::kHe3));
                 double ePi = Hypot(RHyper.fPxPi, RHyper.fPyPi, RHyper.fPzPi, AliPID::ParticleMass(AliPID::kPion));

@@ -102,14 +102,13 @@ void HyperTreeFatherData()
   while (fReader.Next())
   {
     Centrality = RColl->fCent;
-    if (Centrality < 10.051 || Centrality > 40.05)
-      continue;
-    int bin = (int)(Centrality * 10.);
-    double height = (double)fHistCent->GetBinContent(bin);
-  //  if ((gRandom->Rndm() * height) > fMin)
-  //    continue;
+    if (Centrality > 10.051 && Centrality < 40.05)
+      Nev1040++;
+    //int bin = (int)(Centrality * 10.);
+    //double height = (double)fHistCent->GetBinContent(bin);
+    //  if ((gRandom->Rndm() * height) > fMin)
+    //    continue;
 
-    Nev1040++;
     for (int i = 0; i < (static_cast<int>(RHyperVec.GetSize())); i++)
     {
       auto RHyper = RHyperVec[i];
