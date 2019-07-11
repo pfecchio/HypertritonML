@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import xgboost as xgb
 from sklearn.metrics import roc_curve, auc
 from mpl_toolkits.axes_grid1 import ImageGrid
+from scipy import stats
 
 # Data Visualization Functions
 ###########################################################################################
@@ -132,6 +133,7 @@ def plot_output_train_test(clf, x_train, y_train, x_test, y_test, model='xgb', b
     """
     model could be 'xgb' or 'sklearn'
     """
+   
     decisions = []
     for x, y in ((x_train, y_train), (x_test, y_test)):
         if model == 'xgb':
@@ -144,7 +146,7 @@ def plot_output_train_test(clf, x_train, y_train, x_test, y_test, model='xgb', b
             print('Error: wrong model typr used')
             return
         decisions += [d1, d2]
-
+    print(stats.ks_2samp(d1,d2))
     low = min(np.min(d) for d in decisions)
     high = max(np.max(d) for d in decisions)
     low_high = (low, high)
