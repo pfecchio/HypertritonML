@@ -16,7 +16,7 @@ label_stat = ('', '_reflection', '_fake')
 label = tuple([a, b] for a in label_cuts for b in label_stat)
 
 # get the reference for the efficiency
-input_file_ref = TFile('~/cernbox/workspace/hypertriton3/output/MCinfoA1.root', 'read')
+input_file_ref = TFile('~/3body_workspace/results/MCinfo_tot.root', 'read')
 
 hist_ptycent_hyp = input_file_ref.Get('fHistGeneratedPtVsYVsCentralityHypTrit')
 hist_ptycent_antihyp = input_file_ref.Get('fHistGeneratedPtVsYVsCentralityAntiHypTrit')
@@ -34,15 +34,15 @@ ref_hyp = []
 ref_antihyp = []
 
 for pt_min, pt_max in bin_map:
-    ref_hyp.append(hist_pt_hyp.Integral(pt_min, pt_max) / 2)
-    ref_antihyp.append(hist_pt_antihyp.Integral(pt_min, pt_max) / 2)
+    ref_hyp.append(hist_pt_hyp.Integral(pt_min, pt_max) / 2.)
+    ref_antihyp.append(hist_pt_antihyp.Integral(pt_min, pt_max) / 2.)
 
 ref_tot = [x + y for x, y in zip(ref_hyp, ref_antihyp)]
 
 #-----------------------------------------------------------------------------#
 
 # get the reconstructed (anti-)hypertritons
-input_file = TFile('~/cernbox/workspace/hypertriton3/output/selector_outputa1.root', 'read')
+input_file = TFile('~/3body_workspace/output/selector_output_tot_hard.root', 'read')
 
 bin_map = [[n + 1, (n + 1)] for n in range(20)]
 
@@ -79,7 +79,7 @@ input_file.Close()
 hist_eff = {}
 hist_eff_label = []
 
-output_file = TFile('~/cernbox/workspace/hypertriton3/results/eff_test.root', 'recreate')
+output_file = TFile('~/3body_workspace/results/selector_eff_tot_hard.root', 'recreate')
 
 for l in label_cuts:
     eff_antihyp_tmp = TH1F('eff_antihyp_{}'.format(l), '', 20, 0, 10)

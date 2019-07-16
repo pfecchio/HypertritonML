@@ -22,6 +22,59 @@ kYellowCT = TColor.GetColorTransparent(kYellowC, 0.5)
 kBrownC = TColor.GetColor('#b15928')
 kBrownCT = TColor.GetColorTransparent(kBrownC, 0.5)
 
+kBlueYellowScale0 = TColor.GetColor('#003f5c')
+kBlueYellowScale1 = TColor.GetColor('#2f4b7c')
+kBlueYellowScale2 = TColor.GetColor('#665191')
+kBlueYellowScale3 = TColor.GetColor('#a05195')
+kBlueYellowScale4 = TColor.GetColor('#d45087')
+kBlueYellowScale5 = TColor.GetColor('#f95d6a')
+kBlueYellowScale6 = TColor.GetColor('#ff7c43')
+kBlueYellowScale7 = TColor.GetColor('#ffa600')
+
+kSunsetScale0 = TColor.GetColor('#f3e79b')
+kSunsetScale1 = TColor.GetColor('#fac484')
+kSunsetScale2 = TColor.GetColor('#f8a07e')
+kSunsetScale3 = TColor.GetColor('#eb7f86')
+kSunsetScale4 = TColor.GetColor('#ce6693')
+kSunsetScale5 = TColor.GetColor('#a059a0')
+kSunsetScale6 = TColor.GetColor('#5c53a5')
+
+kOrYelScale0 = TColor.GetColor('#ecda9a')
+kOrYelScale1 = TColor.GetColor('#efc47e')
+kOrYelScale2 = TColor.GetColor('#f3ad6a')
+kOrYelScale3 = TColor.GetColor('#f7945d')
+kOrYelScale4 = TColor.GetColor('#f97b57')
+kOrYelScale5 = TColor.GetColor('#f66356')
+kOrYelScale6 = TColor.GetColor('#ee4d5a')
+
+kBluYelScale0 = TColor.GetColor('#f7feae')
+kBluYelScale1 = TColor.GetColor('#b7e6a5')
+kBluYelScale2 = TColor.GetColor('#7ccba2')
+kBluYelScale3 = TColor.GetColor('#46aea0')
+kBluYelScale4 = TColor.GetColor('#089099')
+kBluYelScale5 = TColor.GetColor('#00718b')
+kBluYelScale6 = TColor.GetColor('#045275')
+
+kTempsScale0 = TColor.GetColor('#009392')
+kTempsScale1 = TColor.GetColor('#39b185')
+kTempsScale2 = TColor.GetColor('#9ccb86')
+kTempsScale3 = TColor.GetColor('#e9e29c')
+kTempsScale4 = TColor.GetColor('#eeb479')
+kTempsScale5 = TColor.GetColor('#e88471')
+kTempsScale6 = TColor.GetColor('#cf597e')
+
+
+kBlueYellowScale = (kBlueYellowScale0, kBlueYellowScale1, kBlueYellowScale2, kBlueYellowScale3,
+                    kBlueYellowScale4, kBlueYellowScale5, kBlueYellowScale6, kBlueYellowScale7)
+
+kSunsetScale = (kSunsetScale0, kSunsetScale1, kSunsetScale2, kSunsetScale3, kSunsetScale4, kSunsetScale5, kSunsetScale6)
+
+kOrYelScale = (kOrYelScale0, kOrYelScale1, kOrYelScale2, kOrYelScale3, kOrYelScale4, kOrYelScale5, kOrYelScale6)
+
+kBluYelScale = (kBluYelScale0, kBluYelScale1, kBluYelScale2, kBluYelScale3, kBluYelScale4, kBluYelScale5, kBluYelScale6)
+
+kTempsScale = (kTempsScale0, kTempsScale1, kTempsScale2, kTempsScale3, kTempsScale4, kTempsScale5, kTempsScale6)
+
 colors = (kBlueC,  kRedC, kGreenC, kOrangeC, kPurpleC, kMagentaC, kYellowC, kBrownC)
 
 
