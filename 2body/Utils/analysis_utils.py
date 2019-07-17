@@ -68,7 +68,7 @@ def plot_corr(df, columns, **kwds):
     fig = plt.figure(figsize=(10.7, 6.6))
     # plt.title(t,y=1.08,fontsize=16)
     plt.suptitle(t,fontsize=18,ha='center')
-    grid = ImageGrid(fig,111,nrows_ncols(1,2),axes_pad=0.15,share_all=True,cbar_location="right",cbar_mode="single",cbar_size="7%",cbar_pad=0.15)
+    grid =ImageGrid(fig,111,nrows_ncols=(1,2),axes_pad=0.15,share_all=True,cbar_location="right",cbar_mode="single",cbar_size="7%",cbar_pad=0.15)
 
     opts = {'cmap': plt.get_cmap("coolwarm"), 'vmin': -1, 'vmax': +1, 'snap': True}
 
@@ -100,7 +100,6 @@ def plot_corr(df, columns, **kwds):
         ax.set_yticks(np.arange(len(lab)), minor=False)
         ax.set_xticklabels(lab, minor=False, ha='left', rotation=90, fontsize=15)
         ax.tick_params(axis='both',which='both',direction="in")
-
         for tick in ax.xaxis.get_minor_ticks():
             tick.tick1line.set_markersize(0)
             tick.tick2line.set_markersize(0)
@@ -108,9 +107,6 @@ def plot_corr(df, columns, **kwds):
 
     ax1.cax.colorbar(heatmap1)
     ax1.cax.toggle_label(True)
-
-    # plt.tight_layout()
-plt.savefig('correlations.eps', dpi=500, transparent=True)
 
 
 def plot_roc(y_truth, model_decision):
