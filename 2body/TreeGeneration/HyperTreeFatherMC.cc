@@ -72,7 +72,7 @@ double Hypot(F a, F b, F c, F d)
 
 void HyperTreeFatherMC(bool fRejec = true)
 {
-    TFile *file = TFile::Open("../../../HypertritonML/Hypertriton2Body/fitsM.root", "r");
+    TFile *file = TFile::Open("../fitsM.root", "r");
     TDirectoryFile *dir = (TDirectoryFile *)file->Get("BlastWave");
     TF1 *BlastWave;
     TF1 *BlastWave0;
