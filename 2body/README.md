@@ -10,7 +10,7 @@ If you want to run the analysis in one of the two centrality classes you have to
 
 2) Put the HyperTritonTree.root files (both for data and Monte Carlo) in the subdirectory: Trees
 
-3) Run the macros in /HypertritonML/2body/TreeGeneration: HyperTreeFatherData.root and HyperTreeFatherMC.root. You can also run them directly from the Uproot_Conversion notebook using pyROOT
+3) Run the macros in /HypertritonML/2body/TreeGeneration: HyperTreeFatherData.root and HyperTreeFatherMC.root. You can also run them directly from the Uproot_Conversion(section:Run the filtering macros) notebooks using pyROOT. The first argument of the macros is the name of your trees.
 
 4) Choose the centrality class for your analysis: 0-10% or 10-40%
 
