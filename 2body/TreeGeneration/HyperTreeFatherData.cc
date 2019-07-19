@@ -30,8 +30,8 @@ void HyperTreeFatherData()
   getDirs(dataDir, tableDir);
   
   TChain inputChain("_custom/fTreeV0");
-  inputChain.AddFile(Form("%s/LHC18r.root", dataDir));
-  inputChain.AddFile(Form("%s/LHC18q.root", dataDir));
+  inputChain.AddFile(Form("%s/HyperTritonTree_18r.root", dataDir));
+  //inputChain.AddFile(Form("%s/LHC18q.root", dataDir));
 
   TTreeReader fReader(&inputChain);
   TTreeReaderArray<RHyperTritonHe3pi> RHyperVec = {fReader, "RHyperTriton"};
@@ -52,12 +52,7 @@ void HyperTreeFatherData()
 
   while (fReader.Next())
   {
-    if (RColl->fCent > 10.051 && RColl->fCent < 40.05)
-      Nev1040++;
-    //int bin = (int)(Centrality * 10.);
-    //double height = (double)fHistCent->GetBinContent(bin);
-    //  if ((gRandom->Rndm() * height) > fMin)
-    //    continue;
+  
 
     for (auto& RHyper : RHyperVec)
       tree.Fill(RHyper, *RColl);

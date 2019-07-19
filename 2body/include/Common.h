@@ -61,11 +61,11 @@ double Hypot(F a, F b, F c, F d)
     return std::sqrt(a * a + b * b + c * c + d * d);
 }
 
-inline void getDirs(char* &dataDir, char* &tableDir) {
+inline void getDirs(char* &dataDir,char* &tableDir) {
   dataDir =  getenv("HYPERML_DATA");
   tableDir = getenv("HYPERML_TABLES");
-  dataDir = dataDir == NULL ? new char[2]{"."} : dataDir;
-  tableDir = tableDir == NULL ? new char[2]{"."} : tableDir;
+  dataDir = dataDir == NULL ? new char[2]{'.'} : dataDir;
+  tableDir = tableDir == NULL ? new char[2]{'.'} : tableDir;
 }
 
 #endif

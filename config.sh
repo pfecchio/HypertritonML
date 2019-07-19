@@ -1,3 +1,3 @@
 #!/bin/bash
-export HYPERML_DATA="~/alice/hypertriton/data"
-export HYPERML_TABLES="~/alice/hypertriton/table"
+export HYPERML_DATA="~/HypertritonAnalysis/Trees"
+export HYPERML_TABLES="~/HypertritonAnalysis/Derived_Trees"

@@ -15,16 +15,16 @@
 #include <Riostream.h>
 #include <TF1.h>
 #include <TSystem.h>
-
 #include "../include/Common.h"
 #include "../include/Table.h"
 
 void HyperTreeFatherMC(bool fRejec = true)
 {
+
     char *dataDir{nullptr}, *tableDir{nullptr};
     getDirs(dataDir, tableDir);
 
-    TFile bwFile(Form("%s/fitsM.root", dataDir));
+    TFile bwFile("../fitsM.root");
     TF1 *BlastWave{nullptr};
     TF1 *BlastWave0{(TF1 *)bwFile.Get("BlastWave/BlastWave0")};
     TF1 *BlastWave1{(TF1 *)bwFile.Get("BlastWave/BlastWave1")};
@@ -45,7 +45,8 @@ void HyperTreeFatherMC(bool fRejec = true)
     float max1040 = BlastWave1040->GetMaximum();
 
     TChain mcChain("_default/fTreeV0");
-    mcChain.AddFile(Form("%s/LHC19d2.root", dataDir));
+    cout<<dataDir<<endl;
+    mcChain.AddFile(Form("%s/HyperTritonTree_19d2.root", dataDir));
 
     TTreeReader fReader(&mcChain);
     TTreeReaderArray<RHyperTritonHe3pi> RHyperVec = {fReader, "RHyperTriton"};

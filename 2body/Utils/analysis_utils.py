@@ -277,3 +277,19 @@ def EfficiencyVsCuts(df,plot_ext=False):
     plt.grid()
     if plot_ext==False:
         return eff_s
+    
+def optimize_params(dtrain,par):
+    gs_dict = {'first_par': {'name': 'max_depth', 'par_values': [i for i in range(2, 10, 2)]},
+           'second_par': {'name': 'min_child_weight', 'par_values':[i for i in range(0, 12, 2)]},
+          }
+    par['max_depth'],par['min_child_weight'],_ = gs_2par(gs_dict, par, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
+    
+    gs_dict = {'first_par': {'name': 'subsample', 'par_values': [i/10. for i in range(4, 10)]},
+           'second_par': {'name': 'colsample_bytree', 'par_values': [i/10. for i in range(8, 10)]},
+          }
+    par['subsample'],par['colsample_bytree'],_ = gs_2par(gs_dict, par, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
+    gs_dict = {'first_par': {'name': 'gamma', 'par_values': [i/10. for i in range(0, 11)]}} 
+    par['gamma'],_ = gs_1par(gs_dict, par, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
+    gs_dict = {'first_par': {'name': 'eta', 'par_values': [0.1, 0.05, 0.01, 0.005, 0.001]}}
+    par['eta'],n = gs_1par(gs_dict, par, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
+    return n
