@@ -1,19 +1,12 @@
 ## Tutorial for running the two body analysis
 If you want to run the analysis in one of the two centrality classes you have to:
 
-1) Create a directory named HypertritonAnalysis in the same directory in which you have the HypertritonML package. The directory must have this structure:
+1) Put the HyperTritonTree.root files (both for data and Monte Carlo) in the same directory
+2) Edit the file "config.sh" adding the path to your Trees
+3) Type in your terminal : source config.sh
 
-
-
-![Structure](structure.png)
-
-
-2) Put the HyperTritonTree.root files (both for data and Monte Carlo) in the subdirectory: Trees
-
-3) Run the macros in /HypertritonML/2body/TreeGeneration: HyperTreeFatherData.root and HyperTreeFatherMC.root. You can also run them directly from the Uproot_Conversion(section:Run the filtering macros) notebooks using pyROOT. The first argument of the macros is the name of your trees.
+3) Run the macros in /HypertritonML/2body/TreeGeneration: HyperTreeFatherData.root and HyperTreeFatherMC.root.The first argument of the macros is the name of your trees.
 
 4) Choose the centrality class for your analysis: 0-10% or 10-40%
 
-5) Run the Uproot_conversion notebook
-
-6) Run the Training_and_significance_scan notebook
+6) Run the Training notebook
