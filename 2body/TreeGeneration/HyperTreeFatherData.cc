@@ -23,14 +23,14 @@ using namespace std;
 #include "../include/Common.h"
 #include "../include/Table.h"
 
-void HyperTreeFatherData()
+void HyperTreeFatherData(TString name="HyperTritonTree_18r.root")
 {
     
   char *dataDir{nullptr}, *tableDir{nullptr};
   getDirs(dataDir, tableDir);
   
   TChain inputChain("_custom/fTreeV0");
-  inputChain.AddFile(Form("%s/HyperTritonTree_18r.root", dataDir));
+  inputChain.AddFile(Form("%s/%s", dataDir,name.Data()));
   //inputChain.AddFile(Form("%s/LHC18q.root", dataDir));
 
   TTreeReader fReader(&inputChain);

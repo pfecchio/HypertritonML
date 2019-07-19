@@ -18,7 +18,7 @@
 #include "../include/Common.h"
 #include "../include/Table.h"
 
-void HyperTreeFatherMC(bool fRejec = true)
+void HyperTreeFatherMC(TString name="HyperTritonTree_19d2.root",bool fRejec = true)
 {
 
     char *dataDir{nullptr}, *tableDir{nullptr};
@@ -46,7 +46,7 @@ void HyperTreeFatherMC(bool fRejec = true)
 
     TChain mcChain("_default/fTreeV0");
     cout<<dataDir<<endl;
-    mcChain.AddFile(Form("%s/HyperTritonTree_19d2.root", dataDir));
+    mcChain.AddFile(Form("%s/%s", dataDir,name.Data()));
 
     TTreeReader fReader(&mcChain);
     TTreeReaderArray<RHyperTritonHe3pi> RHyperVec = {fReader, "RHyperTriton"};
