@@ -72,7 +72,7 @@ void eff2body() {
   //______________________________________________________________________________
 
   /// open input file and get the tree
-  TFile *myFile         = TFile::Open("~/HypertritonData/HyperTritonTree_19d2.root", "r");
+  TFile *myFile         = TFile::Open("~/HypertritonAnalysis/Trees/HyperTritonTree_19d2.root", "r");
   TDirectoryFile *mydir = (TDirectoryFile *)myFile->Get("_default");
 
   TTreeReader fReader("fTreeV0", mydir);

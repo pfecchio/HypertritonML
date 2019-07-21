@@ -31,7 +31,7 @@ void HyperTreeFatherData(TString name="HyperTritonTree_18r.root")
   
   TChain inputChain("_custom/fTreeV0");
   inputChain.AddFile(Form("%s/%s", dataDir,name.Data()));
-  //inputChain.AddFile(Form("%s/LHC18q.root", dataDir));
+  inputChain.AddFile(Form("%s/HyperTritonTree_18q.root", dataDir));
 
   TTreeReader fReader(&inputChain);
   TTreeReaderArray<RHyperTritonHe3pi> RHyperVec = {fReader, "RHyperTriton"};

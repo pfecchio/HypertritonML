@@ -35,6 +35,10 @@ class Table {
   float TPCnSigmaPi;
   float Lrec;
   float Centrality;
+  float V0radius;  
+  float PiProngPvDCAXY;
+  float He3ProngPvDCAXY;    
+    
 };
 
 Table::Table(std::string name, std::string title) {
@@ -52,10 +56,13 @@ Table::Table(std::string name, std::string title) {
   tree->Branch("ProngsDCA", &ProngsDCA);
   tree->Branch("He3ProngPvDCA", &He3ProngPvDCA);
   tree->Branch("PiProngPvDCA", &PiProngPvDCA);
+  tree->Branch("He3ProngPvDCAXY", &He3ProngPvDCAXY);
+  tree->Branch("PiProngPvDCAXY", &PiProngPvDCAXY);    
   tree->Branch("NpidClustersHe3", &NpidClustersHe3);
   tree->Branch("TPCnSigmaPi", &TPCnSigmaPi);
   tree->Branch("Lrec", &Lrec);
   tree->Branch("Centrality", &Centrality);
+  tree->Branch("V0radius", &V0radius);  
 };
 
 void Table::Fill(const RHyperTritonHe3pi& RHyper, const RCollision& RColl) {
@@ -97,7 +104,10 @@ void Table::Fill(const RHyperTritonHe3pi& RHyper, const RCollision& RColl) {
   ProngsDCA = RHyper.fDcaV0daughters;
   PiProngPvDCA = RHyper.fDcaPi2PrimaryVertex;
   He3ProngPvDCA = RHyper.fDcaHe32PrimaryVertex;
+  PiProngPvDCAXY = RHyper.fDcaPi2PrimaryVertexXY;
+  He3ProngPvDCAXY = RHyper.fDcaHe32PrimaryVertexXY;    
   Lrec = Hypot(RHyper.fDecayX, RHyper.fDecayY, RHyper.fDecayZ);
+  V0radius=Hypot(RHyper.fDecayX, RHyper.fDecayY);
   NpidClustersHe3 = RHyper.fNpidClustersHe3;
   TPCnSigmaPi = RHyper.fTPCnSigmaPi;
   TPCnSigmaHe3 = RHyper.fTPCnSigmaHe3;
