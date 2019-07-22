@@ -105,7 +105,7 @@ def SignificanceScan(df, pT_min, pT_max, i_pT,efficiency_array,eff_pres,n_ev,cus
         axs[0].grid()
     
     axs[0].legend(loc='upper left')
-    plt.suptitle(r"%1.f $ \leq \rm{p}_{T} \leq $ %1.f, Cut Score = %0.2f, Significance/Events = %0.4f$x10^{-7}$, Significance x Efficiency = %0.2f , Raw yield = %0.2f" %(pT_min,pT_max,max_score,(sign/n_ev)*1e7,custom_sign,ryield))
+    plt.suptitle(r"%1.f $ \leq \rm{p}_{T} \leq $ %1.f, Cut Score = %0.2f, Significance/Events = %0.4f$x10^{-4}$, Significance x Efficiency = %0.2f , Raw yield = %0.2f" %(pT_min,pT_max,max_score,(sign/np.sqrt(n_ev))*1e4,custom_sign,ryield))
     
     yerr_data = np.sqrt(counts_data[sidemap])
     yerr_tot = np.sqrt(counts_tot[massmap])
@@ -125,7 +125,7 @@ def SignificanceScan(df, pT_min, pT_max, i_pT,efficiency_array,eff_pres,n_ev,cus
     plt.ylim(ymin=0)
     textstr = '\n'.join((
     r"%1.f GeV/c $ \leq \rm{p}_{T} < $ %1.f GeV/c " %(pT_min,pT_max,),
-    r' Significance/Events = %0.4f$x10^{-7}$' % ((sign/n_ev)*1e7, )))
+    r' Significance/Sqrt(Events) = %0.4f$x10^{-4}$' % ((sign/np.sqrt(n_ev))*1e4, )))
     props = dict(boxstyle='round',facecolor='white', alpha=0,)
     axs[1].text(0.37, 0.95, textstr, transform=axs[1].transAxes,
         verticalalignment='top', bbox=props)
@@ -166,7 +166,7 @@ def TestOnData(df,score,pt,n_ev):
     props = dict(boxstyle='round',facecolor='white', alpha=0,)
     plt.title(textstr)
     plt.legend()
-    print("Significance/Events = " , tot_sig/np.sqrt(tot_bkg+tot_sig)/n_ev*1e7)
+    print("Significance/Sqrt(Events) x 10^-4 = " , tot_sig/np.sqrt(tot_bkg+tot_sig)/np.sqrt(n_ev)*1e4)
     print("S/B = " ,tot_sig/tot_bkg)
     print("Raw yield = " , tot_sig)
 
