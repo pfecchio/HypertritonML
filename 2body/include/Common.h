@@ -5,8 +5,12 @@
 #include <vector>
 #include <stdlib.h>
 
+#include <TColor.h>
 #include <TF1.h>
 #include <TLorentzVector.h>
+
+constexpr double kHyperTritonMass{2.99131};
+constexpr char kLetter[2]{'A','M'};
 
 struct SumTF1
 {
@@ -67,5 +71,23 @@ inline void getDirs(char* &dataDir,char* &tableDir) {
   dataDir = dataDir == NULL ? new char[2]{'.'} : dataDir;
   tableDir = tableDir == NULL ? new char[2]{'.'} : tableDir;
 }
+
+/// custom colors
+const int kBlueC     = TColor::GetColor("#1f78b4");
+const int kBlueCT    = TColor::GetColorTransparent(kBlueC, 0.5);
+const int kRedC      = TColor::GetColor("#e31a1c");
+const int kRedCT     = TColor::GetColorTransparent(kRedC, 0.5);
+const int kPurpleC   = TColor::GetColor("#911eb4");
+const int kPurpleCT  = TColor::GetColorTransparent(kPurpleC, 0.5);
+const int kOrangeC   = TColor::GetColor("#ff7f00");
+const int kOrangeCT  = TColor::GetColorTransparent(kOrangeC, 0.5);
+const int kGreenC    = TColor::GetColor("#33a02c");
+const int kGreenCT   = TColor::GetColorTransparent(kGreenC, 0.5);
+const int kMagentaC  = TColor::GetColor("#f032e6");
+const int kMagentaCT = TColor::GetColorTransparent(kMagentaC, 0.5);
+const int kYellowC   = TColor::GetColor("#ffe119");
+const int kYellowCT  = TColor::GetColorTransparent(kYellowC, 0.5);
+const int kBrownC    = TColor::GetColor("#b15928");
+const int kBrownCT   = TColor::GetColorTransparent(kBrownC, 0.5);
 
 #endif

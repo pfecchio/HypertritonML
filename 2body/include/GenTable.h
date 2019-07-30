@@ -1,0 +1,59 @@
+#ifndef HYPERGENTABLE_H
+#define HYPERGENTABLE_H
+
+#include "Common.h"
+
+#include <string>
+
+#include <TLorentzVector.h>
+#include <TTree.h>
+#include <TVector3.h>
+
+#include "AliAnalysisTaskHyperTriton2He3piML.h"
+#include "AliPID.h"
+#include "Math/LorentzVector.h"
+
+class GenTable {
+  public: 
+  GenTable(std::string name, std::string title);
+  void Fill(const SHyperTritonHe3pi& SHyperVec, const RCollision& RColl);
+  void Write() { tree->Write(); }
+
+  private:
+  TTree* tree;
+  float Pt;
+  float Rapidity;
+  float Phi;
+  float Ct;
+  float Centrality;
+  bool Matter;    
+};
+
+GenTable::GenTable(std::string name, std::string title) {
+  tree = new TTree(name.data(), title.data());
+
+  tree->Branch("Pt", &Pt);
+  tree->Branch("Rapidity", &Rapidity);
+  tree->Branch("Phi", &Phi);
+  tree->Branch("Ct", &Ct);
+  tree->Branch("Centrality", &Centrality);
+  tree->Branch("Matter", &Matter);
+};
+
+void GenTable::Fill(const SHyperTritonHe3pi& SHyper, const RCollision& RColl) {
+  Centrality = RColl.fCent;
+  Matter = SHyper.fPdgCode > 0;
+  const double len = Hypot(SHyper.fDecayX, SHyper.fDecayY, SHyper.fDecayZ);
+
+  using namespace ROOT::Math;
+  const LorentzVector<PxPyPzM4D<double>> sHe3{SHyper.fPxHe3, SHyper.fPyHe3, SHyper.fPzHe3, AliPID::ParticleMass(AliPID::kHe3)};
+  const LorentzVector<PxPyPzM4D<double>> sPi{SHyper.fPxPi, SHyper.fPyPi, SHyper.fPzPi, AliPID::ParticleMass(AliPID::kPion)};
+  const LorentzVector<PxPyPzM4D<double>> sMother = sHe3 + sPi;
+  Pt = sMother.Pt();
+  Phi = sMother.Phi();
+  Ct = len * kHyperTritonMass / sMother.P();
+  Rapidity = sMother.Rapidity();
+  tree->Fill();
+}
+
+#endif
