@@ -2,6 +2,8 @@ import pyroot_plot as prp
 from ROOT import (TH1D, AliPID, TCanvas, TFile, TGaxis, TLegend,
                   TLorentzVector, TPad, TTree, gROOT)
 
+TGaxis.SetMaxDigits(4)
+
 color_a = [prp.kTempsScale6, prp.kTempsScale5, prp.kTempsScale4]
 color_m = [prp.kTempsScale0, prp.kTempsScale1, prp.kTempsScale2]
 
@@ -16,10 +18,10 @@ dict_hist_eff = {}
 input_file = TFile('~/3body_workspace/results/eff_hist.root', 'read')
 
 for lab in label_array:
-  hist = input_file.Get('fHistEfficiency_{}'.format(lab))
-  hist.SetDirectory(0)
+    hist = input_file.Get('fHistEfficiency_{}'.format(lab))
+    hist.SetDirectory(0)
 
-  dict_hist_eff[lab] = hist
+    dict_hist_eff[lab] = hist
 
 input_file.Close()
 
@@ -97,12 +99,12 @@ for cent in range(1, 4):
 
     h_a = dict_hist_eff[label_am[0] + '_' + label_centrality[cent - 1]]
     h_a.SetDirectory(0)
-    
+
     h_a.GetYaxis().SetRangeUser(-0.12, 0.36)
 
     h_m = dict_hist_eff[label_am[1] + '_' + label_centrality[cent - 1]]
     h_m.SetDirectory(0)
-    
+
     h_m.GetYaxis().SetRangeUser(-0.12, 0.36)
 
     pad1 = TPad('pad1', 'pad1', 0, 0.3, 1, 1.0)

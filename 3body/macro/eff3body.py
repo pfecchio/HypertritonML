@@ -1,11 +1,35 @@
+import sys
+import time
 import math
 
-import ctime
 import pyroot_plot as prp
 from ROOT import (TH1D, AliPID, TCanvas, TFile, TGaxis, TLegend,
                   TLorentzVector, TPad, TTree, gROOT)
 
 
+# usefull progressbar
+# update_progress() : Displays or updates a console progress bar
+def update_progress(progress):
+    barLength = 40  # Modify this to change the length of the progress bar
+    status = ''
+    if isinstance(progress, int):
+        progress = float(progress)
+    if not isinstance(progress, float):
+        progress = 0
+        status = 'error: progress var must be float\r\n'
+    if progress < 0:
+        progress = 0
+        status = 'Halt...\r\n'
+    if progress >= 1:
+        progress = 1
+        status = 'Done...\r\n'
+    block = int(round(barLength*progress))
+    text = '\rPercent: [{0}] {1:g}% {2}'.format('#'*block + '-'*(barLength-block), progress*100, status)
+    sys.stdout.write(text)
+    sys.stdout.flush()
+
+
+# useful methods
 def pot2(x):
     return x*x
 
@@ -16,17 +40,26 @@ def hypot4(x0, x1, x2, x3):
 
 n_bins = 20
 test_mode = True
-control = 0
 
-TGaxis.SetMaxDigits(4)
-
+# labels
 label_centrality = ['0-10', '10-50', '50-90']
 label_am = ['antihyper', 'hyper']
 
-input_file = TFile('~/data/3body_hypetriton_data/train_tree/mc/HyperTritonTree.root', 'read')
+# open input file and tree
+input_file_path = '~/data/3body_hypetriton_data/train_output/mc'
+input_file_name = ''
+
+if test_mode:
+    input_file_name = 'HyperTritonTreeMCTest.root'
+else:
+    input_file_name = 'HyperTritonTreeMC.root'
+
+input_file = TFile('{}/{}'.format(input_file_path, input_file_name), 'read')
 
 tree = input_file.fHypertritonTree
+n_events = tree.GetEntries()
 
+# create histos for the efficiency
 hist_sim = {}
 hist_rec = {}
 
@@ -43,6 +76,8 @@ for lab in label_centrality:
         hist_rec[label].SetDirectory(0)
 
         label_array.append(label)
+
+analyzed_events = 0
 
 # main loop over the events
 for ev in tree:
@@ -104,12 +139,26 @@ for ev in tree:
         label = '{}_'.format(label_am[rec.fIsMatter]) + c_lab
         hist_rec[label].Fill(hyp.Pt())
 
+    analyzed_events += 1
+    update_progress(analyzed_events/n_events)
+
 input_file.Close()
 
-output_file = TFile('~/3body_workspace/results/eff_hist.root', 'recreate')
+# create output file
+output_file_path = '~/3body_workspace/results'
+output_file_name = ''
 
+if test_mode:
+    output_file_name = 'eff_hist_test.root'
+else:
+    output_file_name = 'eff_hist.root'
+
+output_file = TFile('{}/{}'.format(output_file_path, output_file_name), 'recreate')
+
+# dictionary to manage histos
 dict_hist_eff = {}
 
+# compute efficiency
 for lab in label_array:
     hist_eff = TH1D('fHistEfficiency_{}'.format(lab), '', n_bins, 0, 10)
     hist_eff.SetDirectory(0)
@@ -128,3 +177,5 @@ for lab in label_array:
     prp.histo_makeup(hist_eff, x_title='#it{p}_{T} (GeV/#it{c} )',
                      y_title='Efficiency #times Acceptance', color=prp.kRedC, y_range=(-0.01, 0.41), l_width=3)
     hist_eff.Write()
+
+output_file.Close()
