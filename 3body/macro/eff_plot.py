@@ -4,10 +4,10 @@ from ROOT import (TH1D, AliPID, TCanvas, TFile, TGaxis, TLegend,
 
 TGaxis.SetMaxDigits(4)
 
-color_a = [prp.kTempsScale6, prp.kTempsScale5, prp.kTempsScale4]
-color_m = [prp.kTempsScale0, prp.kTempsScale1, prp.kTempsScale2]
+color_a = [prp.kNewGradient3, prp.kNewGradient2, prp.kNewGradient1, prp.kNewGradient0]
+color_m = [prp.kBluYelScale3, prp.kBluYelScale4, prp.kBluYelScale5, prp.kBluYelScale6]
 
-label_centrality = ['0-10', '10-50', '50-90']
+label_centrality = ['0-10', '10-30', '30-50', '50-90']
 label_am = ['antihyper', 'hyper']
 
 label_array = [x + '_' + y for x in label_am for y in label_centrality]
@@ -38,7 +38,7 @@ legend.SetFillStyle(0)
 legend.SetTextSize(18)
 legend.SetHeader('anti-hypertriton')
 
-for cent in range(3):
+for cent in range(4):
     h = dict_hist_eff[label_am[0] + '_' + label_centrality[cent]]
     h.SetDirectory(0)
 
@@ -67,7 +67,7 @@ legend.SetFillStyle(0)
 legend.SetTextSize(18)
 legend.SetHeader('hypertriton')
 
-for cent in range(3):
+for cent in range(4):
     h = dict_hist_eff[label_am[1] + '_' + label_centrality[cent]]
     h.SetDirectory(0)
 
@@ -88,13 +88,13 @@ c.Write()
 #-----------------------------------------------------------------------------#
 # matter-antimatter comparison
 #-----------------------------------------------------------------------------#
-c = TCanvas('c_eff_comparison', '', 1600, 550)
-c.Divide(3, 1)
+c = TCanvas('c_eff_comparison', '', 1000, 1300)
+c.Divide(2, 2)
 
 h3 = []
 legend = []
 
-for cent in range(1, 4):
+for cent in range(1, 5):
     c.cd(cent)
 
     h_a = dict_hist_eff[label_am[0] + '_' + label_centrality[cent - 1]]
@@ -135,7 +135,7 @@ for cent in range(1, 4):
     axis.SetLabelSize(18)
     axis.SetTitleFont(43)
     axis.SetTitleSize(20)
-    axis.SetTitleOffset(1.6)
+    axis.SetTitleOffset(2.1)
     axis.Draw()
     c.Update()
 
@@ -151,8 +151,8 @@ for cent in range(1, 4):
     # Define the ratio plot
     h3.append(h_a.Clone('h3'))
     h3[cent-1].SetDirectory(0)
-    h3[cent-1].SetLineColor(prp.kPurpleC)
-    h3[cent-1].SetMarkerColor(prp.kPurpleC)
+    h3[cent-1].SetLineColor(prp.kRedC)
+    h3[cent-1].SetMarkerColor(prp.kRedC)
     h3[cent-1].SetMarkerSize(0.5)
     h3[cent-1].Sumw2()
     h3[cent-1].SetStats(0)  # No statistics on lower plot
@@ -165,7 +165,7 @@ for cent in range(1, 4):
     h3[cent-1].GetYaxis().SetNdivisions(505)
     h3[cent-1].GetYaxis().SetTitleSize(20)
     h3[cent-1].GetYaxis().SetTitleFont(43)
-    h3[cent-1].GetYaxis().SetTitleOffset(1.6)
+    h3[cent-1].GetYaxis().SetTitleOffset(2.1)
     h3[cent-1].GetYaxis().SetLabelFont(43)
     h3[cent-1].GetYaxis().SetLabelSize(16)
     h3[cent-1].GetYaxis().SetRangeUser(-0.022, 0.012)
@@ -174,7 +174,7 @@ for cent in range(1, 4):
     h3[cent-1].GetXaxis().SetTitle('#it{p}_{T} (GeV/#it{c} )')
     h3[cent-1].GetXaxis().SetTitleSize(20)
     h3[cent-1].GetXaxis().SetTitleFont(43)
-    h3[cent-1].GetXaxis().SetTitleOffset(3.5)
+    h3[cent-1].GetXaxis().SetTitleOffset(6.5)
     h3[cent-1].GetXaxis().SetLabelFont(43)
     h3[cent-1].GetXaxis().SetLabelOffset(0.02)
     # Absolute font size in pixel(precision 3)

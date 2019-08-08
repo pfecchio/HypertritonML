@@ -47,13 +47,13 @@ kOrYelScale4 = TColor.GetColor('#f97b57')
 kOrYelScale5 = TColor.GetColor('#f66356')
 kOrYelScale6 = TColor.GetColor('#ee4d5a')
 
-kBluYelScale0 = TColor.GetColor('#f7feae')
-kBluYelScale1 = TColor.GetColor('#b7e6a5')
-kBluYelScale2 = TColor.GetColor('#7ccba2')
-kBluYelScale3 = TColor.GetColor('#46aea0')
-kBluYelScale4 = TColor.GetColor('#089099')
-kBluYelScale5 = TColor.GetColor('#00718b')
-kBluYelScale6 = TColor.GetColor('#045275')
+kBluYelScale0 = TColor.GetColor('#ffd700')
+kBluYelScale1 = TColor.GetColor('#ffb14e')
+kBluYelScale2 = TColor.GetColor('#fa8775')
+kBluYelScale3 = TColor.GetColor('#ea5f94')
+kBluYelScale4 = TColor.GetColor('#cd34b5')
+kBluYelScale5 = TColor.GetColor('#9d02d7')
+kBluYelScale6 = TColor.GetColor('#0000ff')
 
 kTempsScale0 = TColor.GetColor('#009392')
 kTempsScale1 = TColor.GetColor('#39b185')
@@ -63,6 +63,11 @@ kTempsScale4 = TColor.GetColor('#eeb479')
 kTempsScale5 = TColor.GetColor('#e88471')
 kTempsScale6 = TColor.GetColor('#cf597e')
 
+kNewGradient0 = TColor.GetColor('#524582')
+kNewGradient1 = TColor.GetColor('#367bc3')
+kNewGradient2 = TColor.GetColor('#38bfa7')
+kNewGradient3 = TColor.GetColor('#8fe1a2')
+           
 
 kBlueYellowScale = (kBlueYellowScale0, kBlueYellowScale1, kBlueYellowScale2, kBlueYellowScale3,
                     kBlueYellowScale4, kBlueYellowScale5, kBlueYellowScale6, kBlueYellowScale7)

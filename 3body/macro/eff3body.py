@@ -1,6 +1,7 @@
+import math
+import os
 import sys
 import time
-import math
 
 import pyroot_plot as prp
 from ROOT import (TH1D, AliPID, TCanvas, TFile, TGaxis, TLegend,
@@ -39,14 +40,15 @@ def hypot4(x0, x1, x2, x3):
 
 
 n_bins = 20
-test_mode = True
+pt_bin_width = float(10 / n_bins)
+test_mode = False
 
 # labels
-label_centrality = ['0-10', '10-50', '50-90']
+label_centrality = ['0-10', '10-30', '30-50', '50-90']
 label_am = ['antihyper', 'hyper']
 
 # open input file and tree
-input_file_path = '~/data/3body_hypetriton_data/train_output/mc'
+input_file_path = '~/data/3body_hypertriton_data/train_output/mc'
 input_file_name = ''
 
 if test_mode:
@@ -88,11 +90,14 @@ for ev in tree:
     if centrality <= 10.:
         c_lab = '{}'.format(label_centrality[0])
 
-    elif centrality <= 50.:
+    elif centrality <= 30.:
         c_lab = '{}'.format(label_centrality[1])
 
-    elif centrality <= 90.:
+    elif centrality <= 50.:
         c_lab = '{}'.format(label_centrality[2])
+
+    elif centrality <= 90.:
+        c_lab = '{}'.format(label_centrality[3])
 
     if centrality > 90.:
         continue
@@ -154,6 +159,7 @@ else:
     output_file_name = 'eff_hist.root'
 
 output_file = TFile('{}/{}'.format(output_file_path, output_file_name), 'recreate')
+output_file_txt = open('eff.txt', 'w')
 
 # dictionary to manage histos
 dict_hist_eff = {}
@@ -163,9 +169,10 @@ for lab in label_array:
     hist_eff = TH1D('fHistEfficiency_{}'.format(lab), '', n_bins, 0, 10)
     hist_eff.SetDirectory(0)
 
-    for b in range(1, n_bins):
-        count_sim = hist_sim[lab].Integral(b, b)
+    output_file_txt.write('-- efficiency {} -- \n'.format(lab))
 
+    for b in range(1, n_bins+1):
+        count_sim = hist_sim[lab].Integral(b, b)
         count_rec = hist_rec[lab].Integral(b, b)
 
         eff = count_rec / count_sim
@@ -174,8 +181,17 @@ for lab in label_array:
         hist_eff.SetBinContent(b, eff)
         hist_eff.SetBinError(b, err_eff)
 
+        pt_bin = [(b - 1) * pt_bin_width, b * pt_bin_width]
+
+        output_file_txt.write('{:.1f} - {:.1f}    {:.4f} ± {:.4f} \n'.format(pt_bin[0], pt_bin[1], eff, err_eff))
+
+    output_file_txt.write('\n')
+
     prp.histo_makeup(hist_eff, x_title='#it{p}_{T} (GeV/#it{c} )',
                      y_title='Efficiency #times Acceptance', color=prp.kRedC, y_range=(-0.01, 0.41), l_width=3)
     hist_eff.Write()
 
 output_file.Close()
+output_file_txt.close()
+
+os.system('mv eff.txt {}/eff.txt'.format(output_file_path))
