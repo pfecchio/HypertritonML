@@ -40,7 +40,7 @@ def expo(x,tau):
     return np.exp(-x/tau/0.029979245800)
 
 def SignificanceScan(df,ct_cut,pt_cut,centrality_cut, i_pT,efficiency_array,eff_pres,n_ev,custom=False):    
-
+    counter = 0
     ct_min = ct_cut[0]
     ct_max = ct_cut[1]
     pt_max = pt_cut[1]
@@ -56,16 +56,17 @@ def SignificanceScan(df,ct_cut,pt_cut,centrality_cut, i_pT,efficiency_array,eff_
     HyTrLifetime = 206
     #1/slope of from a exp fit
     fit_par = 2.25499e+01
+    print(counter)
+    counter=counter+1
     for i in score_list:
-        df_score = df.query('Score>@i and @ct_cut[0]<Ct<@ct_cut[1] and @ct_min<Ct<@ct_max and @pt_min<V0pt<@pt_max and @centrality_min<Centrality<@centrality_max')
-        counts,bins = np.histogram(df_score['InvMass'],bins=26,range=[2.97,3.05]);
+        df_score = df.query('Score>@i and @ct_min<Ct<@ct_max and @pt_min<V0pt<@pt_max and @centrality_min<Centrality<@centrality_max')
+        counts,bins = np.histogram(df_score['InvMass'],bins=26,range=[2.97,3.05])
         bin_centers = 0.5*(bins[1:]+bins[:-1])
         sidemap = (bin_centers<2.9923-3*0.0025) + (bin_centers>2.9923+3*0.0025)
         massmap = np.logical_not(sidemap)
         bins_side = bin_centers[sidemap]
         counts_side = counts[sidemap]
         h, residuals, _, _, _ = np.polyfit(bins_side,counts_side,2,full=True)
-        chisq_dof = residuals / (len(bins_side) - 3)
         y = np.polyval(h,bins_side)
         
         
@@ -84,7 +85,10 @@ def SignificanceScan(df,ct_cut,pt_cut,centrality_cut, i_pT,efficiency_array,eff_
         index += 1
     significance_array=np.asarray(significance_array)
     error_array=np.asarray(error_array)
-        
+    
+    print(counter)
+    counter=counter+1
+
     if custom==True:
         max_index = np.argmax(custom_significance_array)
     else:
@@ -97,7 +101,7 @@ def SignificanceScan(df,ct_cut,pt_cut,centrality_cut, i_pT,efficiency_array,eff_
     df_cut = df.query('Score>@max_score and @ct_min<Ct<@ct_max and @pt_min<V0pt<@pt_max and @centrality_min<Centrality<@centrality_max')
     counts_mc_0 = norm.pdf(bin_centers,loc=2.992,scale=0.0025)
     counts_mc = (ryield/sum(counts_mc_0))*counts_mc_0
-    counts_data,_ = np.histogram(df_cut['InvMass'],bins=26,range=[2.97,3.05]);
+    counts_data,_ = np.histogram(df_cut['InvMass'],bins=26,range=[2.97,3.05])
     h = np.polyfit(bins_side,counts_data[sidemap],2)
     counts_bkg = np.polyval(h,bin_centers)
     counts_tot = counts_bkg+counts_mc
@@ -106,6 +110,8 @@ def SignificanceScan(df,ct_cut,pt_cut,centrality_cut, i_pT,efficiency_array,eff_
     axs[0].tick_params(axis="x", direction="in")
     axs[0].tick_params(axis="y", direction="in")
     
+    print(counter)
+    counter=counter+1
     
     if custom==True:
         axs[0].set_ylabel('Significance x Efficiency')
@@ -123,6 +129,10 @@ def SignificanceScan(df,ct_cut,pt_cut,centrality_cut, i_pT,efficiency_array,eff_
         axs[0].fill_between(score_list,a,b,facecolor='deepskyblue',label=r'$ \pm 1\sigma$')
         axs[0].grid()
     
+    
+        print(counter)
+        counter=counter+1    
+
     axs[0].legend(loc='upper left')
     plt.suptitle(r"%1.f $ \leq \rm{p}_{T} \leq $ %1.f, Cut Score = %0.2f, Significance/Events = %0.4f$x10^{-4}$, Significance x Efficiency = %0.2f , Raw yield = %0.2f" %(pt_min,pt_max,max_score,(sign/np.sqrt(n_ev))*1e4,custom_sign,ryield))
     
@@ -149,6 +159,10 @@ def SignificanceScan(df,ct_cut,pt_cut,centrality_cut, i_pT,efficiency_array,eff_
     axs[1].text(0.37, 0.95, textstr, transform=axs[1].transAxes,
         verticalalignment='top', bbox=props)
     plt.show()
+
+    print(counter)
+    counter=counter+1
+
     return max_score
 
 def gauss_function(x, a, x0, sigma):
@@ -157,7 +171,7 @@ def gauss_function(x, a, x0, sigma):
 
 def TestOnData(df,score,pt,n_ev):
     df_score = df.query('Score>@score and V0pt>=@pt[0] and V0pt<=@pt[1]')
-    counts,bins = np.histogram(df_score['InvMass'],bins=26,range=[2.97,3.05]);
+    counts,bins = np.histogram(df_score['InvMass'],bins=26,range=[2.97,3.05])
     bin_centers = 0.5*(bins[1:]+bins[:-1])
     sidemap = (bin_centers<2.9923-3*0.0025) + (bin_centers>2.9923+3*0.0025)
     massmap = np.logical_not(sidemap)

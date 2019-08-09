@@ -3,6 +3,7 @@
 
 #TODO: 
 # ROC 
+# wrong df in SignificanceScan
 import uproot
 import matplotlib
 import matplotlib.pyplot as plt
@@ -45,11 +46,11 @@ class Generalized_Analysis:
     self.dfMCGen = uproot.open(MCfile_name)['GenTable'].pandas.df()
     self.dfData = uproot.open(Datafile_name)['DataTable'].pandas.df()
 
-    self.dfMCSig['Ct']=self.dfMCSig['DistOverP']*2.99131
     self.dfData['Ct']=self.dfData['DistOverP']*2.99131
+    self.dfMCSig['Ct']=self.dfMCSig['DistOverP']*2.99131
 
-    self.dfMCSig['y'] = 0
-    self.dfData['y'] = 1
+    self.dfMCSig['y'] = 1
+    self.dfData['y'] = 0
     # dataframe for the background
     self.dfDataF = self.dfData.query(bkg_selection)
     # dataframe for the signal where are applied the preselection cuts
@@ -108,15 +109,18 @@ class Generalized_Analysis:
     sig = self.dfMCSigF.query(total_cut)
     print('condidates of bkg: ',len(bkg))
     print('condidates of sig: ',len(sig))
+    if len(sig) is 0:
+      print('no signal -> the model is not trained')
+      return 0
     df= pd.concat([sig,bkg])
     traindata,testdata,ytrain,ytest = train_test_split(df[training_columns], df['y'], test_size=0.5)
     dtrain = xgb.DMatrix(data=np.asarray(traindata), label=ytrain, feature_names=training_columns)
     model = xgb.train(params_def, dtrain,num_boost_round=num_rounds)
     au.plot_output_train_test(model, traindata[training_columns], ytrain, testdata[training_columns], ytest, branch_names=training_columns,raw=True,log=True,draw=draw,ct_cut=ct_cut,pt_cut=pt_cut,centrality_cut=centrality_cut)
-    droc = xgb.DMatrix(data=np.asarray(testdata))
-    y_pred=model.predict(droc)
-    if ROC is True:
-      au.plot_roc(ytest,y_pred)
+    # droc = xgb.DMatrix(data=np.asarray(testdata))
+    # y_pred=model.predict(droc)
+    # if ROC is True:
+    #   au.plot_roc(ytest,y_pred)
     self.traindata = traindata
     self.testdata =testdata
     self.ytrain = ytrain
