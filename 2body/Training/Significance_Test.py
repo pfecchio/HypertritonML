@@ -14,6 +14,7 @@ import pickle
 from scipy.stats import norm
 from scipy import stats
 
+from ROOT import TF1,TFile,gDirectory
 
 
 
@@ -33,6 +34,7 @@ def SignificanceError(sig,bkg,i):
 def ExpectedSignal(eff_bdt, i,n_ev,eff_V0):
     yield_meas = [1e-5,8e-6,4e-6,9e-7] # values taken from S.Trogolo PhD Thesis
     dpT = [1,1,1,4]
+    print(n_ev," ",eff_bdt," ",eff_V0)
     return int(round(n_ev*yield_meas[i]*dpT[i]*eff_V0*eff_bdt))
 
 
@@ -40,7 +42,7 @@ def expo(x,tau):
     return np.exp(-x/tau/0.029979245800)
 
 def SignificanceScan(df,ct_cut,pt_cut,centrality_cut, i_pT,efficiency_array,eff_pres,n_ev,custom=False):    
-    counter = 0
+  
     ct_min = ct_cut[0]
     ct_max = ct_cut[1]
     pt_max = pt_cut[1]
@@ -56,8 +58,6 @@ def SignificanceScan(df,ct_cut,pt_cut,centrality_cut, i_pT,efficiency_array,eff_
     HyTrLifetime = 206
     #1/slope of from a exp fit
     fit_par = 2.25499e+01
-    print(counter)
-    counter=counter+1
     for i in score_list:
         df_score = df.query('Score>@i and @ct_min<Ct<@ct_max and @pt_min<V0pt<@pt_max and @centrality_min<Centrality<@centrality_max')
         counts,bins = np.histogram(df_score['InvMass'],bins=26,range=[2.97,3.05])
@@ -68,7 +68,6 @@ def SignificanceScan(df,ct_cut,pt_cut,centrality_cut, i_pT,efficiency_array,eff_
         counts_side = counts[sidemap]
         h, residuals, _, _, _ = np.polyfit(bins_side,counts_side,2,full=True)
         y = np.polyval(h,bins_side)
-        
         
         YpTt = ExpectedSignal(efficiency_array[index],i_pT,n_ev,eff_pres)
         Yct = -(expo(ct_max,216)-expo(ct_min,216))/(ct_max-ct_min)*HyTrLifetime*0.029979245800
@@ -86,9 +85,6 @@ def SignificanceScan(df,ct_cut,pt_cut,centrality_cut, i_pT,efficiency_array,eff_
     significance_array=np.asarray(significance_array)
     error_array=np.asarray(error_array)
     
-    print(counter)
-    counter=counter+1
-
     if custom==True:
         max_index = np.argmax(custom_significance_array)
     else:
@@ -110,8 +106,6 @@ def SignificanceScan(df,ct_cut,pt_cut,centrality_cut, i_pT,efficiency_array,eff_
     axs[0].tick_params(axis="x", direction="in")
     axs[0].tick_params(axis="y", direction="in")
     
-    print(counter)
-    counter=counter+1
     
     if custom==True:
         axs[0].set_ylabel('Significance x Efficiency')
@@ -128,10 +122,6 @@ def SignificanceScan(df,ct_cut,pt_cut,centrality_cut, i_pT,efficiency_array,eff_
         b=significance_array+error_array
         axs[0].fill_between(score_list,a,b,facecolor='deepskyblue',label=r'$ \pm 1\sigma$')
         axs[0].grid()
-    
-    
-        print(counter)
-        counter=counter+1    
 
     axs[0].legend(loc='upper left')
     plt.suptitle(r"%1.f $ \leq \rm{p}_{T} \leq $ %1.f, Cut Score = %0.2f, Significance/Events = %0.4f$x10^{-4}$, Significance x Efficiency = %0.2f , Raw yield = %0.2f" %(pt_min,pt_max,max_score,(sign/np.sqrt(n_ev))*1e4,custom_sign,ryield))
@@ -159,10 +149,6 @@ def SignificanceScan(df,ct_cut,pt_cut,centrality_cut, i_pT,efficiency_array,eff_
     axs[1].text(0.37, 0.95, textstr, transform=axs[1].transAxes,
         verticalalignment='top', bbox=props)
     plt.show()
-
-    print(counter)
-    counter=counter+1
-
     return max_score
 
 def gauss_function(x, a, x0, sigma):

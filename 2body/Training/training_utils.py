@@ -1,12 +1,7 @@
 # this class has been created to generalize the training and to open the file.root just one time
 # to achive that alse analysis_utils.py and Significance_Test.py has been modified
 
-#TODO: 
-# ROC 
-# wrong df in SignificanceScan
 import uproot
-import matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xgboost as xgb
@@ -83,6 +78,7 @@ class Generalized_Analysis:
         plt.xlabel("pT [GeV/c]")
       plt.show()
     return (Eff,RecoDiv)
+
   # function to compute the preselection cuts efficiency
   def EfficiencyPresel(self,ct_cut=[0,100],pt_cut=[0,12],centrality_cut=[0,100]):
     ct_min = ct_cut[0]
@@ -100,10 +96,11 @@ class Generalized_Analysis:
   def TrainingAndTest(self,training_columns,params_def,ct_cut=[0,100],pt_cut=[2,3],centrality_cut=[0,10],num_rounds=200,draw=True,ROC=True):
     ct_min = ct_cut[0]
     ct_max = ct_cut[1]
-    pt_max = pt_cut[1]
     pt_min = pt_cut[0]
-    centrality_max = centrality_cut[1]
+    pt_max = pt_cut[1]
     centrality_min = centrality_cut[0]
+    centrality_max = centrality_cut[1]
+    
     total_cut = '@ct_min<Ct<@ct_max and @pt_min<V0pt<@pt_max and @centrality_min<Centrality<@centrality_max'
     bkg = self.dfDataF.query(total_cut)
     sig = self.dfMCSigF.query(total_cut)
@@ -125,7 +122,7 @@ class Generalized_Analysis:
     self.testdata =testdata
     self.ytrain = ytrain
     self.ytest = ytest
-    return model#,traindata,testdata,ytrain,ytest)
+    return model
 
   #this function is still not working
   def Significance(self,model,training_columns,ct_cut=[0,100],pt_cut=[2,3],centrality_cut=[0,10]):
