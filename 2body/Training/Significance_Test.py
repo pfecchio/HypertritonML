@@ -19,10 +19,29 @@ from ROOT import TF1,TFile,gDirectory
 
 
 
+def Yield(Centrality_bin):
+    bwFile=TFile("../fitsM.root")
+    if Centrality_bin==[0,10]:
+        BlastWave=bwFile.Get("BlastWave/BlastWave0")
+    elif Centrality_bin==[10,30]:
+        BlastWave=bwFile.Get("BlastWave/BlastWave1") 
+    elif Centrality_bin==[30,50]:
+        BlastWave=bwFile.Get("BlastWave/BlastWave2") 
+    elif Centrality_bin==[50,90]:
+        BlastWave=bwFile.Get("BlastWave/BlastWave2")    
+    else:
+        return "Centrality class not allowed"           
+    pt_bins=[[2,3],[3,4],[4,5],[5,9]]
+    yields=[]
+
+    for j in range(0,4): 
+        yields.append(BlastWave.Integral(pt_bins[j][0],pt_bins[j][1])/(pt_bins[j][1]-pt_bins[j][0]))
+    return yields
 
 
-def SignificanceError(sig,bkg,i):
-    yield_meas = [1.e-5,8.e-6,4.e-6,9.e-7]
+
+def SignificanceError(sig,bkg,i,Centrality_bin):
+    yield_meas = Yield(Centrality_bin)
     err_sig=np.sqrt(yield_meas[i])/(yield_meas[i])*sig
     err_bkg=np.sqrt(bkg)
     err_sig=np.sqrt(sig)
@@ -31,8 +50,8 @@ def SignificanceError(sig,bkg,i):
     return abs(err_1)*err_sig+abs(err_2)*err_bkg
 
 
-def ExpectedSignal(eff_bdt, i,n_ev,eff_V0):
-    yield_meas = [1e-5,8e-6,4e-6,9e-7] # values taken from S.Trogolo PhD Thesis
+def ExpectedSignal(eff_bdt, i,n_ev,eff_V0,Centrality_bin):
+    yield_meas = Yield(Centrality_bin) # values taken from S.Trogolo PhD Thesis
     dpT = [1,1,1,4]
     print(n_ev," ",eff_bdt," ",eff_V0)
     return int(round(n_ev*yield_meas[i]*dpT[i]*eff_V0*eff_bdt))
