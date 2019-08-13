@@ -1,3 +1,4 @@
+#include <boost/progress.hpp>
 #include <iostream>
 #include <vector>
 
@@ -9,50 +10,50 @@
 #include <TTreeReaderValue.h>
 
 #include "AliAnalysisTaskHypertriton3ML.h"
+#include "GenerateDerivedTree.h"
 
-template <typename T> double Pot2(T a) { return a * a; }
+void GenerateDerivedTreeData(std::string dataPeriod = "") {
 
-template <typename T> double Hypot(T a, T b, T c, T d) { return std::sqrt(Pot2(a) + Pot2(b) + Pot2(c) + Pot2(d)); }
+  std::string hypDataDir  = getenv("HYPERML_DATA");
+  std::string hypTableDir = getenv("HYPERML_TABLES");
 
-template <typename T> double DistanceZ(T v1, T v2) { return std::sqrt(Pot2(v1[2] - v2[2])); }
-
-template <typename T> double DistanceXY(T v1, T v2) { return std::sqrt(Pot2(v1[0] - v2[0]) + Pot2(v1[1] - v2[1])); }
-
-template <typename T> double Distance3D(T v1, T v2) {
-  return std::sqrt(Pot2(v1[0] - v2[0]) + Pot2(v1[1] - v2[1]) + Pot2(v1[2] - v2[2]));
-}
-
-int GetNClsITS(unsigned char clsMap) {
-  int ncls = 0;
-
-  for (int i = 0; i < 6; i++) {
-    ncls += (int)(clsMap >> i) & 1;
+  if ((dataPeriod != "r") && (dataPeriod != "q")) {
+    std::cout << "Wrong data period!!" << std::endl;
+    return;
   }
 
-  return ncls;
-}
+  std::string inFileName = "HyperTritonTree_18" + dataPeriod + ".root";
+  std::string inFileArg  = hypDataDir + "/" + inFileName;
 
-void HyperTreeExtractfeaturesMC() {
+  std::string outFileName = "HyperTritonTable_18" + dataPeriod + ".root";
+  std::string outFileArg  = hypTableDir + "/" + outFileName;
 
   // read the tree
-  TFile *inFile = new TFile("~/data/3body_hypertriton_data/train_output/mc/HyperTritonTreeMC.root", "read");
+  TFile *inFile = new TFile(inFileArg.data(), "READ");
 
   TTreeReader myReader("fHypertritonTree", inFile);
   TTreeReaderValue<REvent> rEv          = {myReader, "REvent"};
-  TTreeReaderArray<SHypertriton3> sHyp3 = {myReader, "SHypertriton"};
   TTreeReaderArray<RHypertriton3> rHyp3 = {myReader, "RHypertriton"};
 
-  // new tree with the features
-  TFile outFile("~/data/3body_hypertriton_data/training_set/Hyper3SignalTree.root", "RECREATE");
-  TTree *tree = new TTree("Hyper3Signal", "");
+  // new flat tree with the features
+  TFile outFile(outFileArg.data(), "RECREATE");
+  TTree *tree = new TTree("Hyper3Background", "");
+
+  // usefull info
+  int n_entries = 0;
+  if (dataPeriod == "r") n_entries = 8616701;
+  if (dataPeriod == "q") n_entries = 13215350;
+
+  // particle masses;
+  float kDeuMass = AliPID::ParticleMass(AliPID::kDeuteron);
+  float kPMass   = AliPID::ParticleMass(AliPID::kProton);
+  float kPiMass  = AliPID::ParticleMass(AliPID::kPion);
 
   float fCentrality;
 
   float fPtDeu;
   float fPtP;
   float fPtPi;
-
-  float fDistOverP;
 
   float nClsTPCDeu;
   float nClsTPCP;
@@ -105,6 +106,10 @@ void HyperTreeExtractfeaturesMC() {
 
   float fCosPA;
 
+  float fDistOverP;
+
+  bool fMatter;
+
   tree->Branch("Centrality", &fCentrality);
   tree->Branch("PtDeu", &fPtDeu);
   tree->Branch("PtP", &fPtP);
@@ -148,6 +153,12 @@ void HyperTreeExtractfeaturesMC() {
   tree->Branch("TrackDistDeuPi", &fTrackDistDeuPi);
   tree->Branch("CosPA", &fCosPA);
   tree->Branch("DistOverP", &fDistOverP);
+  tree->Branch("Matter", &fMatter);
+
+  std::cout << "\n\nGenerating derived tree from Data tree " << dataPeriod.data() << " period..." << std::endl;
+
+  // progress bar
+  boost::progress_display show_progress(n_entries);
 
   while (myReader.Next()) {
     // centrality
@@ -204,9 +215,9 @@ void HyperTreeExtractfeaturesMC() {
       fDCADecayVtxPi    = Distance3D(decayVtxPos, piPosVector);
 
       // compute the 4-vector of the daughter tracks
-      double eDeu = Hypot(rec.fPxDeu, rec.fPyDeu, rec.fPzDeu, AliPID::ParticleMass(AliPID::kDeuteron));
-      double eP   = Hypot(rec.fPxP, rec.fPyP, rec.fPzP, AliPID::ParticleMass(AliPID::kProton));
-      double ePi  = Hypot(rec.fPxPi, rec.fPyPi, rec.fPzPi, AliPID::ParticleMass(AliPID::kPion));
+      double eDeu = Hypot(rec.fPxDeu, rec.fPyDeu, rec.fPzDeu, kDeuMass);
+      double eP   = Hypot(rec.fPxP, rec.fPyP, rec.fPzP, kPMass);
+      double ePi  = Hypot(rec.fPxPi, rec.fPyPi, rec.fPzPi, kPiMass);
 
       TLorentzVector deuVector, pVector, piVector, hyperVector;
       deuVector.SetPxPyPzE(rec.fPxDeu, rec.fPyDeu, rec.fPzDeu, eDeu);
@@ -233,8 +244,12 @@ void HyperTreeExtractfeaturesMC() {
 
       // decay lenght over momentum TODO: che unità di misura sono?
       fDistOverP = decayLenghtVector.Mag() / hyperVector.P();
+
+      fMatter = rec.fIsMatter;
+
       // fill the tree
       tree->Fill();
+      ++show_progress;
     }
   }
 
@@ -243,4 +258,6 @@ void HyperTreeExtractfeaturesMC() {
   inFile->Delete();
   outFile.Close();
   outFile.Delete();
+
+  std::cout << "\nDerived tree from Data period " << dataPeriod << " generated!\n" << std::endl;
 }
