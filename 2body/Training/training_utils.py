@@ -158,5 +158,3 @@ class Generalized_Analysis:
       if score_list[index]==cut:
         effBDT=efficiency_array[index]
     return (cut,effBDT)
-
-

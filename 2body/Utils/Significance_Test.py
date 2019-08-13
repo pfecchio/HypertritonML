@@ -33,18 +33,31 @@ def SignificanceError(sig,bkg,i):
 def ExpectedSignal(eff_bdt, i,n_ev,eff_V0):
     yield_meas = [1e-5,8e-6,4e-6,9e-7] # values taken from S.Trogolo PhD Thesis
     dpT = [1,1,1,4]
-    return int(round(n_ev*yield_meas[i]*dpT[i]*eff_V0[i]*eff_bdt))
+    return int(round(n_ev*yield_meas[i]*dpT[i]*eff_V0*eff_bdt))
 
 
-def SignificanceScan(df, pT_min, pT_max, i_pT,efficiency_array,eff_pres,n_ev,custom=False):    
+def expo(x,tau):
+    return np.exp(-x/tau/0.029979245800)
+
+def SignificanceScan(df,pt_cut,ct_cut,centrality_cut, i_pT,efficiency_array,eff_pres,n_ev,custom=False):    
+
+    ct_min = ct_cut[0]
+    ct_max = ct_cut[1]
+    pt_max = pt_cut[1]
+    pt_min = pt_cut[0]
+    centrality_max = centrality_cut[1]
+    centrality_min = centrality_cut[0]
     signal_array = []
     significance_array = []
     custom_significance_array = []
     error_array=[]
     score_list = np.linspace(-3,12.5,100)
     index = 0
+    HyTrLifetime = 206
+    #1/slope of from a exp fit
+    fit_par = 2.25499e+01
     for i in score_list:
-        df_score = df.query('Score>@i and V0pt>=@pT_min and V0pt<=@pT_max')
+        df_score = df.query('Score>@i and @ct_cut[0]<Ct<@ct_cut[1] and @ct_min<Ct<@ct_max and @pt_min<V0pt<@pt_max and @centrality_min<Centrality<@centrality_max')
         counts,bins = np.histogram(df_score['InvMass'],bins=26,range=[2.97,3.05]);
         bin_centers = 0.5*(bins[1:]+bins[:-1])
         sidemap = (bin_centers<2.9923-3*0.0025) + (bin_centers>2.9923+3*0.0025)
@@ -54,9 +67,15 @@ def SignificanceScan(df, pT_min, pT_max, i_pT,efficiency_array,eff_pres,n_ev,cus
         h, residuals, _, _, _ = np.polyfit(bins_side,counts_side,2,full=True)
         chisq_dof = residuals / (len(bins_side) - 3)
         y = np.polyval(h,bins_side)
-        signal = ExpectedSignal(efficiency_array[index], i_pT,n_ev,eff_pres)
+        
+        
+        YpTt = ExpectedSignal(efficiency_array[index],pt_min,pt_max,i_pT,n_ev,eff_pres)
+        Yct = -(expo(ct_cut[1],216)-expo(ct_cut,216))/(ct_max-ct_cut)*HyTrLifetime*0.029979245800
+        Ycen = -(expo(centrality_cut[1],216)-expo(centrality_cut,216))/(centrality_max-centrality_cut)*fit_par
+        signal=YpTt*Yct*Ycen
+        
         bkg = sum(np.polyval(h,bin_centers[massmap]))
-        significance = signal/np.sqrt(signal+bkg+1e-10)
+        significance = signal/np.sqrt(signal+bkg+1e-10)#1e-10?
         signal_array.append(signal)
         error_array.append(SignificanceError(signal,bkg,i_pT))
         significance_array.append(significance)
@@ -75,7 +94,7 @@ def SignificanceScan(df, pT_min, pT_max, i_pT,efficiency_array,eff_pres,n_ev,cus
     sign = significance_array[max_index]
     custom_sign = custom_significance_array[max_index]
     ryield = signal_array[max_index]
-    df_cut = df.query('Score>@max_score and V0pt>=@pT_min and V0pt<=@pT_max')
+    df_cut = df.query('Score>@max_score and @ct_min<Ct<@ct_max and @pt_min<V0pt<@pt_max and @centrality_min<Centrality<@centrality_max')
     counts_mc_0 = norm.pdf(bin_centers,loc=2.992,scale=0.0025)
     counts_mc = (ryield/sum(counts_mc_0))*counts_mc_0
     counts_data,_ = np.histogram(df_cut['InvMass'],bins=26,range=[2.97,3.05]);
