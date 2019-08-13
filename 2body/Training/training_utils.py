@@ -89,9 +89,7 @@ class Generalized_Analysis:
     centrality_min = centrality_cut[0]
     total_cut = '@ct_min<Ct<@ct_max and @pt_min<V0pt<@pt_max and @centrality_min<Centrality<@centrality_max'
     total_cut_gen = '@ct_min<Ct<@ct_max and @pt_min<Pt<@pt_max and @centrality_min<Centrality<@centrality_max'
-    countcut  = len(self.dfMCSigF.query(total_cut))/len(self.dfMCSig.query(total_cut))
-    count = len(self.dfMCSig.query(total_cut))/len(self.dfMCGen.query(total_cut_gen))
-    return countcut/count
+    return len(self.dfMCSigF.query(total_cut))/len(self.dfMCGen.query(total_cut_gen))
   
   def TrainingAndTest(self,training_columns,params_def,ct_cut=[0,100],pt_cut=[2,3],centrality_cut=[0,10],num_rounds=200,draw=True,ROC=True):
     ct_min = ct_cut[0]
@@ -124,7 +122,6 @@ class Generalized_Analysis:
     self.ytest = ytest
     return model
 
-  #this function is still not working
   def Significance(self,model,training_columns,ct_cut=[0,100],pt_cut=[2,3],centrality_cut=[0,10]):
 
     ct_min = ct_cut[0]
@@ -134,27 +131,32 @@ class Generalized_Analysis:
     centrality_max = centrality_cut[1]
     centrality_min = centrality_cut[0]
     total_cut = '@ct_min<Ct<@ct_max and @pt_min<V0pt<@pt_max and @centrality_min<Centrality<@centrality_max'
-    dfDataSig=self.dfData.query(total_cut)
-
-    dtest = xgb.DMatrix(data=(dfDataSig[training_columns]))
+    dtest = xgb.DMatrix(data=(self.testdata[training_columns]))
+    self.testdata.eval('y = @self.ytest',inplace=True)   
     y_pred = model.predict(dtest,output_margin=True)
-    dfDataSig.eval('Score = @y_pred',inplace=True)    
-    efficiency_array=au.EfficiencyVsCuts(dfDataSig)
+    self.testdata.eval('Score = @y_pred',inplace=True)
+    efficiency_array=au.EfficiencyVsCuts(self.testdata)
 
     pT_list = [[2,3],[3,4],[4,5],[5,9]]
     i_pT = 0
     i_cen = 0
     for index in range(0,len(pT_list)):
       if pt_cut is pT_list[index]:
-        print(index)
         i_pT=index
         break
     for index in range(0,len(self.Centrality)):
       if centrality_cut is self.Centrality[index]:
         i_cen=index
         break
-
-    return ST.SignificanceScan(dfDataSig,ct_cut,pt_cut,centrality_cut,i_pT,efficiency_array,self.EfficiencyPresel(ct_cut,pt_cut,centrality_cut),self.n_ev[i_cen])
-
+    dfDataSig = self.dfData.query(total_cut)
+    dtest = xgb.DMatrix(data=(dfDataSig[training_columns]))
+    y_pred = model.predict(dtest,output_margin=True)
+    dfDataSig.eval('Score = @y_pred',inplace=True)
+    cut = ST.SignificanceScan(dfDataSig,ct_cut,pt_cut,centrality_cut,i_pT,efficiency_array,self.EfficiencyPresel(ct_cut,pt_cut,centrality_cut),self.n_ev[i_cen])
+    score_list = np.linspace(-3,12.5,100)
+    for index in range(0,len(score_list)):
+      if score_list[index]==cut:
+        effBDT=efficiency_array[index]
+    return (cut,effBDT)
 
 
