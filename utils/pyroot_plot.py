@@ -228,4 +228,3 @@ def random_string(stringLength=3):
     '''Generate a random string of fixed length '''
     letters = string.ascii_lowercase
     return ''.join(random.sample(letters, stringLength))
-q

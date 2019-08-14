@@ -14,8 +14,8 @@
 
 void GenerateDerivedTreeMC() {
 
-  std::string hypDataDir  = getenv("HYPERML_DATA");
-  std::string hypTableDir = getenv("HYPERML_TABLES");
+  std::string hypDataDir  = getenv("HYPERML_DATA_3");
+  std::string hypTableDir = getenv("HYPERML_TABLES_3");
 
   std::string inFileName = "HyperTritonTree_19d2.root";
   std::string inFileArg  = hypDataDir + "/" + inFileName;
