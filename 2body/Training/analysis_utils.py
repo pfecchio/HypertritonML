@@ -171,10 +171,10 @@ def plot_output_train_test(clf, x_train, y_train, x_test, y_test,ct_cut=[0,100],
     plt.legend(loc=location, frameon=False, fontsize=15)
     if draw is True:
         plt.show()
-    if not os.path.exists('Plots'):
-        os.makedirs('Plots')        
+    if not os.path.exists(os.environ['HYPERML_FIGURES']+'/Plots'):
+        os.makedirs(os.environ['HYPERML_FIGURES']+'/Plots')        
     filename = 'Plot_Ct_{:.2f}_{:.2f}_pT_{:.2f}_{:.2f}_Cen_{:.2f}_{:.2f}'.format(ct_cut[0],ct_cut[1],pt_cut[0],pt_cut[1],centrality_cut[0],centrality_cut[1])
-    plt.savefig('Plots/'+filename+'.pdf')
+    plt.savefig(os.environ['HYPERML_FIGURES']+'/Plots/'+filename+'.pdf')
     plt.close()
 
 def plot_feature_imp(model, imp_list=None, line_pos=None):

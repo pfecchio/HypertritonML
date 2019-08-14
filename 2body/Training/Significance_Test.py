@@ -19,7 +19,7 @@ from ROOT import TF1,TFile,gDirectory
 
 
 
-def Yield(Centrality_bin):
+def Yield(pt_bin,Centrality_bin):
     bwFile=TFile("../fitsM.root")
     if Centrality_bin==[0,10]:
         BlastWave=bwFile.Get("BlastWave/BlastWave0")
@@ -31,18 +31,13 @@ def Yield(Centrality_bin):
         BlastWave=bwFile.Get("BlastWave/BlastWave2")    
     else:
         return "Centrality class not allowed"           
-    pt_bins=[[2,3],[3,4],[4,5],[5,9]]
-    yields=[]
-
-    for j in range(0,4): 
-        yields.append(BlastWave.Integral(pt_bins[j][0],pt_bins[j][1])/(pt_bins[j][1]-pt_bins[j][0]))
-    return yields
+    pT_yield=3*BlastWave.Integral(pt_bin[0],pt_bin[1])/(pt_bin[1]-pt_bin[0])
+    return pT_yield
 
 
-
-def SignificanceError(sig,bkg,i,Centrality_bin):
-    yield_meas = Yield(Centrality_bin)
-    err_sig=np.sqrt(yield_meas[i])/(yield_meas[i])*sig
+def SignificanceError(sig,bkg,pT_bin,Centrality_bin):
+    yield_meas = Yield(pT_bin,Centrality_bin)
+    err_sig=np.sqrt(yield_meas)/(yield_meas)*sig
     err_bkg=np.sqrt(bkg)
     err_sig=np.sqrt(sig)
     err_1=(np.sqrt(sig+bkg)-sig*(1/(2*np.sqrt(sig+bkg))))/(sig+bkg)
@@ -50,16 +45,15 @@ def SignificanceError(sig,bkg,i,Centrality_bin):
     return abs(err_1)*err_sig+abs(err_2)*err_bkg
 
 
-def ExpectedSignal(eff_bdt, i,n_ev,eff_V0,Centrality_bin):
-    yield_meas = Yield(Centrality_bin) # values taken from S.Trogolo PhD Thesis
-    dpT = [1,1,1,4]
-    return int(round(n_ev*yield_meas[i]*dpT[i]*eff_V0*eff_bdt))
+def ExpectedSignal(eff_bdt, pT_bin,n_ev,eff_V0,Centrality_bin):
+    yield_meas = Yield(pT_bin,Centrality_bin) 
+    return int(round(n_ev*yield_meas*(pT_bin[1]-pT_bin[0])*eff_V0*eff_bdt))
 
 
 def expo(x,tau):
     return np.exp(-x/tau/0.029979245800)
 
-def SignificanceScan(df,ct_cut,pt_cut,centrality_cut, i_pT,efficiency_array,eff_pres,n_ev,custom=False,draw=False):    
+def SignificanceScan(df,ct_cut,pt_cut,centrality_cut,efficiency_array,eff_pres,n_ev,custom=False,draw=False):    
   
     ct_min = ct_cut[0]
     ct_max = ct_cut[1]
@@ -87,15 +81,15 @@ def SignificanceScan(df,ct_cut,pt_cut,centrality_cut, i_pT,efficiency_array,eff_
         h, residuals, _, _, _ = np.polyfit(bins_side,counts_side,2,full=True)
         y = np.polyval(h,bins_side)
         
-        YpTt = ExpectedSignal(efficiency_array[index],i_pT,n_ev,eff_pres,centrality_cut)
+        YpTt = ExpectedSignal(efficiency_array[index],pt_cut,n_ev,eff_pres,centrality_cut)
         Yct = -(expo(ct_max,216)-expo(ct_min,216))/(ct_max-ct_min)*HyTrLifetime*0.029979245800
         #Ycen = -(expo(centrality_max,216)-expo(centrality_min,216))/(centrality_max-centrality_min)*fit_par
         signal=YpTt*Yct
         
         bkg = sum(np.polyval(h,bin_centers[massmap]))
-        significance = signal/np.sqrt(signal+bkg+1e-10)#1e-10?
+        significance = signal/np.sqrt(signal+bkg+1e-10)
         signal_array.append(signal)
-        error_array.append(SignificanceError(signal,bkg,i_pT,centrality_cut))
+        error_array.append(SignificanceError(signal,bkg,pt_cut,centrality_cut))
         significance_array.append(significance)
         custom_significance = significance*efficiency_array[index]
         custom_significance_array.append(custom_significance)

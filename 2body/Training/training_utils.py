@@ -136,14 +136,7 @@ class Generalized_Analysis:
     y_pred = model.predict(dtest,output_margin=True)
     self.testdata.eval('Score = @y_pred',inplace=True)
     efficiency_array=au.EfficiencyVsCuts(self.testdata)
-
-    pT_list = [[2,3],[3,4],[4,5],[5,9]]
-    i_pT = 0
     i_cen = 0
-    for index in range(0,len(pT_list)):
-      if pt_cut is pT_list[index]:
-        i_pT=index
-        break
     for index in range(0,len(self.Centrality)):
       if centrality_cut is self.Centrality[index]:
         i_cen=index
@@ -152,7 +145,7 @@ class Generalized_Analysis:
     dtest = xgb.DMatrix(data=(dfDataSig[training_columns]))
     y_pred = model.predict(dtest,output_margin=True)
     dfDataSig.eval('Score = @y_pred',inplace=True)
-    cut = ST.SignificanceScan(dfDataSig,ct_cut,pt_cut,centrality_cut,i_pT,efficiency_array,self.EfficiencyPresel(ct_cut,pt_cut,centrality_cut),self.n_ev[i_cen])
+    cut = ST.SignificanceScan(dfDataSig,ct_cut,pt_cut,centrality_cut,efficiency_array,self.EfficiencyPresel(ct_cut,pt_cut,centrality_cut),self.n_ev[i_cen])
     score_list = np.linspace(-3,12.5,100)
     for index in range(0,len(score_list)):
       if score_list[index]==cut:
