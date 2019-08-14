@@ -3,6 +3,8 @@ import os
 import sys
 import time
 
+sys.path.append('../../utils/')
+
 import pyroot_plot as prp
 from ROOT import (TH1D, AliPID, TCanvas, TFile, TGaxis, TLegend,
                   TLorentzVector, TPad, TTree, gROOT)
@@ -43,18 +45,15 @@ n_bins = 20
 pt_bin_width = float(10 / n_bins)
 test_mode = False
 
+# import environment
+input_file_path = os.environ['HYPERML_DATA_3']
+
 # labels
 label_centrality = ['0-10', '10-30', '30-50', '50-90']
 label_am = ['antihyper', 'hyper']
 
 # open input file and tree
-input_file_path = '~/data/3body_hypertriton_data/train_output/mc'
-input_file_name = ''
-
-if test_mode:
-    input_file_name = 'HyperTritonTreeMCTest.root'
-else:
-    input_file_name = 'HyperTritonTreeMC.root'
+input_file_name = 'HyperTritonTree_19d2.root'
 
 input_file = TFile('{}/{}'.format(input_file_path, input_file_name), 'read')
 
@@ -150,13 +149,8 @@ for ev in tree:
 input_file.Close()
 
 # create output file
-output_file_path = '~/3body_workspace/results'
-output_file_name = ''
-
-if test_mode:
-    output_file_name = 'eff_hist_test.root'
-else:
-    output_file_name = 'eff_hist.root'
+output_file_path = 'results/'
+output_file_name = 'PreselectionEfficiencyHist.root'
 
 output_file = TFile('{}/{}'.format(output_file_path, output_file_name), 'recreate')
 output_file_txt = open('eff.txt', 'w')
@@ -183,7 +177,7 @@ for lab in label_array:
 
         pt_bin = [(b - 1) * pt_bin_width, b * pt_bin_width]
 
-        output_file_txt.write('{:.1f} - {:.1f}    {:.4f} ± {:.4f} \n'.format(pt_bin[0], pt_bin[1], eff, err_eff))
+        output_file_txt.write('{:.1f} - {:.1f}    {:.4f} +- {:.4f} \n'.format(pt_bin[0], pt_bin[1], eff, err_eff))
 
     output_file_txt.write('\n')
 
@@ -194,4 +188,4 @@ for lab in label_array:
 output_file.Close()
 output_file_txt.close()
 
-os.system('mv eff.txt {}/eff.txt'.format(output_file_path))
+os.system('mv eff.txt results/eff.txt')
