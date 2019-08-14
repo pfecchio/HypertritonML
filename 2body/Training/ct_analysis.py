@@ -28,7 +28,7 @@ params_def = {
 #, 'DistOverP'
 training_columns = [ 'V0CosPA','ProngsDCA','ArmenterosAlpha','NpidClustersHe3','V0pt','TPCnSigmaHe3','He3ProngPvDCA','PiProngPvDCA']
 
-Analysis = tu.Generalized_Analysis('../DerivedTrees/SignalTable.root','../DerivedTrees/DataTable.root','ProngsDCA<1.6 and He3ProngPvDCA>0.01 and He3ProngPvDCA>0.01 and V0CosPA>0.98','(InvMass<2.98 or InvMass>3.005) and V0pt<=10')
+Analysis = tu.Generalized_Analysis(os.environ['HYPERML_TABLES']+'/SignalTable.root',os.environ['HYPERML_TABLES']+'/DataTable.root','ProngsDCA<1.6 and He3ProngPvDCA>0.01 and He3ProngPvDCA>0.01 and V0CosPA>0.98','(InvMass<2.98 or InvMass>3.005) and V0pt<=10')
 
 # loop to train the models
 if not os.path.exists('Models'):

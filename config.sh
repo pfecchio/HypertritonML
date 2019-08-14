@@ -1,6 +1,6 @@
 #!/bin/bash
 export HYPERML_DATA="$HOME/HypertritonAnalysis/Trees"
-export HYPERML_TABLES="$HOME/HypertritonAnalysis/Derived_Trees"
+export HYPERML_TABLES="$HOME/HypertritonAnalysis/DerivedTrees"
 
 [ ! -d "$HYPERML_DATA" ] && mkdir -p $HYPERML_DATA
 [ ! -f "$HYPERML_DATA/HyperTritonTree_18q.root"  ] && alien_cp alien:/alice/cern.ch/user/f/fmazzasc/Trees/HyperTritonTree_18q.root  $HYPERML_DATA/HyperTritonTree_18q.root
