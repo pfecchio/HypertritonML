@@ -1,3 +1,7 @@
+import sys
+
+sys.path.append('../../utils/')
+
 import pyroot_plot as prp
 from ROOT import (TH1D, AliPID, TCanvas, TFile, TGaxis, TLegend,
                   TLorentzVector, TPad, TTree, gROOT)
@@ -15,7 +19,7 @@ label_array = [x + '_' + y for x in label_am for y in label_centrality]
 dict_hist_eff = {}
 
 # extract histos from file
-input_file = TFile('~/3body_workspace/results/eff_hist.root', 'read')
+input_file = TFile('results/PreselectionEfficiencyHist.root.root', 'read')
 
 for lab in label_array:
     hist = input_file.Get('fHistEfficiency_{}'.format(lab))
@@ -24,9 +28,6 @@ for lab in label_array:
     dict_hist_eff[lab] = hist
 
 input_file.Close()
-
-# output file for the beautified plots
-output_file = TFile('~/3body_workspace/results/eff_plot.root', 'recreate')
 
 #-----------------------------------------------------------------------------#
 # efficiency for antimatter in different centrality classes
@@ -55,7 +56,8 @@ for cent in range(4):
         h.Draw('same')
 
 legend.Draw()
-c.Write()
+c.SaveAs('c_eff_cent_a.pdf')
+c.Close()
 
 #-----------------------------------------------------------------------------#
 # efficiency for matter in different centrality classes
@@ -83,7 +85,9 @@ for cent in range(4):
         h.Draw('same')
 
 legend.Draw()
-c.Write()
+c.SaveAs('c_eff_cent_m.pdf')
+c.Close()
+
 
 #-----------------------------------------------------------------------------#
 # matter-antimatter comparison
@@ -184,9 +188,5 @@ for cent in range(1, 5):
     h3[cent-1].Draw('ep')  # Draw the ratio plot
     c.Update()
 
-c.Write()
 c.SaveAs('comparison.pdf')
 c.Close()
-
-output_file.Write()
-output_file.Close()

@@ -14,8 +14,8 @@
 
 void GenerateDerivedTreeData(std::string dataPeriod = "") {
 
-  std::string hypDataDir  = getenv("HYPERML_DATA");
-  std::string hypTableDir = getenv("HYPERML_TABLES");
+  std::string hypDataDir  = getenv("HYPERML_DATA_3");
+  std::string hypTableDir = getenv("HYPERML_TABLES_3");
 
   if ((dataPeriod != "r") && (dataPeriod != "q")) {
     std::cout << "Wrong data period!!" << std::endl;
