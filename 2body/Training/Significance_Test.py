@@ -14,6 +14,7 @@ import pickle
 from scipy.stats import norm
 from scipy import stats
 
+import os
 from ROOT import TF1,TFile,gDirectory
 
 
@@ -23,25 +24,34 @@ def Yield(pt_bin,Centrality_bin):
     bwFile=TFile("../fitsM.root")
     if Centrality_bin==[0,10]:
         BlastWave=bwFile.Get("BlastWave/BlastWave0")
+        index_cen=0
     elif Centrality_bin==[10,30]:
-        BlastWave=bwFile.Get("BlastWave/BlastWave1") 
+        BlastWave=bwFile.Get("BlastWave/BlastWave1")
+        index_cen=1
     elif Centrality_bin==[30,50]:
-        BlastWave=bwFile.Get("BlastWave/BlastWave2") 
+        BlastWave=bwFile.Get("BlastWave/BlastWave2")
+        index_cen=2
     elif Centrality_bin==[50,90]:
-        BlastWave=bwFile.Get("BlastWave/BlastWave2")    
+        BlastWave=bwFile.Get("BlastWave/BlastWave2")   
+        index_cen=3
     else:
         return "Centrality class not allowed"           
-    pT_yield=3*BlastWave.Integral(pt_bin[0],pt_bin[1])/(pt_bin[1]-pt_bin[0])
+    #BlastWave.SetNormalized(1)
+    Integral = BlastWave.Integral(0,10,1e-8)
+    #last values obtained by a exponential fit
+    Scale_Factor = [3.37e-5,1.28e-5,0.77e-5,0.183e-5]
+    Scale_Factor = Scale_Factor
+    pT_yield=2*Scale_Factor[index_cen]*BlastWave.Integral(pt_bin[0],pt_bin[1],1e-8)/(pt_bin[1]-pt_bin[0])/Integral
     return pT_yield
 
 
 def SignificanceError(sig,bkg,pT_bin,Centrality_bin):
     yield_meas = Yield(pT_bin,Centrality_bin)
-    err_sig=np.sqrt(yield_meas)/(yield_meas)*sig
+    err_sig=np.sqrt(yield_meas)/(yield_meas+1e-10)*sig
     err_bkg=np.sqrt(bkg)
     err_sig=np.sqrt(sig)
-    err_1=(np.sqrt(sig+bkg)-sig*(1/(2*np.sqrt(sig+bkg))))/(sig+bkg)
-    err_2=sig/(2*(sig+bkg)**(3/2))
+    err_1=(np.sqrt(sig+bkg+1e-10)-sig*(1/(2*np.sqrt(sig+bkg+1e-10))))/(sig+bkg+1e-10)
+    err_2=sig/(2*(sig+bkg+1e-10)**(3/2))
     return abs(err_1)*err_sig+abs(err_2)*err_bkg
 
 
@@ -68,11 +78,9 @@ def SignificanceScan(df,ct_cut,pt_cut,centrality_cut,efficiency_array,eff_pres,n
     score_list = np.linspace(-3,12.5,100)
     index = 0
     HyTrLifetime = 206
-    #1/slope of from a exp fit
-    fit_par = 2.25499e+01
     for i in score_list:
         df_score = df.query('Score>@i and @ct_min<Ct<@ct_max and @pt_min<V0pt<@pt_max and @centrality_min<Centrality<@centrality_max')
-        counts,bins = np.histogram(df_score['InvMass'],bins=26,range=[2.97,3.05])
+        counts,bins = np.histogram(df_score['InvMass'],bins=30,range=[2.96,3.05])
         bin_centers = 0.5*(bins[1:]+bins[:-1])
         sidemap = (bin_centers<2.9923-3*0.0025) + (bin_centers>2.9923+3*0.0025)
         massmap = np.logical_not(sidemap)
@@ -82,8 +90,7 @@ def SignificanceScan(df,ct_cut,pt_cut,centrality_cut,efficiency_array,eff_pres,n
         y = np.polyval(h,bins_side)
         
         YpTt = ExpectedSignal(efficiency_array[index],pt_cut,n_ev,eff_pres,centrality_cut)
-        Yct = -(expo(ct_max,216)-expo(ct_min,216))/(ct_max-ct_min)*HyTrLifetime*0.029979245800
-        #Ycen = -(expo(centrality_max,216)-expo(centrality_min,216))/(centrality_max-centrality_min)*fit_par
+        Yct = -(expo(ct_max,HyTrLifetime)-expo(ct_min,HyTrLifetime))/(ct_max-ct_min)*HyTrLifetime*0.029979245800
         signal=YpTt*Yct
         
         bkg = sum(np.polyval(h,bin_centers[massmap]))
@@ -109,7 +116,7 @@ def SignificanceScan(df,ct_cut,pt_cut,centrality_cut,efficiency_array,eff_pres,n
     df_cut = df.query('Score>@max_score and @ct_min<Ct<@ct_max and @pt_min<V0pt<@pt_max and @centrality_min<Centrality<@centrality_max')
     counts_mc_0 = norm.pdf(bin_centers,loc=2.992,scale=0.0025)
     counts_mc = (ryield/sum(counts_mc_0))*counts_mc_0
-    counts_data,_ = np.histogram(df_cut['InvMass'],bins=26,range=[2.97,3.05])
+    counts_data,_ = np.histogram(df_cut['InvMass'],bins=30,range=[2.96,3.05])
     h = np.polyfit(bins_side,counts_data[sidemap],2)
     counts_bkg = np.polyval(h,bin_centers)
     counts_tot = counts_bkg+counts_mc
@@ -153,7 +160,7 @@ def SignificanceScan(df,ct_cut,pt_cut,centrality_cut,efficiency_array,eff_pres,n
     axs[1].tick_params(axis="x", direction="in")
     axs[1].tick_params(axis="y", direction="in")    
     axs[1].legend(loc=(0.37,0.47))
-    plt.ylim(ymin=0)
+    plt.ylim(bottom=0)
     textstr = '\n'.join((
     r"%1.f GeV/c $ \leq \rm{p}_{T} < $ %1.f GeV/c " %(pt_min,pt_max,),
     r' Significance/Sqrt(Events) = %0.4f$x10^{-4}$' % ((sign/np.sqrt(n_ev))*1e4, )))
@@ -162,6 +169,12 @@ def SignificanceScan(df,ct_cut,pt_cut,centrality_cut,efficiency_array,eff_pres,n
         verticalalignment='top', bbox=props)
     if draw is True:
         plt.show()
+
+    filename = 'Significance_Ct_{:.2f}_{:.2f}_pT_{:.2f}_{:.2f}_Cen_{:.2f}_{:.2f}.pdf'.format(ct_cut[0],ct_cut[1],pt_cut[0],pt_cut[1],centrality_cut[0],centrality_cut[1])
+
+    if not os.path.exists(os.environ['HYPERML_FIGURES']+'/Significance/'):
+        os.makedirs(os.environ['HYPERML_FIGURES']+'/Significance/')
+    plt.savefig(os.environ['HYPERML_FIGURES']+'/Significance/'+filename)
     plt.close()
     return max_score
 
@@ -171,7 +184,7 @@ def gauss_function(x, a, x0, sigma):
 
 def TestOnData(df,score,pt,n_ev):
     df_score = df.query('Score>@score and V0pt>=@pt[0] and V0pt<=@pt[1]')
-    counts,bins = np.histogram(df_score['InvMass'],bins=26,range=[2.97,3.05])
+    counts,bins = np.histogram(df_score['InvMass'],bins=30,range=[2.96,3.05])
     bin_centers = 0.5*(bins[1:]+bins[:-1])
     sidemap = (bin_centers<2.9923-3*0.0025) + (bin_centers>2.9923+3*0.0025)
     massmap = np.logical_not(sidemap)

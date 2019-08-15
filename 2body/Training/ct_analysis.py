@@ -9,8 +9,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit 
 import scipy
-
-
+import os
+def gauss(x,n,mu,sigma):
+    return n*np.exp(-(x-mu)**2/(2*sigma**2))
 params_def = {
     # Parameters that we are going to tune.
     'max_depth':8,
@@ -44,7 +45,7 @@ for index_ct in range(0,len(Ct_bins)):
     print('Ct: ',Ct_bins[index_ct])
     model =Analysis.TrainingAndTest(training_columns,params_def,Ct_bins[index_ct],[2,10],Centrality_bins[index_cen],draw=False)
     if model is not 0:
-      filename = '/BDT_Ct_{:.2f}_{:.2f}_pT_{:.2f}_{:.2f}_Cen_{:.2f}_{:.2f}.sav'.format(Ct_bins[index_ct][0],Ct_bins[index_ct][1],2,10,Centrality_bins[index_cen][0],Centrality_bins[index_cen][1])
+      filename = '/BDT_Ct_{:.2f}_{:.2f}_pT_{:.2f}_{:.2f}_Cen_{:.2f}_{:.2f}.sav'.format(Ct_bins[index_ct][0],Ct_bins[index_ct][1],0,10,Centrality_bins[index_cen][0],Centrality_bins[index_cen][1])
       pickle.dump(model, open(os.environ['HYPERML_MODELS']+filename, 'wb'))
       Cut,eff = Analysis.Significance(model,training_columns,Ct_bins[index_ct],[2,10],Centrality_bins[index_cen])
       Cut_saved.append(Cut)
@@ -61,12 +62,11 @@ print("cut: ",Cut_saved)
 Ct_counts = []
 # loop to read the models and to do the prediction
 index_cut = 0
+plt.close()
 for index_ct in range(0,len(Ct_bins)):
   for index_cen in range(0,len(Centrality_bins)):
     output_cut = Cut_saved[index_cut]
-    print('centrality: ',Centrality_bins[index_cen])
-    print('Ct: ',Ct_bins[index_ct])
-    #model =Analysis.TrainingAndTest(training_columns,params_def,Ct_bins[index_ct],[0,10],Centrality_bins[index_cen],draw=False)
+    print('centrality: ',Centrality_bins[index_cen],'Ct: ',Ct_bins[index_ct])
     
     ct_min = Ct_bins[index_ct][0]
     ct_max = Ct_bins[index_ct][1]
@@ -74,13 +74,13 @@ for index_ct in range(0,len(Ct_bins)):
     centrality_max = Centrality_bins[index_cen][1]
 
     total_cut = '@ct_min<Ct<@ct_max and 0<V0pt<10 and @centrality_min<Centrality<@centrality_max'
-    filename = '/BDT_Ct_{:.2f}_{:.2f}_pT_{:.2f}_{:.2f}_Cen_{:.2f}_{:.2f}.sav'.format(Ct_bins[index_ct][0],Ct_bins[index_ct][1],2,10,Centrality_bins[index_cen][0],Centrality_bins[index_cen][1])
+    filename = '/BDT_Ct_{:.2f}_{:.2f}_pT_{:.2f}_{:.2f}_Cen_{:.2f}_{:.2f}.sav'.format(Ct_bins[index_ct][0],Ct_bins[index_ct][1],0,10,Centrality_bins[index_cen][0],Centrality_bins[index_cen][1])
     model = pickle.load(open(os.environ['HYPERML_MODELS']+filename, 'rb'))
     dfDataF = Analysis.dfData.query(total_cut)
     data = xgb.DMatrix(data=(dfDataF[training_columns]))
     y_pred = model.predict(data,output_margin=True)
     dfDataF.eval('Score = @y_pred',inplace=True)
-    Counts,bins = np.histogram(dfDataF.query('Score >@output_cut')['InvMass'],bins=26,range=[2.97,3.05])
+    Counts,bins = np.histogram(dfDataF.query('Score >@output_cut')['InvMass'],bins=30,range=[2.96,3.05])
     #sum over the counts in centrality intervals
     if index_cen==0:
       CountsTot=Counts
@@ -89,7 +89,7 @@ for index_ct in range(0,len(Ct_bins)):
     index_cut=index_cut+1
   
   bin_centers = 0.5*(bins[1:]+bins[:-1])
-  sidemap = (bin_centers<2.98) + (bin_centers>3.005)
+  sidemap = (bin_centers<2.975) + (bin_centers>3.005)
   massmap = np.logical_not(sidemap)
   bins_side = bin_centers[sidemap]
   counts_side = CountsTot[sidemap]
@@ -100,8 +100,13 @@ for index_ct in range(0,len(Ct_bins)):
 
   Ct_counts.append(sig/(Ct_bins[index_ct][1]-Ct_bins[index_ct][0]))
 
-  plt.errorbar(bins[:-1], CountsTot, yerr=1,xerr=(bins[2]-bins[1])/2, fmt='o', c='b')
-  filename = '/InvMass_Ct_{:.2f}_{:.2f}'.format(Ct_bins[index_ct][0],Ct_bins[index_ct][1])
+  plt.errorbar(bins[:-1], CountsTot, yerr=np.sqrt(CountsTot),xerr=(bins[2]-bins[1])/2, fmt='o', c='b')
+  plt.plot(bins[:-1],np.polyval(h,bins[:-1]),'g--')
+  plt.axvline(x=2.975)
+  plt.axvline(x=3.005)
+
+  filename = 'InvMass_Ct_{:.2f}_{:.2f}.pdf'.format(Ct_bins[index_ct][0],Ct_bins[index_ct][1])
+  plt.savefig(os.environ['HYPERML_FIGURES']+'/Peaks/'+filename)
   plt.close()
 
 print('counts : ',Ct_counts)
@@ -121,15 +126,16 @@ errCt = np.sqrt(Ct_counts)
 def expo(x,n,tau):
     return n*np.exp(-x/tau/0.029979245800)
 
+print('counts corrected: ',Ct_counts)
 fig, ax = plt.subplots()
 plt.errorbar(bins, Ct_counts, yerr=errCt,xerr=errbins, fmt='o', c='b')
-par,cov = curve_fit(expo,bins,Ct_counts,bounds=([1800,180],[2400,240]))
+par,cov = curve_fit(expo,bins,Ct_counts,bounds=([1800,180],[4000,240]))
 plt.plot(bins,expo(np.array(bins),*par),'r--',label='fit: N(0)={:.2f}, $\\tau$={:.2f}$\pm${:.2f}ps'.format(par[0],par[1],cov[1][1]))
 ax.set_yscale('log')
 plt.xlabel('ct [cm]')
 plt.ylabel('$\\frac{dN}{dct}$ [cm$^-1$]')
 print('N : ',par[0])
-print('tau : ',par[1],' +- ',cov[1][1], ' ps')
+print('tau : ',par[1],' +- ',math.sqrt(cov[1][1]), ' ps')
 if not os.path.exists(os.environ['HYPERML_FIGURES']+'/Peaks/'):
   os.makedirs(os.environ['HYPERML_FIGURES']+'/Peaks/')
 plt.savefig(os.environ['HYPERML_FIGURES']+'/Peaks/'+'ct.pdf')

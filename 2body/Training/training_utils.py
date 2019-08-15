@@ -23,7 +23,8 @@ class Generalized_Analysis:
 
   def __init__(self,MCfile_name,Datafile_name,cut_presel,bkg_selection):
 
-    centrality=uproot.open('../../../HypertritonData/EventCounter.root')['fCentrality']
+    #centrality=uproot.open('../../../HypertritonData/EventCounter.root')['fCentrality']
+    centrality=uproot.open(os.environ['HYPERML_TABLES']+'/EventCounter.root')['fCentrality']
     self.Centrality = [[0,10],[10,30],[30,50],[50,90]]
     self.n_ev = [0,0,0,0]
     
@@ -52,33 +53,7 @@ class Generalized_Analysis:
     self.dfMCSigF = self.dfMCSig.query(cut_presel)
     
     
-  # function to compute the efficiency (it is not really useful)
-  def Efficiency(self,variable,other_name,MaxRange,Step,plot = True, log = False):
-
-    #plot of the all
-    RecoHist,RecoDiv=np.histogram(self.dfMCSig[variable].array,bins=np.arange(0,MaxRange,Step))
-    MCHist,MCdiv=np.histogram(self.dfMCGen[other_name].array,bins=np.arange(0,MaxRange,Step))
-    #computation of the efficiency
-    Eff = RecoHist/MCHist
-    #binomial error 
-    ErrEff = np.sqrt(Eff*(1-Eff)/MCHist)
-    RecoDiv=RecoDiv+Step/2
-
-    if plot is True:
-      fig, ax = plt.subplots()
-      ax.errorbar(RecoDiv[:-1], Eff,xerr=Step/2,yerr=ErrEff,linewidth=0.8)
-      if log is True:
-        ax.set_yscale('log')
-      plt.ylabel("Efficiency")
-      if variable is 'Ct':
-        plt.title("Efficiency vs ct")  
-        plt.xlabel("ct [cm]")
-      elif variable is 'V0pt':
-        plt.title("Efficiency vs pT")  
-        plt.xlabel("pT [GeV/c]")
-      plt.show()
-    return (Eff,RecoDiv)
-
+  
   # function to compute the preselection cuts efficiency
   def EfficiencyPresel(self,ct_cut=[0,100],pt_cut=[0,12],centrality_cut=[0,100]):
     ct_min = ct_cut[0]
@@ -91,7 +66,27 @@ class Generalized_Analysis:
     total_cut_gen = '@ct_min<Ct<@ct_max and @pt_min<Pt<@pt_max and @centrality_min<Centrality<@centrality_max'
     return len(self.dfMCSigF.query(total_cut))/len(self.dfMCGen.query(total_cut_gen))
   
-  def TrainingAndTest(self,training_columns,params_def,ct_cut=[0,100],pt_cut=[2,3],centrality_cut=[0,10],num_rounds=200,draw=True,ROC=True):
+  def optimize_params(self,dtrain,par):
+    scoring = 'auc'
+    early_stopping_rounds = 20
+    num_rounds = 200
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=23)
+    gs_dict = {'first_par': {'name': 'max_depth', 'par_values': [i for i in range(2, 10, 2)]},
+          'second_par': {'name': 'min_child_weight', 'par_values':[i for i in range(0, 12, 2)]},
+          }
+    par['max_depth'],par['min_child_weight'],_ = au.gs_2par(gs_dict, par, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
+      
+    gs_dict = {'first_par': {'name': 'subsample', 'par_values': [i/10. for i in range(4, 10)]},
+          'second_par': {'name': 'colsample_bytree', 'par_values': [i/10. for i in range(8, 10)]},
+          }
+    par['subsample'],par['colsample_bytree'],_ = au.gs_2par(gs_dict, par, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
+    gs_dict = {'first_par': {'name': 'gamma', 'par_values': [i/10. for i in range(0, 11)]}} 
+    par['gamma'],_ = au.gs_1par(gs_dict, par, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
+    gs_dict = {'first_par': {'name': 'eta', 'par_values': [0.1, 0.05, 0.01, 0.005, 0.001]}}
+    par['eta'],n = au.gs_1par(gs_dict, par, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
+    return n
+
+  def TrainingAndTest(self,training_columns,params_def,ct_cut=[0,100],pt_cut=[2,3],centrality_cut=[0,10],num_rounds=200,draw=True,ROC=True,optimize=False):
     ct_min = ct_cut[0]
     ct_max = ct_cut[1]
     pt_min = pt_cut[0]
@@ -110,17 +105,27 @@ class Generalized_Analysis:
     df= pd.concat([sig,bkg])
     traindata,testdata,ytrain,ytest = train_test_split(df[training_columns], df['y'], test_size=0.5)
     dtrain = xgb.DMatrix(data=np.asarray(traindata), label=ytrain, feature_names=training_columns)
+    
+    if optimize is True:
+      num_rounds = self.optimize_params(dtrain,params_def)
+      print(total_cut)
+      print('num rounds: ',num_rounds)
+      print('parameters: ',params_def)
+
     model = xgb.train(params_def, dtrain,num_boost_round=num_rounds)
     au.plot_output_train_test(model, traindata[training_columns], ytrain, testdata[training_columns], ytest, branch_names=training_columns,raw=True,log=True,draw=draw,ct_cut=ct_cut,pt_cut=pt_cut,centrality_cut=centrality_cut)
-    # droc = xgb.DMatrix(data=np.asarray(testdata))
-    # y_pred=model.predict(droc)
-    # if ROC is True:
-    #   au.plot_roc(ytest,y_pred)
+    droc = xgb.DMatrix(data=testdata)
+    y_pred=model.predict(droc)
+    if ROC is True:
+      au.plot_roc(ytest,y_pred)
     self.traindata = traindata
     self.testdata =testdata
     self.ytrain = ytrain
     self.ytest = ytest
     return model
+
+  
+    
 
   def Significance(self,model,training_columns,ct_cut=[0,100],pt_cut=[2,3],centrality_cut=[0,10]):
 
