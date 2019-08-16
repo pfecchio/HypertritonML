@@ -11,9 +11,9 @@
 
 #include <vector>
 
-#include "../include/Common.h"
-#include "../include/Table.h"
-#include "../include/GenTable.h"
+#include "../../common/GenerateTable/Common.h"
+#include "../../common/GenerateTable/Table.h"
+#include "../../common/GenerateTable/GenTable.h"
 
 void HyperTreeFatherMC(bool reject = true,TString name="HyperTritonTree_19d2.root")
 {

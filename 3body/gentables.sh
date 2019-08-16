@@ -41,7 +41,7 @@ if [ $MC -eq 1 ]; then
     if [ $FORCE -eq 1 ]; then
         rm "$HYPERML_TABLES_3/HyperTritonTable_19d2.root"
     fi
-    [ ! -f "$HYPERML_TABLES_3/HyperTritonTable_19d2.root" ] && root -l -q -b DerivedTreeGeneration/GenerateDerivedTreeMC.cc || echo "HyperTritonTable_19d2.root already exist! Will not be regenerated."
+    [ ! -f "$HYPERML_TABLES_3/HyperTritonTable_19d2.root" ] && root -l -q -b TreesToTables/GenerateTableFromMC.cc || echo "HyperTritonTable_19d2.root already exist! Will not be generated again."
 fi
 
 if [ $DATA -eq 1 ]; then
@@ -49,12 +49,12 @@ if [ $DATA -eq 1 ]; then
         if [ $FORCE -eq 1 ]; then
             rm "$HYPERML_TABLES_3/HyperTritonTable_18q.root"
         fi
-        [ ! -f "$HYPERML_TABLES_3/HyperTritonTable_18q.root" ] && root -l -q -b DerivedTreeGeneration/GenerateDerivedTreeData.cc\(\"q\"\) || echo "HyperTritonTable_18q.root already exist! Will not be regenerated."
+        [ ! -f "$HYPERML_TABLES_3/HyperTritonTable_18q.root" ] && root -l -q -b TreesToTables/GenerateTableFromData.cc+\(\"q\"\) || echo "HyperTritonTable_18q.root already exist! Will not be generated again."
     fi
     if [ $PERIOD_R = 1 ]; then
         if [ $FORCE -eq 1 ]; then
             rm "$HYPERML_TABLES_3/HyperTritonTable_18r.root"
         fi
-        [ ! -f "$HYPERML_TABLES_3/HyperTritonTable_18r.root" ] && root -l -q -b DerivedTreeGeneration/GenerateDerivedTreeData.cc\(\"r\"\) || echo "HyperTritonTable_18r.root already exist! Will not be regenerated."
+        [ ! -f "$HYPERML_TABLES_3/HyperTritonTable_18r.root" ] && root -l -q -b TreesToTables/GenerateTableFromData.cc+\(\"r\"\) || echo "HyperTritonTable_18r.root already exist! Will not be generated again."
     fi
 fi
