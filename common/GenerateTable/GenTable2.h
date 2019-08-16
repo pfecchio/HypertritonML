@@ -1,5 +1,5 @@
-#ifndef HYPERGENTABLE_H
-#define HYPERGENTABLE_H
+#ifndef HYPERGENTABLE2_H
+#define HYPERGENTABLE2_H
 
 #include "Common.h"
 
@@ -13,9 +13,9 @@
 #include "AliPID.h"
 #include "Math/LorentzVector.h"
 
-class GenTable {
+class GenTable2 {
   public: 
-  GenTable(std::string name, std::string title);
+  GenTable2(std::string name, std::string title);
   void Fill(const SHyperTritonHe3pi& SHyperVec, const RCollision& RColl);
   void Write() { tree->Write(); }
 
@@ -29,7 +29,7 @@ class GenTable {
   bool Matter;    
 };
 
-GenTable::GenTable(std::string name, std::string title) {
+GenTable2::GenTable2(std::string name, std::string title) {
   tree = new TTree(name.data(), title.data());
 
   tree->Branch("Pt", &Pt);
@@ -40,7 +40,7 @@ GenTable::GenTable(std::string name, std::string title) {
   tree->Branch("Matter", &Matter);
 };
 
-void GenTable::Fill(const SHyperTritonHe3pi& SHyper, const RCollision& RColl) {
+void GenTable2::Fill(const SHyperTritonHe3pi& SHyper, const RCollision& RColl) {
   Centrality = RColl.fCent;
   Matter = SHyper.fPdgCode > 0;
   const double len = Hypot(SHyper.fDecayX, SHyper.fDecayY, SHyper.fDecayZ);

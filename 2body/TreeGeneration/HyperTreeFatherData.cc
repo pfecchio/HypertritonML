@@ -20,23 +20,21 @@
 
 using namespace std;
 
-#include "../include/Common.h"
-#include "../include/Table.h"
+#include "../../common/GenerateTable/Common.h"
+#include "../../common/GenerateTable/Table2.h"
 
-void HyperTreeFatherData(TString name="HyperTritonTree_18r.root")
-{
-    
+void HyperTreeFatherData(TString name = "HyperTritonTree_18r.root") {
+
   char *dataDir{nullptr}, *tableDir{nullptr};
-  getDirs(dataDir, tableDir);
-  
+  getDirs2(dataDir, tableDir);
+
   TChain inputChain("_custom/fTreeV0");
-  inputChain.AddFile(Form("%s/%s", dataDir,name.Data()));
+  inputChain.AddFile(Form("%s/%s", dataDir, name.Data()));
   inputChain.AddFile(Form("%s/HyperTritonTree_18q.root", dataDir));
 
   TTreeReader fReader(&inputChain);
   TTreeReaderArray<RHyperTritonHe3pi> RHyperVec = {fReader, "RHyperTriton"};
-  TTreeReaderValue<RCollision> RColl = {fReader, "RCollision"};
-
+  TTreeReaderValue<RCollision> RColl            = {fReader, "RCollision"};
 
   // TFile tfileHist("CentHist.root", "READ");
   // TH1D *fHistCent = (TH1D *)tfileHist.Get("fHistCent");
@@ -47,20 +45,14 @@ void HyperTreeFatherData(TString name="HyperTritonTree_18r.root")
   // cout << fMin << endl;
 
   TFile tfile(Form("%s/DataTable.root", tableDir), "RECREATE");
-  Table tree("DataTable", "Data Table");
+  Table2 tree("DataTable", "Data Table");
 
+  while (fReader.Next()) {
 
-  while (fReader.Next())
-  {
-  
-
-    for (auto& RHyper : RHyperVec)
+    for (auto &RHyper : RHyperVec)
       tree.Fill(RHyper, *RColl);
   }
 
-
   tfile.cd();
   tree.Write();
-
-
 }
