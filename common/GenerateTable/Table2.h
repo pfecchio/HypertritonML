@@ -1,5 +1,5 @@
-#ifndef HYPERTABLE_H
-#define HYPERTABLE_H
+#ifndef HYPERTABLE2_H
+#define HYPERTABLE2_H
 
 #include "Common.h"
 
@@ -11,9 +11,9 @@
 
 #include "AliAnalysisTaskHyperTriton2He3piML.h"
 
-class Table {
+class Table2 {
   public: 
-  Table(std::string name, std::string title);
+  Table2(std::string name, std::string title);
   void Fill(const RHyperTritonHe3pi& RHyperVec, const RCollision& RColl);
   void Write() { tree->Write(); }
 
@@ -44,7 +44,7 @@ class Table {
   float PseudoRapidityPion;    
 };
 
-Table::Table(std::string name, std::string title) {
+Table2::Table2(std::string name, std::string title) {
   tree = new TTree(name.data(), title.data());
 
   tree->Branch("HypCandPt", &HypCandPt);
@@ -72,7 +72,7 @@ Table::Table(std::string name, std::string title) {
   tree->Branch("PseudoRapidityPion", &PseudoRapidityPion);  
 };
 
-void Table::Fill(const RHyperTritonHe3pi& RHyper, const RCollision& RColl) {
+void Table2::Fill(const RHyperTritonHe3pi& RHyper, const RCollision& RColl) {
   Centrality = RColl.fCent;
   double eHe3 = Hypot(RHyper.fPxHe3, RHyper.fPyHe3, RHyper.fPzHe3, AliPID::ParticleMass(AliPID::kHe3));
   double ePi = Hypot(RHyper.fPxPi, RHyper.fPyPi, RHyper.fPzPi, AliPID::ParticleMass(AliPID::kPion));
