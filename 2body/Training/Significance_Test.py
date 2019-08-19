@@ -15,33 +15,39 @@ from scipy.stats import norm
 from scipy import stats
 
 import os
-from ROOT import TF1,TFile,gDirectory
+from ROOT import TF1,TFile,gDirectory,vector
 
 
 
 
 def Yield(pt_bin,Centrality_bin):
     bwFile=TFile("../fitsM.root")
-    if Centrality_bin==[0,10]:
-        BlastWave=bwFile.Get("BlastWave/BlastWave0")
-        index_cen=0
-    elif Centrality_bin==[10,30]:
-        BlastWave=bwFile.Get("BlastWave/BlastWave1")
-        index_cen=1
-    elif Centrality_bin==[30,50]:
-        BlastWave=bwFile.Get("BlastWave/BlastWave2")
-        index_cen=2
-    elif Centrality_bin==[50,90]:
-        BlastWave=bwFile.Get("BlastWave/BlastWave2")   
-        index_cen=3
-    else:
-        return "Centrality class not allowed"           
-    #BlastWave.SetNormalized(1)
-    Integral = BlastWave.Integral(0,10,1e-8)
-    #last values obtained by a exponential fit
     Scale_Factor = [3.37e-5,1.28e-5,0.77e-5,0.183e-5]
-    Scale_Factor = Scale_Factor
-    pT_yield=2*Scale_Factor[index_cen]*BlastWave.Integral(pt_bin[0],pt_bin[1],1e-8)/(pt_bin[1]-pt_bin[0])/Integral
+
+    if Centrality_bin==[30,50]:
+        Bl1=bwFile.Get("BlastWave/BlastWave1")
+        Bl2=bwFile.Get("BlastWave/BlastWave2")
+        index_cen=2
+        pT_yield=2*Scale_Factor[index_cen]*(Bl1.Integral(pt_bin[0],pt_bin[1],1e-8)+Bl2.Integral(pt_bin[0],pt_bin[1],1e-8))/(pt_bin[1]-pt_bin[0])/(Bl1.Integral(0,10,1e-8)+Bl2.Integral(0,10,1e-8))
+    else: 
+        if Centrality_bin==[0,10]:
+            BlastWave=bwFile.Get("BlastWave/BlastWave0")
+            index_cen=0   
+        elif Centrality_bin==[10,30]:
+            BlastWave=bwFile.Get("BlastWave/BlastWave1")
+            index_cen=1
+
+        elif Centrality_bin==[50,90]:
+            BlastWave=bwFile.Get("BlastWave/BlastWave2")   
+            index_cen=3
+        else:
+            return "Centrality class not allowed"
+              
+        Integral = BlastWave.Integral(0,10,1e-8)
+        #last values obtained by a exponential fit
+        pT_yield=2*Scale_Factor[index_cen]*BlastWave.Integral(pt_bin[0],pt_bin[1],1e-8)/(pt_bin[1]-pt_bin[0])/Integral 
+         
+    #BlastWave.SetNormalized(1)
     return pT_yield
 
 

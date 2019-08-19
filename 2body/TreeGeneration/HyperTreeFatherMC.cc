@@ -27,19 +27,12 @@ void HyperTreeFatherMC(TString name="HyperTritonTree_19d2.root",bool reject = tr
   TF1 *BlastWave1{(TF1 *)bwFile.Get("BlastWave/BlastWave1")};
   TF1 *BlastWave2{(TF1 *)bwFile.Get("BlastWave/BlastWave2")};
 
-  BlastWave0->SetNormalized(1);
-  BlastWave1->SetNormalized(1);
-  BlastWave2->SetNormalized(1);
-
-  std::vector<TF1 *> v{BlastWave1, BlastWave2};
-
-  TF1 *BlastWave1040 = new TF1("BlastWave1040", SumTF1(v), 0, 10, 0);
 
   float max;
   float max0 = BlastWave0->GetMaximum();
   float max1 = BlastWave1->GetMaximum();
   float max2 = BlastWave2->GetMaximum();
-  float max1040 = BlastWave1040->GetMaximum();
+
 
   TChain mcChain("_default/fTreeV0");
   mcChain.AddFile(Form("%s/%s", dataDir,name.Data()));
@@ -64,8 +57,8 @@ void HyperTreeFatherMC(TString name="HyperTritonTree_19d2.root",bool reject = tr
     }
     if (cent > 10. && cent < 40.)
     {
-      BlastWave = BlastWave1040;
-      max = max1040;
+      BlastWave = BlastWave1;
+      max = max1;
     }
     else
     {

@@ -21,7 +21,7 @@ class Table {
   TTree* tree;
   float V0pt;
   float TPCnSigmaHe3;
-  float DistOverP;
+  float Ct;
   float InvMass;
   float ArmenterosAlpha;
   float V0CosPA;
@@ -32,13 +32,16 @@ class Table {
   float PiProngPvDCA;
   float He3ProngPvDCA;
   float NpidClustersHe3;
+  float NpidClustersPion;
   float TPCnSigmaPi;
   float Lrec;
   float Centrality;
   float V0radius;  
   float PiProngPvDCAXY;
-  float He3ProngPvDCAXY;    
-    
+  float He3ProngPvDCAXY;   
+  float Rapidity; 
+  float PseudoRapidityHe3;
+  float PseudoRapidityPion;    
 };
 
 Table::Table(std::string name, std::string title) {
@@ -46,7 +49,7 @@ Table::Table(std::string name, std::string title) {
 
   tree->Branch("V0pt", &V0pt);
   tree->Branch("TPCnSigmaHe3", &TPCnSigmaHe3);
-  tree->Branch("DistOverP", &DistOverP);
+  tree->Branch("Ct", &Ct);
   tree->Branch("InvMass", &InvMass);
   tree->Branch("ArmenterosAlpha", &ArmenterosAlpha);
   tree->Branch("V0CosPA", &V0CosPA);
@@ -59,10 +62,14 @@ Table::Table(std::string name, std::string title) {
   tree->Branch("He3ProngPvDCAXY", &He3ProngPvDCAXY);
   tree->Branch("PiProngPvDCAXY", &PiProngPvDCAXY);    
   tree->Branch("NpidClustersHe3", &NpidClustersHe3);
+  tree->Branch("NpidClustersPion", &NpidClustersPion); 
   tree->Branch("TPCnSigmaPi", &TPCnSigmaPi);
   tree->Branch("Lrec", &Lrec);
   tree->Branch("Centrality", &Centrality);
-  tree->Branch("V0radius", &V0radius);  
+  tree->Branch("V0radius", &V0radius);
+  tree->Branch("Rapidity", &Rapidity);
+  tree->Branch("PseudoRapidityHe3", &PseudoRapidityHe3);
+  tree->Branch("PseudoRapidityPion", &PseudoRapidityPion);  
 };
 
 void Table::Fill(const RHyperTritonHe3pi& RHyper, const RCollision& RColl) {
@@ -74,6 +81,7 @@ void Table::Fill(const RHyperTritonHe3pi& RHyper, const RCollision& RColl) {
   he3Vector.SetPxPyPzE(RHyper.fPxHe3, RHyper.fPyHe3, RHyper.fPzHe3, eHe3);
   piVector.SetPxPyPzE(RHyper.fPxPi, RHyper.fPyPi, RHyper.fPzPi, ePi);
   hyperVector = piVector + he3Vector;
+  
 
   TVector3 v(RHyper.fDecayX, RHyper.fDecayY, RHyper.fDecayZ);
   float pointAngle = hyperVector.Angle(v);
@@ -94,7 +102,7 @@ void Table::Fill(const RHyperTritonHe3pi& RHyper, const RCollision& RColl) {
   }
 
   float alpha = (qP - qN) / (qP + qN);
-  DistOverP = Hypot(RHyper.fDecayX, RHyper.fDecayY, RHyper.fDecayZ) / hyperVector.P();
+  Ct = kHyperTritonMass*(Hypot(RHyper.fDecayX, RHyper.fDecayY, RHyper.fDecayZ) / hyperVector.P());
   InvMass = hyperVector.M();
   ArmenterosAlpha = alpha;
   V0CosPA = CosPA;
@@ -109,9 +117,13 @@ void Table::Fill(const RHyperTritonHe3pi& RHyper, const RCollision& RColl) {
   Lrec = Hypot(RHyper.fDecayX, RHyper.fDecayY, RHyper.fDecayZ);
   V0radius=Hypot(RHyper.fDecayX, RHyper.fDecayY);
   NpidClustersHe3 = RHyper.fNpidClustersHe3;
+  NpidClustersPion = RHyper.fNpidClustersPi;
   TPCnSigmaPi = RHyper.fTPCnSigmaPi;
   TPCnSigmaHe3 = RHyper.fTPCnSigmaHe3;
   V0pt = hyperVector.Pt();
+  Rapidity=hyperVector.Rapidity();
+  PseudoRapidityHe3=he3Vector.PseudoRapidity();
+  PseudoRapidityPion=piVector.PseudoRapidity();  
   tree->Fill();
 }
 
