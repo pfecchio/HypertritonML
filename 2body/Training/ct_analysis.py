@@ -10,6 +10,21 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit 
 import scipy
 import os
+from ROOT import TH2D,TFile
+
+def Write_List(file_name,numbers,title=''):
+  file = open(file_name,'a+')
+  final_string = ''
+  for item in numbers:
+    final_string = final_string+str(item)+' '
+  file.write(title)
+  file.write(final_string+'\n')
+  file.close()
+
+file_name = os.environ['HYPERML_FIGURES']+'/results.txt'
+# file = open(file_name,'a+')
+# file.close()
+
 def gauss(x,n,mu,sigma):
     return n*np.exp(-(x-mu)**2/(2*sigma**2))
 params_def = {
@@ -26,8 +41,9 @@ params_def = {
     'nthread':4,
     'tree_method':'hist',
     'scale_pos_weight': 10}
-#, 'DistOverP'
-training_columns = [ 'V0CosPA','ProngsDCA','ArmenterosAlpha','NpidClustersHe3','V0pt','TPCnSigmaHe3','He3ProngPvDCA','PiProngPvDCA']
+params_def = {'max_depth': 8, 'eta': 0.1, 'gamma': 0.2, 'min_child_weight': 2, 'subsample': 0.6, 'colsample_bytree': 0.9, 'objective': 'binary:logistic', 'random_state': 42, 'silent': 1, 'nthread': 4, 'tree_method': 'hist', 'scale_pos_weight': 10}
+
+training_columns = [ 'V0CosPA','ProngsDCA', 'DistOverP','ArmenterosAlpha','NpidClustersHe3','V0pt','TPCnSigmaHe3','He3ProngPvDCA','PiProngPvDCA']
 
 Analysis = tu.Generalized_Analysis(os.environ['HYPERML_TABLES']+'/SignalTable.root',os.environ['HYPERML_TABLES']+'/DataTable.root','ProngsDCA<1.6 and He3ProngPvDCA>0.01 and He3ProngPvDCA>0.01 and V0CosPA>0.98','(InvMass<2.98 or InvMass>3.005) and V0pt<=10')
 
@@ -47,7 +63,7 @@ for index_ct in range(0,len(Ct_bins)):
     if model is not 0:
       filename = '/BDT_Ct_{:.2f}_{:.2f}_pT_{:.2f}_{:.2f}_Cen_{:.2f}_{:.2f}.sav'.format(Ct_bins[index_ct][0],Ct_bins[index_ct][1],0,10,Centrality_bins[index_cen][0],Centrality_bins[index_cen][1])
       pickle.dump(model, open(os.environ['HYPERML_MODELS']+filename, 'wb'))
-      Cut,eff = Analysis.Significance(model,training_columns,Ct_bins[index_ct],[2,10],Centrality_bins[index_cen])
+      Cut,eff = Analysis.Significance(model,training_columns,Ct_bins[index_ct],[2,10],Centrality_bins[index_cen],draw=False)
       Cut_saved.append(Cut)
       Eff_BDT.append(eff)
       print(filename+' has been saved')
@@ -59,10 +75,17 @@ print("cut: ",Cut_saved)
 # cuts obtained by the previous loop
 # Cut_saved = [4.202020202020202, 4.515151515151516, 5.767676767676768, 3.7323232323232327, 4.358585858585859, 5.297979797979799, 5.767676767676768, 4.045454545454546, 4.515151515151516, 4.984848484848485, 6.080808080808081, 3.262626262626263, 4.828282828282829, 5.141414141414142, 6.080808080808081, 2.47979797979798, 4.671717171717172, 4.984848484848485, 5.767676767676768, 1.070707070707071, 5.141414141414142, 5.611111111111111, 5.767676767676768, 4.358585858585859, 5.454545454545455, 5.611111111111111, 6.3939393939393945, 4.828282828282829, 5.141414141414142, 6.080808080808081, 6.707070707070708, 2.7929292929292933, 4.984848484848485, 5.611111111111111, 6.863636363636363, 4.358585858585859]
 
+#
+
+results = TFile(os.environ['HYPERML_DATA']+'/results.root','RECREATE')
+histo = TH2D('InvMassVsct','histo;m [GeV/c^2];ct bin [cm];counts',30,2.96,3.05,9,0,9)
+
 Ct_counts = []
 # loop to read the models and to do the prediction
 index_cut = 0
 plt.close()
+if not os.path.exists(os.environ['HYPERML_FIGURES']+'/Peaks/'):
+  os.makedirs(os.environ['HYPERML_FIGURES']+'/Peaks/')
 for index_ct in range(0,len(Ct_bins)):
   for index_cen in range(0,len(Centrality_bins)):
     output_cut = Cut_saved[index_cut]
@@ -87,7 +110,14 @@ for index_ct in range(0,len(Ct_bins)):
     else:
       CountsTot=CountsTot+Counts
     index_cut=index_cut+1
-  
+  ##
+  Write_List(file_name,CountsTot,str(Ct_bins[index_ct])+'\n')
+  Write_List(file_name,bins)
+
+  for index_mass in range(0,30,1):
+    histo.SetBinContent(index_mass+1,index_ct+1,CountsTot[index_mass])
+    histo.SetBinError(index_mass+1,index_ct+1,math.sqrt(CountsTot[index_mass]))
+  ##
   bin_centers = 0.5*(bins[1:]+bins[:-1])
   sidemap = (bin_centers<2.975) + (bin_centers>3.005)
   massmap = np.logical_not(sidemap)
@@ -108,7 +138,8 @@ for index_ct in range(0,len(Ct_bins)):
   filename = 'InvMass_Ct_{:.2f}_{:.2f}.pdf'.format(Ct_bins[index_ct][0],Ct_bins[index_ct][1])
   plt.savefig(os.environ['HYPERML_FIGURES']+'/Peaks/'+filename)
   plt.close()
-
+histo.Write()
+results.Close()
 print('counts : ',Ct_counts)
 
 
@@ -122,21 +153,23 @@ for index in range(0,len(Ct_bins)):
   Effp.append(Analysis.EfficiencyPresel(Ct_bins[index],pt_cut=[0,10],centrality_cut=[0,100]))
   Ct_counts[index]=Ct_counts[index]/Effp[index]/Eff_BDT[index]
 errCt = np.sqrt(Ct_counts)
-
+print('eff presel: ',Effp)
 def expo(x,n,tau):
     return n*np.exp(-x/tau/0.029979245800)
+
+
+Write_List(file_name,Eff_BDT,'bdt\n')
+Write_List(file_name,Effp,'presel\n')
 
 print('counts corrected: ',Ct_counts)
 fig, ax = plt.subplots()
 plt.errorbar(bins, Ct_counts, yerr=errCt,xerr=errbins, fmt='o', c='b')
-par,cov = curve_fit(expo,bins,Ct_counts,bounds=([1800,180],[4000,240]))
+par,cov = curve_fit(expo,bins,Ct_counts,bounds=([1800,180],[8000,240]))
 plt.plot(bins,expo(np.array(bins),*par),'r--',label='fit: N(0)={:.2f}, $\\tau$={:.2f}$\pm${:.2f}ps'.format(par[0],par[1],cov[1][1]))
 ax.set_yscale('log')
 plt.xlabel('ct [cm]')
 plt.ylabel('$\\frac{dN}{dct}$ [cm$^-1$]')
 print('N : ',par[0])
 print('tau : ',par[1],' +- ',math.sqrt(cov[1][1]), ' ps')
-if not os.path.exists(os.environ['HYPERML_FIGURES']+'/Peaks/'):
-  os.makedirs(os.environ['HYPERML_FIGURES']+'/Peaks/')
 plt.savefig(os.environ['HYPERML_FIGURES']+'/Peaks/'+'ct.pdf')
 plt.show()

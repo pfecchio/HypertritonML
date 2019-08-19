@@ -122,6 +122,7 @@ def plot_roc(y_truth, model_decision):
     plt.ylabel('True Positive Rate', fontsize=12)
     plt.legend(loc="lower right")
     plt.grid()
+    plt.close()
 
 
 def plot_output_train_test(clf, x_train, y_train, x_test, y_test,ct_cut=[0,100],pt_cut=[2,3],centrality_cut=[0,10],draw=True, model='xgb', branch_names=None,
@@ -260,7 +261,7 @@ def gs_2par(gs_dict, par_dict, train_data, num_rounds, seed, folds, metrics, n_e
             best_params = (first_val, second_val,boost_rounds)
     return (best_params)
 
-def EfficiencyVsCuts(df,plot_ext=False):
+def EfficiencyVsCuts(df,ct_cut,pt_cut,centrality_cut,plot_ext=False):
     if plot_ext==True:
         cuts=np.linspace(-15,15,200)
     else:    
@@ -282,6 +283,11 @@ def EfficiencyVsCuts(df,plot_ext=False):
     plt.ylabel('Efficiency')
     plt.title('Efficiency vs Score')
     plt.grid()
+    if not os.path.exists(os.environ['HYPERML_FIGURES']+'/Efficiency/'):
+        os.makedirs(os.environ['HYPERML_FIGURES']+'/Efficiency/')
+    filename = '/EfficiencyBDT_Ct_{:.2f}_{:.2f}_pT_{:.2f}_{:.2f}_Cen_{:.2f}_{:.2f}.pdf'.format(ct_cut[0],ct_cut[1],pt_cut[0],pt_cut[1],centrality_cut[0],centrality_cut[1])
+    plt.savefig(os.environ['HYPERML_FIGURES']+'/Efficiency/'+filename)
+    plt.close()
     if plot_ext==False:
         return eff_s
     

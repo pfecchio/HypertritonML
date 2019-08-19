@@ -127,7 +127,7 @@ class Generalized_Analysis:
   
     
 
-  def Significance(self,model,training_columns,ct_cut=[0,100],pt_cut=[2,3],centrality_cut=[0,10]):
+  def Significance(self,model,training_columns,ct_cut=[0,100],pt_cut=[2,3],centrality_cut=[0,10],draw=False):
 
     ct_min = ct_cut[0]
     ct_max = ct_cut[1]
@@ -140,7 +140,7 @@ class Generalized_Analysis:
     self.testdata.eval('y = @self.ytest',inplace=True)   
     y_pred = model.predict(dtest,output_margin=True)
     self.testdata.eval('Score = @y_pred',inplace=True)
-    efficiency_array=au.EfficiencyVsCuts(self.testdata)
+    efficiency_array=au.EfficiencyVsCuts(self.testdata,,ct_cut,pt_cut,centrality_cut)
     i_cen = 0
     for index in range(0,len(self.Centrality)):
       if centrality_cut is self.Centrality[index]:
@@ -150,7 +150,7 @@ class Generalized_Analysis:
     dtest = xgb.DMatrix(data=(dfDataSig[training_columns]))
     y_pred = model.predict(dtest,output_margin=True)
     dfDataSig.eval('Score = @y_pred',inplace=True)
-    cut = ST.SignificanceScan(dfDataSig,ct_cut,pt_cut,centrality_cut,efficiency_array,self.EfficiencyPresel(ct_cut,pt_cut,centrality_cut),self.n_ev[i_cen])
+    cut = ST.SignificanceScan(dfDataSig,ct_cut,pt_cut,centrality_cut,efficiency_array,self.EfficiencyPresel(ct_cut,pt_cut,centrality_cut),self.n_ev[i_cen],draw=draw)
     score_list = np.linspace(-3,12.5,100)
     for index in range(0,len(score_list)):
       if score_list[index]==cut:
