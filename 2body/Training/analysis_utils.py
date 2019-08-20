@@ -9,6 +9,9 @@ from sklearn.metrics import roc_curve, auc
 from mpl_toolkits.axes_grid1 import ImageGrid
 from scipy import stats
 import os
+import math
+from ROOT import TH2D,TH1D,TCanvas,TFile,TF1,gStyle,TPaveText
+
 # Data Visualization Functions
 ###########################################################################################
 def plot_distr(df, column=None, figsize=None, bins=25, **kwds):
@@ -306,3 +309,90 @@ def optimize_params(dtrain,par):
     gs_dict = {'first_par': {'name': 'eta', 'par_values': [0.1, 0.05, 0.01, 0.005, 0.001]}}
     par['eta'],n = gs_1par(gs_dict, par, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
     return n
+
+def fit(counts,min,max,nsigma=3,recreate=False,signif=0,errsignif=0,minCent=10,maxCent=90,filename='results.root'):
+  if recreate is True:
+    results = TFile(os.environ['HYPERML_DATA']+'/'+filename,"RECREATE")
+  else:
+    results = TFile(os.environ['HYPERML_DATA']+'/'+filename,"UPDATE")
+  
+  histo = TH1D("histo{}_{}".format(min,max),";ct[cm];dN/dct [cm^{-1}]",30,2.96,3.05)
+  for index in range(0,len(counts)):
+    histo.SetBinContent(index+1,counts[index])
+    histo.SetBinError(index+1,math.sqrt(counts[index]))
+  
+  results.cd()
+  cv = TCanvas("cv{}_{}".format(min,max))
+  fitTpl = TF1("fitTpl","expo(0)+pol2(2)+gausn(3)",0,5)
+  fitTpl.SetParNames("B_{exp}","#tau","B_{0}","N_{sig}","#mu","#sigma")
+  bkgTpl = TF1("fitTpl","expo(0)+pol2(2)",0,5)
+  fitTpl.SetNpx(300)
+  fitTpl.SetLineWidth(2)
+  fitTpl.SetLineColor(2)
+  bkgTpl.SetNpx(300)
+  bkgTpl.SetLineWidth(2)
+  bkgTpl.SetLineStyle(2)
+  bkgTpl.SetLineColor(2)
+  fitTpl.SetParameter(0,2)
+  fitTpl.SetParameter(1,-1)
+  fitTpl.SetParameter(2,0)
+  fitTpl.SetParameter(3,40)
+  fitTpl.SetParameter(4,2.99)
+  fitTpl.SetParameter(5,0.002)
+  fitTpl.SetParLimits(5,0.0001,0.004)
+  gStyle.SetOptStat(0)
+  gStyle.SetOptFit(0)
+  ####################
+
+  histo.UseCurrentStyle()
+  histo.SetLineColor(1)
+  histo.SetMarkerStyle(20)
+  histo.SetMarkerColor(1)
+  histo.SetTitle(";m (^{3}He + #pi) (GeV/#it{c})^{2};Counts")
+  histo.SetMaximum(1.5 * histo.GetMaximum())
+  histo.Fit(fitTpl,"RL","",2.96,3.03)
+  histo.SetDrawOption("e")
+  histo.GetXaxis().SetRangeUser(2.96,3.03)
+  bkgTpl.SetParameters(fitTpl.GetParameters())
+  #bkgTpl.Draw("same")
+
+  mu = fitTpl.GetParameter(4)
+  sigma = fitTpl.GetParameter(5)
+  signal = fitTpl.GetParameter(3) / histo.GetBinWidth(1)
+  errsignal = fitTpl.GetParError(3) / histo.GetBinWidth(1)
+  bkg = bkgTpl.Integral(mu - nsigma * sigma, mu + nsigma * sigma) / histo.GetBinWidth(1)
+  errbkg = math.sqrt(bkg)
+
+  peak = histo.Integral(int(len(counts)*(mu-nsigma*sigma-2.96)/(3.05-2.96)),int(len(counts)*(mu+nsigma*sigma-2.96)/(3.05-2.96)))
+  
+  NHyTr = (peak-bkg)
+  print(peak,' ',bkg)
+  ErrNHyTr = math.sqrt(peak+bkg)
+
+  pinfo2= TPaveText(0.5,0.5,0.91,0.9,"NDC")
+  pinfo2.SetBorderSize(0)
+  pinfo2.SetFillStyle(0)
+  pinfo2.SetTextAlign(30+3)
+  pinfo2.SetTextFont(42)
+  string ='ALICE Internal, Pb-Pb 2018 {}-{}'.format(minCent,maxCent)
+  pinfo2.AddText(string)    
+  string='^{3}_{#Lambda}H#rightarrow ^{3}He#pi + c.c., %i #leq #it{ct} < %i GeV/#it{c} ' % (min,max)
+  pinfo2.AddText(string)    
+  string='Significance ({:.0f}#sigma) {:.1f} #pm {:.1f} '.format(nsigma,signif,errsignif)
+  pinfo2.AddText(string)
+  
+  string='S ({:.0f}#sigma) {:.0f} #pm {:.0f} '.format(nsigma,signal,errsignal)
+  pinfo2.AddText(string)
+  string='B ({:.0f}#sigma) {:.0f} #pm {:.0f}'.format(nsigma,signal,errsignal)
+  pinfo2.AddText(string)
+  ratio = signal/bkg
+  if bkg>0: 
+    string='S/B ({:.0f}#sigma) {:.4f} '.format(nsigma,ratio)
+  pinfo2.AddText(string)
+  pinfo2.Draw()
+  
+  histo.Write()
+  cv.Write()
+  results.Close()
+  
+  return (NHyTr,ErrNHyTr)

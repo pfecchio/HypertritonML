@@ -126,7 +126,6 @@ class Generalized_Analysis:
 
   
     
-
   def Significance(self,model,training_columns,ct_cut=[0,100],pt_cut=[2,3],centrality_cut=[0,10],draw=False):
 
     ct_min = ct_cut[0]
@@ -140,7 +139,7 @@ class Generalized_Analysis:
     self.testdata.eval('y = @self.ytest',inplace=True)   
     y_pred = model.predict(dtest,output_margin=True)
     self.testdata.eval('Score = @y_pred',inplace=True)
-    efficiency_array=au.EfficiencyVsCuts(self.testdata,,ct_cut,pt_cut,centrality_cut)
+    efficiency_array=au.EfficiencyVsCuts(self.testdata,ct_cut,pt_cut,centrality_cut)
     i_cen = 0
     for index in range(0,len(self.Centrality)):
       if centrality_cut is self.Centrality[index]:
