@@ -34,9 +34,9 @@ params_def = {
     'scale_pos_weight': 10}
 params_def = {'max_depth': 8, 'eta': 0.1, 'gamma': 0.2, 'min_child_weight': 2, 'subsample': 0.6, 'colsample_bytree': 0.9, 'objective': 'binary:logistic', 'random_state': 42, 'silent': 1, 'nthread': 4, 'tree_method': 'hist', 'scale_pos_weight': 10}
 
-training_columns = [ 'V0CosPA','ProngsDCA', 'DistOverP','ArmenterosAlpha','NpidClustersHe3','V0pt','TPCnSigmaHe3','He3ProngPvDCA','PiProngPvDCA']
+training_columns = [ 'V0CosPA','ProngsDCA','ArmenterosAlpha','NpidClustersHe3','V0pt','TPCnSigmaHe3','He3ProngPvDCA','PiProngPvDCA']
 
-Analysis = tu.Generalized_Analysis(os.environ['HYPERML_TABLES']+'/SignalTable.root',os.environ['HYPERML_TABLES']+'/DataTable.root','ProngsDCA<1.6 and He3ProngPvDCA>0.01 and He3ProngPvDCA>0.01 and V0CosPA>0.98','(InvMass<2.98 or InvMass>3.005) and V0pt<=10')
+Analysis = tu.Generalized_Analysis(os.environ['HYPERML_TABLES']+'/SignalTable.root',os.environ['HYPERML_TABLES']+'/DataTable.root','ProngsDCA<1.6 and PiProngPvDCA>0.01 and He3ProngPvDCA>0.01 and V0CosPA>0.98 and 0.4<V0radius<200 and TPCnSigmaHe3<5 and NpidClustersHe3>=50 and NpidClustersPion>=50 and He3ProngPt>1.2','(InvMass<2.98 or InvMass>3.005) and V0pt<=10')
 
 # loop to train the models
 if not os.path.exists(os.environ['HYPERML_MODELS']):
@@ -153,10 +153,6 @@ errCt = np.sqrt(Ct_counts)
 print('eff presel: ',Effp)
 def expo(x,n,tau):
     return n*np.exp(-x/tau/0.029979245800)
-
-
-Write_List(file_name,Eff_BDT,'bdt\n')
-Write_List(file_name,Effp,'presel\n')
 
 print('counts corrected: ',Ct_counts)
 fig, ax = plt.subplots()

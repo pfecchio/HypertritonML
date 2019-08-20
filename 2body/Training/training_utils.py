@@ -42,9 +42,6 @@ class Generalized_Analysis:
     self.dfMCGen = uproot.open(MCfile_name)['GenTable'].pandas.df()
     self.dfData = uproot.open(Datafile_name)['DataTable'].pandas.df()
 
-    self.dfData['Ct']=self.dfData['DistOverP']*2.99131
-    self.dfMCSig['Ct']=self.dfMCSig['DistOverP']*2.99131
-
     self.dfMCSig['y'] = 1
     self.dfData['y'] = 0
     # dataframe for the background
