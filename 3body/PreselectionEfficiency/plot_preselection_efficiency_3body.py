@@ -1,6 +1,4 @@
-import sys
-
-sys.path.append('../../utils/')
+import os
 
 import pyroot_plot as prp
 from ROOT import (TH1D, AliPID, TCanvas, TFile, TGaxis, TLegend,
@@ -19,7 +17,9 @@ label_array = [x + '_' + y for x in label_am for y in label_centrality]
 dict_hist_eff = {}
 
 # extract histos from file
-input_file = TFile('results/PreselectionEfficiencyHist.root.root', 'read')
+home_path = os.environ['HOME']
+input_file_path = home_path + '/HypertritonAnalysis/PreselEfficiency/3Body'
+input_file = TFile('{}/PreselectionEfficiencyHist.root'.format(input_file_path), 'read')
 
 for lab in label_array:
     hist = input_file.Get('fHistEfficiency_{}'.format(lab))
@@ -190,3 +190,6 @@ for cent in range(1, 5):
 
 c.SaveAs('comparison.pdf')
 c.Close()
+
+fig_dir = os.environ['HYPERML_FIGURES_3']
+os.system('mv *.pdf {}/'.format(fig_dir))
