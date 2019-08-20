@@ -9,9 +9,8 @@
 #include <TTree.h>
 #include <TVector3.h>
 
-#include "AliPID.h"
 #include "AliAnalysisTaskHypertriton3ML.h"
-
+#include "AliPID.h"
 
 class Table3 {
 public:
@@ -23,6 +22,7 @@ private:
   TTree *tree;
 
   float fCentrality;
+  float fHypCandPt;
   float fPtDeu;
   float fPtP;
   float fPtPi;
@@ -72,6 +72,7 @@ Table3::Table3(std::string name, std::string title) {
   tree = new TTree(name.data(), title.data());
 
   tree->Branch("Centrality", &fCentrality);
+  tree->Branch("HypCandPt", &fHypCandPt);
   tree->Branch("PtDeu", &fPtDeu);
   tree->Branch("PtP", &fPtP);
   tree->Branch("PtPi", &fPtPi);
@@ -182,7 +183,7 @@ void Table3::Fill(const RHypertriton3 &rHyp3, const REvent &rEv) {
   const double ePi  = Hypot(rHyp3.fPxPi, rHyp3.fPyPi, rHyp3.fPzPi, kPiMass);
 
   const TLorentzVector deu4Vector{rHyp3.fPxDeu, rHyp3.fPyDeu, rHyp3.fPzDeu, eDeu};
-  const TLorentzVector p4Vector{rHyp3.fPxP, rHyp3.fPyP, rHyp3.fPzP, eP}; 
+  const TLorentzVector p4Vector{rHyp3.fPxP, rHyp3.fPyP, rHyp3.fPzP, eP};
   const TLorentzVector pi4Vector{rHyp3.fPxPi, rHyp3.fPyPi, rHyp3.fPzPi, ePi};
 
   // pT of the daughter particles
@@ -201,6 +202,7 @@ void Table3::Fill(const RHypertriton3 &rHyp3, const REvent &rEv) {
 
   // compute the 4-vector of the hypertriton candidate
   const TLorentzVector hyper4Vector = deu4Vector + p4Vector + pi4Vector;
+  fHypCandPt                        = hyper4Vector.Pt();
 
   // define the decay lenght vector
   const TVector3 decayLenghtVector = decayVtxPos - primaryVtxPos;
@@ -213,7 +215,7 @@ void Table3::Fill(const RHypertriton3 &rHyp3, const REvent &rEv) {
 
   // matter or anti-matter
   fMatter = rHyp3.fIsMatter;
-  
+
   // fill the tree
   tree->Fill();
 }

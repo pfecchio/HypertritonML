@@ -3,8 +3,6 @@ import os
 import sys
 import time
 
-sys.path.append('../../utils/')
-
 import pyroot_plot as prp
 from ROOT import (TH1D, AliPID, TCanvas, TFile, TGaxis, TLegend,
                   TLorentzVector, TPad, TTree, gROOT)
@@ -43,7 +41,6 @@ def hypot4(x0, x1, x2, x3):
 
 n_bins = 20
 pt_bin_width = float(10 / n_bins)
-test_mode = False
 
 # import environment
 input_file_path = os.environ['HYPERML_DATA_3']
@@ -80,8 +77,15 @@ for lab in label_centrality:
 
 analyzed_events = 0
 
+counter = 0
+
 # main loop over the events
 for ev in tree:
+    # if counter > 10000:
+    #     break
+
+    # counter = counter + 1
+
     centrality = ev.REvent.fCent
 
     c_lab = ''
@@ -149,7 +153,8 @@ for ev in tree:
 input_file.Close()
 
 # create output file
-output_file_path = 'results/'
+home_path = os.environ['HOME']
+output_file_path = home_path + '/HypertritonAnalysis/PreselEfficiency/3Body'
 output_file_name = 'PreselectionEfficiencyHist.root'
 
 output_file = TFile('{}/{}'.format(output_file_path, output_file_name), 'recreate')
@@ -188,4 +193,4 @@ for lab in label_array:
 output_file.Close()
 output_file_txt.close()
 
-os.system('mv eff.txt results/eff.txt')
+os.system('mv eff.txt {}/eff.txt'.format(output_file_path))
