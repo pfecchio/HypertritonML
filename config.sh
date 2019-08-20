@@ -1,8 +1,13 @@
 #!/bin/bash
 HYPERML_DATA="$HOME/HypertritonAnalysis/Trees"
-HYPERML_TABLES="$HOME/HypertritonAnalysis/DerivedTrees"
+HYPERML_TABLES="$HOME/HypertritonAnalysis/Tables"
 HYPERML_FIGURES="$HOME/HypertritonAnalysis/Figures"
 HYPERML_MODELS="$HOME/HypertritonAnalysis/Models"
+HYPERML_CODE="$HOME/HypertritonML"
+HYPERML_COMMON="$HYPERML_CODE/common"
+
+export PYTHONPATH="${PYTHONPATH}:$HYPERML_COMMON/TrainingAndTesting:$HYPERML_COMMON/Utils"
+export HYPERML_UTILS="$HOME/HypertritonAnalysis/Utils"
 
 BODY_2=0
 BODY_3=0
@@ -45,7 +50,7 @@ if [ $BODY_3 -eq 1 ]; then
       [ ! -d "$HYPERML_TABLES_3" ] && mkdir -p $HYPERML_TABLES_3
       [ ! -d "$HYPERML_FIGURES_3" ] && mkdir -p $HYPERML_FIGURES_3
       [ ! -d "$HYPERML_MODELS_3" ] && mkdir -p $HYPERML_MODELS_3
-      [ ! -f "$HYPERML_DATA_3/HyperTritonTree_18q.root"  ] && alien_cp alien:/alice/cern.ch/user/p/pfecchio/Trees/HyperTritonTree_18q.root  $HYPERML_DATA_3/HyperTritonTree_18q.root
-      [ ! -f "$HYPERML_DATA_3/HyperTritonTree_18r.root"  ] && alien_cp alien:/alice/cern.ch/user/p/pfecchio/Trees/HyperTritonTree_18r.root  $HYPERML_DATA_3/HyperTritonTree_18r.root
-      [ ! -f "$HYPERML_DATA_3/HyperTritonTree_19d2.root" ] && alien_cp alien:/alice/cern.ch/user/p/pfecchio/Trees/HyperTritonTree_19d2.root $HYPERML_DATA_3/HyperTritonTree_19d2.root
+      [ ! -f "$HYPERML_DATA_3/HyperTritonTree_18q.root"  ] && alien_cp alien:/alice/cern.ch/user/p/pfecchio/HypertritonAnalysis/Trees/HyperTritonTree_18q.root  $HYPERML_DATA_3/HyperTritonTree_18q.root
+      [ ! -f "$HYPERML_DATA_3/HyperTritonTree_18r.root"  ] && alien_cp alien:/alice/cern.ch/user/p/pfecchio/HypertritonAnalysis/Trees/HyperTritonTree_18r.root  $HYPERML_DATA_3/HyperTritonTree_18r.root
+      [ ! -f "$HYPERML_DATA_3/HyperTritonTree_19d2.root" ] && alien_cp alien:/alice/cern.ch/user/p/pfecchio/HypertritonAnalysis/Trees/HyperTritonTree_19d2.root $HYPERML_DATA_3/HyperTritonTree_19d2.root
 fi
