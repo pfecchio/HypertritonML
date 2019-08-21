@@ -316,7 +316,7 @@ def fit(counts,min,max,nsigma=3,recreate=False,signif=0,errsignif=0,minCent=10,m
   else:
     results = TFile(os.environ['HYPERML_DATA']+'/'+filename,"UPDATE")
   
-  histo = TH1D("histo{}_{}".format(min,max),";ct[cm];dN/dct [cm^{-1}]",30,2.96,3.05)
+  histo = TH1D("histo{}_{}".format(min,max),";ct[cm];dN/dct [cm^{-1}]",26,2.96,3.05)
   for index in range(0,len(counts)):
     histo.SetBinContent(index+1,counts[index])
     histo.SetBinError(index+1,math.sqrt(counts[index]))

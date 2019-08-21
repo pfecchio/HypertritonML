@@ -146,7 +146,7 @@ class Generalized_Analysis:
     dtest = xgb.DMatrix(data=(dfDataSig[training_columns]))
     y_pred = model.predict(dtest,output_margin=True)
     dfDataSig.eval('Score = @y_pred',inplace=True)
-    cut = ST.SignificanceScan(dfDataSig,ct_cut,pt_cut,centrality_cut,efficiency_array,self.EfficiencyPresel(ct_cut,pt_cut,centrality_cut),self.n_ev[i_cen],draw=draw)
+    cut = ST.SignificanceScan(dfDataSig,ct_cut,pt_cut,centrality_cut,efficiency_array,self.EfficiencyPresel(ct_cut,pt_cut,centrality_cut),self.n_ev[i_cen],custom=False,draw=draw)
     score_list = np.linspace(-3,12.5,100)
     for index in range(0,len(score_list)):
       if score_list[index]==cut:

@@ -15,7 +15,7 @@
 #include "../include/Table.h"
 #include "../include/GenTable.h"
 
-void HyperTreeFatherMC(TString name="HyperTritonTree_19d2.root",bool reject = true)
+void HyperTreeFatherMC(bool reject = true,TString name="HyperTritonTree_19d2.root")
 {
 
   char *dataDir{nullptr}, *tableDir{nullptr};
@@ -78,9 +78,9 @@ void HyperTreeFatherMC(TString name="HyperTritonTree_19d2.root",bool reject = tr
       {
         if (BlastWaveNum < gRandom->Rndm())
           continue;
-        outputGenTable.Fill(SHyper, *RColl);
+        
       }
-
+      outputGenTable.Fill(SHyper, *RColl);
       int ind = SHyper.fRecoIndex;
 
       if (ind >= 0)

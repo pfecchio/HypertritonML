@@ -32,9 +32,8 @@ params_def = {
     'nthread':4,
     'tree_method':'hist',
     'scale_pos_weight': 10}
-params_def = {'max_depth': 8, 'eta': 0.1, 'gamma': 0.2, 'min_child_weight': 2, 'subsample': 0.6, 'colsample_bytree': 0.9, 'objective': 'binary:logistic', 'random_state': 42, 'silent': 1, 'nthread': 4, 'tree_method': 'hist', 'scale_pos_weight': 10}
 
-training_columns = [ 'V0CosPA','ProngsDCA','ArmenterosAlpha','NpidClustersHe3','V0pt','TPCnSigmaHe3','He3ProngPvDCA','PiProngPvDCA']
+training_columns = [ 'V0CosPA','ProngsDCA','V0pt','ArmenterosAlpha','NpidClustersHe3','TPCnSigmaHe3','He3ProngPvDCA','PiProngPvDCA']
 
 Analysis = tu.Generalized_Analysis(os.environ['HYPERML_TABLES']+'/SignalTable.root',os.environ['HYPERML_TABLES']+'/DataTable.root','ProngsDCA<1.6 and PiProngPvDCA>0.01 and He3ProngPvDCA>0.01 and V0CosPA>0.98 and 0.4<V0radius<200 and TPCnSigmaHe3<5 and NpidClustersHe3>=50 and NpidClustersPion>=50 and He3ProngPt>1.2','(InvMass<2.98 or InvMass>3.005) and V0pt<=10')
 
@@ -44,33 +43,24 @@ if not os.path.exists(os.environ['HYPERML_MODELS']):
 Centrality_bins = [[0,10],[10,30],[30,50],[50,90]]
 Ct_bins = [[0,2],[2,4],[4,6],[6,8],[8,10],[10,14],[14,18],[18,23],[23,28]]
 
-# Cut_saved = []
-# Eff_BDT = []
-# for index_ct in range(0,len(Ct_bins)):
-#   for index_cen in range(0,len(Centrality_bins)):
-#     print('centrality: ',Centrality_bins[index_cen])
-#     print('Ct: ',Ct_bins[index_ct])
-#     model =Analysis.TrainingAndTest(training_columns,params_def,Ct_bins[index_ct],[2,10],Centrality_bins[index_cen],draw=False)
-#     if model is not 0:
-#       filename = '/BDT_Ct_{:.2f}_{:.2f}_pT_{:.2f}_{:.2f}_Cen_{:.2f}_{:.2f}.sav'.format(Ct_bins[index_ct][0],Ct_bins[index_ct][1],0,10,Centrality_bins[index_cen][0],Centrality_bins[index_cen][1])
-#       pickle.dump(model, open(os.environ['HYPERML_MODELS']+filename, 'wb'))
-#       Cut,eff = Analysis.Significance(model,training_columns,Ct_bins[index_ct],[2,10],Centrality_bins[index_cen],draw=False)
-#       Cut_saved.append(Cut)
-#       Eff_BDT.append(eff)
-#       print(filename+' has been saved')
+Cut_saved = []
+Eff_BDT = []
+for index_ct in range(0,len(Ct_bins)):
+  for index_cen in range(0,len(Centrality_bins)):
+    print('centrality: ',Centrality_bins[index_cen])
+    print('Ct: ',Ct_bins[index_ct])
+    model =Analysis.TrainingAndTest(training_columns,params_def,Ct_bins[index_ct],[2,10],Centrality_bins[index_cen],draw=False,optimize=False)
+    if model is not 0:
+      filename = '/BDT_Ct_{:.2f}_{:.2f}_pT_{:.2f}_{:.2f}_Cen_{:.2f}_{:.2f}.sav'.format(Ct_bins[index_ct][0],Ct_bins[index_ct][1],0,10,Centrality_bins[index_cen][0],Centrality_bins[index_cen][1])
+      pickle.dump(model, open(os.environ['HYPERML_MODELS']+filename, 'wb'))
+      Cut,eff = Analysis.Significance(model,training_columns,Ct_bins[index_ct],[2,10],Centrality_bins[index_cen],draw=False)
+      Cut_saved.append(Cut)
+      Eff_BDT.append(eff)
+      print(filename+' has been saved')
 
 # print("efficiency BDT: ",Eff_BDT)
 # print("cut: ",Cut_saved)
 
-
-# cuts obtained by the previous loop
-Cut_saved = [4.202020202020202, 4.515151515151516, 5.767676767676768, 3.7323232323232327, 4.358585858585859, 5.297979797979799, 5.767676767676768, 4.045454545454546, 4.515151515151516, 4.984848484848485, 6.080808080808081, 3.262626262626263, 4.828282828282829, 5.141414141414142, 6.080808080808081, 2.47979797979798, 4.671717171717172, 4.984848484848485, 5.767676767676768, 1.070707070707071, 5.141414141414142, 5.611111111111111, 5.767676767676768, 4.358585858585859, 5.454545454545455, 5.611111111111111, 6.3939393939393945, 4.828282828282829, 5.141414141414142, 6.080808080808081, 6.707070707070708, 2.7929292929292933, 4.984848484848485, 5.611111111111111, 6.863636363636363, 4.358585858585859]
-Eff_BDT = [0.48680042238648363, 0.7269054303910155, 0.6885647103987715, 0.8886925795053003, 0.7239274502964772, 0.8271386627519017, 0.8405461698680861, 0.9182222222222223, 0.753260637160573, 0.8703726889528818, 0.8728208728208728, 0.9367755532139094, 0.756673373574782, 0.8698046275215757, 0.8282305267897343, 0.9388646288209607, 0.7888019060585433, 0.8802303005958358, 0.7924064979221761, 0.9283276450511946, 0.7277620061509344, 0.8308816505874487, 0.78334125959644, 0.8366834170854272, 0.6802064417471089, 0.7802648904035319, 0.7105843439911798, 0.7254098360655737, 0.615156209656597, 0.7201805963880722, 0.6209000762776506, 0.88, 0.5536929057337221, 0.6986881937436933, 0.5426621160409556, 0.6910994764397905]
-
-#
-
-results = TFile(os.environ['HYPERML_DATA']+'/results.root','RECREATE')
-histo = TH2D('InvMassVsX',';m [GeV/c^2];ct bin [cm];counts',30,2.96,3.05,9,0,9)
 
 Ct_counts = []
 Fit_counts = []
@@ -96,7 +86,7 @@ for index_ct in range(0,len(Ct_bins)):
     data = xgb.DMatrix(data=(dfDataF[training_columns]))
     y_pred = model.predict(data,output_margin=True)
     dfDataF.eval('Score = @y_pred',inplace=True)
-    Counts,bins = np.histogram(dfDataF.query('Score >@output_cut')['InvMass'],bins=30,range=[2.96,3.05])
+    Counts,bins = np.histogram(dfDataF.query('Score >@output_cut')['InvMass'],bins=26,range=[2.96,3.05])
     #sum over the counts in centrality intervals
     if index_cen==0:
       CountsTot=Counts/Eff_BDT[index_ct*len(Centrality_bins)+index_cen]
@@ -111,10 +101,6 @@ for index_ct in range(0,len(Ct_bins)):
     recreate=True
   Fit_counts.append(au.fit(CountsTot,Ct_bins[index_ct][0],Ct_bins[index_ct][1],recreate=recreate))
   
-
-  for index_mass in range(0,30,1):
-    histo.SetBinContent(index_mass+1,index_ct+1,CountsTot[index_mass])
-    histo.SetBinError(index_mass+1,index_ct+1,math.sqrt(CountsTot[index_mass]))
   ##
   bin_centers = 0.5*(bins[1:]+bins[:-1])
   sidemap = (bin_centers<2.975) + (bin_centers>3.005)
