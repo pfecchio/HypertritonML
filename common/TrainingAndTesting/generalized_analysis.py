@@ -37,8 +37,8 @@ class GeneralizedAnalysis:
             self.df_generated = uproot.open(mc_file_name)['GenTable'].pandas.df()
             self.df_data = uproot.open(data_file_name)['DataTable'].pandas.df()
 
-        self.df_data['Ct'] = self.df_data['DistOverP'] * 2.99131
-        self.df_signal['Ct'] = self.df_signal['DistOverP'] * 2.99131
+        self.df_data['ct'] = self.df_data['DistOverP'] * 2.99131
+        self.df_signal['ct'] = self.df_signal['DistOverP'] * 2.99131
 
         self.df_signal['y'] = 1
         self.df_data['y'] = 0
@@ -72,40 +72,17 @@ class GeneralizedAnalysis:
         centrality_max = centrality_cut[1]
         centrality_min = centrality_cut[0]
 
-        total_cut = '{}<Ct<{} and {}<V0pt<{} and {}<Centrality<{}'.format(
+        total_cut = '{}<ct<{} and {}<V0pt<{} and {}<Centrality<{}'.format(
             ct_min, ct_max, pt_min, pt_max, centrality_min, centrality_max)
-        total_cut_gen = '{}<Ct<{} and {}<Pt<{} and {}<Centrality<{}'.format(
+        total_cut_gen = '{}<ct<{} and {}<Pt<{} and {}<Centrality<{}'.format(
             ct_min, ct_max, pt_min, pt_max, centrality_min, centrality_max)
 
         return len(self.df_signal.query(total_cut))/len(self.df_generated.query(total_cut_gen))
 
-    # def optimize_params_gs(self, dtrain, par):
-    #     scoring = 'auc'
-    #     early_stopping_rounds = 20
-    #     num_rounds = 200
-
-    #     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=23)
-
-    #     gs_dict = {'first_par': {'name': 'max_depth', 'par_values': [i for i in range(2, 10, 2)]},
-    #                'second_par': {'name': 'min_child_weight', 'par_values': [i for i in range(0, 12, 2)]},
-    #                }
-    #     par['max_depth'], par['min_child_weight'], _ = au.gs_2par(
-    #         gs_dict, par, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
-
-    #     gs_dict = {'first_par': {'name': 'subsample', 'par_values': [i/10. for i in range(4, 10)]},
-    #                'second_par': {'name': 'colsample_bytree', 'par_values': [i/10. for i in range(8, 10)]},
-    #                }
-    #     par['subsample'], par['colsample_bytree'], _ = au.gs_2par(
-    #         gs_dict, par, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
-    #     gs_dict = {'first_par': {'name': 'gamma', 'par_values': [i/10. for i in range(0, 11)]}}
-    #     par['gamma'], _ = au.gs_1par(gs_dict, par, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
-    #     gs_dict = {'first_par': {'name': 'eta', 'par_values': [0.1, 0.05, 0.01, 0.005, 0.001]}}
-    #     par['eta'], n = au.gs_1par(gs_dict, par, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
-    #     return n
-
+    # target function for the bayesian hyperparameter optimization
     def evaluate_hyperparams(
-            self, dtrain, eta, min_child_weight, max_depth, gamma, subsample, colsample_bytree, scale_pos_weight,
-            nfold=3):
+            self, dtrain, reg_params, eta, min_child_weight, max_depth, gamma, subsample, colsample_bytree,
+            scale_pos_weight, num_rounds=100, es_rounds=2, nfold=3, round_score_list=[]):
         params = {'eval_metric': 'auc',
                   'eta': eta,
                   'min_child_weight': int(min_child_weight),
@@ -114,49 +91,63 @@ class GeneralizedAnalysis:
                   'subsample': subsample,
                   'colsample_bytree': colsample_bytree,
                   'scale_pos_weight': scale_pos_weight}
-        # Used around 1000 boosting rounds in the full model
-        cv_result = xgb.cv(params, dtrain, num_boost_round=100, nfold=nfold)
+        params = {**reg_params, **params}
 
-        return cv_result['test-auc-mean'].iloc[-1]
+        # Use around 1000 boosting rounds in the full model
+        cv_result = xgb.cv(params, dtrain, num_boost_round=num_rounds, early_stopping_rounds=es_rounds, nfold=nfold)
 
-    def optimize_params_bayes(self, dtrain, params, num_rounds=100, nfold=3, init_points=2, n_iter=5):
+        best_boost_rounds = cv_result['test-auc-mean'].idxmax()
+        best_score = 100 * (cv_result['test-auc-mean'].max() - 0.99)
+
+        round_score_list.append(tuple([best_score, best_boost_rounds]))
+
+        return best_score
+
+    # function that manage the bayesian optimization
+    def optimize_params_bayes(
+            self, dtrain, reg_params, hyperparams, num_rounds=100, es_rounds=2, nfold=3, init_points=1, n_iter=1):
+        round_score_list = []
+
         # just an helper function
         def hyperparams_crossvalidation(
-                eta, min_child_weight, max_depth, gamma, subsample, colsample_bytree, scale_pos_weight, nfold=3):
+                eta, min_child_weight, max_depth, gamma, subsample, colsample_bytree, scale_pos_weight):
             return self.evaluate_hyperparams(
-                dtrain, eta, min_child_weight, max_depth, gamma, subsample, colsample_bytree, scale_pos_weight, nfold=3)
+                dtrain, reg_params, eta, min_child_weight, max_depth, gamma, subsample, colsample_bytree,
+                scale_pos_weight, num_rounds, es_rounds, nfold, round_score_list)
 
-        params_range = {'eta': tuple(params['eta'][1]),
-                        'min_child_weight': tuple(params['min_child_weight'][1]),
-                        'max_depth': tuple(params['max_depth'][1]),
-                        'gamma': tuple(params['gamma'][1]),
-                        'subsample': tuple(params['subsample'][1]),
-                        'colsample_bytree': tuple(params['colsample_bytree'][1]),
-                        # 'lambda' : tuple(params['lambda'][1]),
-                        # 'alpha' : tuple(params['alpha'][1]),
-                        'scale_pos_weight': tuple(params['scale_pos_weight'][1])}
+        print('')
 
-        print(params_range)
+        optimizer = BayesianOptimization(f=hyperparams_crossvalidation,
+                                         pbounds=hyperparams, verbose=2, random_state=42)
+        optimizer.maximize(init_points=init_points, n_iter=n_iter, acq='poi')
+        print('')
 
-        xgb_bo = BayesianOptimization(hyperparams_crossvalidation, {'eta': tuple(params['eta'][1]),
-                                                                    'min_child_weight': tuple(params['min_child_weight'][1]),
-                                                                    'max_depth': tuple(params['max_depth'][1]),
-                                                                    'gamma': tuple(params['gamma'][1]),
-                                                                    'subsample': tuple(params['subsample'][1]),
-                                                                    'colsample_bytree': tuple(params['colsample_bytree'][1]),
-                                                                    # 'lambda' : tuple(params['lambda'][1]),
-                                                                    # 'alpha' : tuple(params['alpha'][1]),
-                                                                    'scale_pos_weight': tuple(params['scale_pos_weight'][1])}, random_state=42)
-        xgb_bo.maximize(init_points=init_points, n_iter=n_iter, acq='ei')
+        best_numrounds = max(round_score_list, key=lambda x: x[0])[1]
 
-        max_params = xgb_bo.res['max']['max_params']
-        return max_params
+        # extract and show the results of the optimization
+        max_params = {
+            'eta': optimizer.max['params']['eta'],
+            'min_child_weight': int(optimizer.max['params']['min_child_weight']),
+            'max_depth': int(optimizer.max['params']['max_depth']),
+            'gamma': optimizer.max['params']['gamma'],
+            'subsample': optimizer.max['params']['subsample'],
+            'colsample_bytree': optimizer.max['params']['colsample_bytree'],
+            # 'lambda': optimizer.max['params']['lambda'],
+            # 'alpha': optimizer.max['params']['alpha'],
+            'scale_pos_weight': optimizer.max['params']['scale_pos_weight'],
+        }
+        print('Best target: {0:.6f}'.format(optimizer.max['target']))
+        print('Best parameters: {}'.format(max_params))
+        print('Best num_rounds: {}\n'.format(best_numrounds))
 
+        return max_params, best_numrounds
+
+    # manage all the training stuffs
     def train_test(
-            self, training_columns, params, ct_range=[0, 100],
+            self, training_columns, reg_params, hyperparams=0, ct_range=[0, 100],
             pt_range=[0, 100],
-            cent_class=1, num_rounds=200, early_stopping_rounds=10, draw=True, ROC=True, optimize=False,
-            optimize_mode='bayes', bkg_reduct=True, bkg_factor=1):
+            cent_class=1, num_rounds=1000, es_rounds=20, draw=True, ROC=True, optimize=False, optimize_mode='bayes',
+            bkg_reduct=True, bkg_factor=1):
         ct_min = ct_range[0]
         ct_max = ct_range[1]
         pt_min = pt_range[0]
@@ -166,16 +157,16 @@ class GeneralizedAnalysis:
         cent_max = self.cent_class[cent_class][1]
 
         if self.mode == 2:
-            self.total_cut = '{}<Ct<{} and {}<V0pT<{} and {}<Centrality<{}'.format(
+            self.total_cut = '{}<ct<{} and {}<V0pT<{} and {}<Centrality<{}'.format(
                 ct_min, ct_max, pt_min, pt_max, cent_min, cent_max)
         if self.mode == 3:
-            self.total_cut = '{}<Ct<{} and {}<HypCandPt<{} and {}<Centrality<{}'.format(
+            self.total_cut = '{}<ct<{} and {}<HypCandPt<{} and {}<Centrality<{}'.format(
                 ct_min, ct_max, pt_min, pt_max, cent_min, cent_max)
 
         bkg = self.df_data.query(self.total_cut)
         sig = self.df_signal.query(self.total_cut)
 
-        test = True
+        test = False
         if test:
             sig = sig.sample(n=1000)
             bkg = bkg.sample(n=10000)
@@ -191,22 +182,28 @@ class GeneralizedAnalysis:
 
         df = pd.concat([sig, bkg])
         train_set, test_set, y_train, y_test = train_test_split(df[training_columns], df['y'], test_size=0.5)
-        # define the xgb matrix objects
-        dtrain = xgb.DMatrix(data=train_set, label=y_train, feature_names=training_columns)
-        dtest = xgb.DMatrix(data=test_set)
 
-        max_params = {}
+        dtrain = xgb.DMatrix(data=train_set, label=y_train, feature_names=training_columns)
+        dtest = xgb.DMatrix(data=test_set, label=y_test, feature_names=training_columns)
+
+        # manage the optimization process
         if optimize is True:
             if optimize_mode == 'bayes':
-                max_params = self.optimize_params_bayes(dtrain, params,num_rounds=num_rounds)
+                max_params, best_numrounds = self.optimize_params_bayes(
+                    dtrain, reg_params, hyperparams, num_rounds=num_rounds, es_rounds=es_rounds, init_points=10,n_iter=100)
             # if optimize_mode == 'gs'
             #     num_rounds = self.optimize_params_gs(dtrain, params)
+        else:   # manage the default params
+            if hyperparams == 0:
+                max_params = reg_params
+                best_numrounds = num_rounds
 
-        print('num rounds: ', num_rounds)
-        print('parameters: ', max_params)
-        print('')
+        # join the dictionaries of the regressor params with the maximized hyperparams
+        max_params = {**max_params, **reg_params}
 
-        model = xgb.train(max_params, dtrain, num_boost_round=num_rounds, early_stopping_rounds=early_stopping_rounds)
+        # get the best num_rounds
+
+        model = xgb.train(max_params, dtrain, num_boost_round=best_numrounds)
 
         au.plot_output_train_test(
             model, train_set[training_columns],
@@ -228,41 +225,3 @@ class GeneralizedAnalysis:
         self.y_test = y_test
 
         return model
-
-    # def significance(self, model, training_columns, ct_cut=[0, 100], pt_cut=[2, 3], centrality_cut=[0, 10]):
-    #     ct_min = ct_cut[0]
-    #     ct_max = ct_cut[1]
-    #     pt_max = pt_cut[1]
-    #     pt_min = pt_cut[0]
-
-    #     centrality_max = centrality_cut[1]
-    #     centrality_min = centrality_cut[0]
-
-    #     total_cut = '{}<Ct<{} and {}<V0pt<{} and {}<Centrality<{}'.format(
-    #         ct_min, ct_max, pt_min, pt_max, centrality_min, centrality_max)
-
-    #     dtest = xgb.DMatrix(data=(self.test_set[training_columns]))
-
-    #     self.test_set.eval('y = {}'.format(self.y_test), inplace=True)
-
-    #     y_pred = model.predict(dtest, output_margin=True)
-    #     self.test_set.eval('Score = {}'.format(y_pred), inplace=True)
-
-    #     efficiency_array = au.EfficiencyVsCuts(self.test_set)
-
-    #     i_cen = 0
-    #     for index in range(0, len(self.cent_classes)):
-    #         if centrality_cut is self.cent_classes[index]:
-    #             i_cen = index
-    #             break
-    #     dfDataSig = self.df_data.query(total_cut)
-    #     dtest = xgb.DMatrix(data=(dfDataSig[training_columns]))
-    #     y_pred = model.predict(dtest, output_margin=True)
-    #     dfDataSig.eval('Score = @y_pred', inplace=True)
-    #     cut = ST.SignificanceScan(dfDataSig, ct_cut, pt_cut, centrality_cut, efficiency_array,
-    #                               self.preselection_efficiency(ct_cut, pt_cut, centrality_cut), self.n_events[i_cen])
-    #     score_list = np.linspace(-3, 12.5, 100)
-    #     for index in range(0, len(score_list)):
-    #         if score_list[index] == cut:
-    #             effBDT = efficiency_array[index]
-    #     return (cut, effBDT)
