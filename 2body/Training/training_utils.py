@@ -100,7 +100,7 @@ class Generalized_Analysis:
       print('no signal -> the model is not trained')
       return 0
     df= pd.concat([sig,bkg])
-    traindata,testdata,ytrain,ytest = train_test_split(df[training_columns], df['y'], test_size=0.5)
+    traindata,testdata,ytrain,ytest = train_test_split(df[training_columns], df['y'], test_size=0.2)
     dtrain = xgb.DMatrix(data=np.asarray(traindata), label=ytrain, feature_names=training_columns)
     
     if optimize is True:
@@ -123,7 +123,7 @@ class Generalized_Analysis:
 
   
     
-  def Significance(self,model,training_columns,ct_cut=[0,100],pt_cut=[2,3],centrality_cut=[0,10],draw=False):
+  def Significance(self,model,training_columns,ct_cut=[0,100],pt_cut=[2,3],centrality_cut=[0,10],draw=False,custom=False):
 
     ct_min = ct_cut[0]
     ct_max = ct_cut[1]
@@ -146,7 +146,7 @@ class Generalized_Analysis:
     dtest = xgb.DMatrix(data=(dfDataSig[training_columns]))
     y_pred = model.predict(dtest,output_margin=True)
     dfDataSig.eval('Score = @y_pred',inplace=True)
-    cut = ST.SignificanceScan(dfDataSig,ct_cut,pt_cut,centrality_cut,efficiency_array,self.EfficiencyPresel(ct_cut,pt_cut,centrality_cut),self.n_ev[i_cen],custom=False,draw=draw)
+    cut = ST.SignificanceScan(dfDataSig,ct_cut,pt_cut,centrality_cut,efficiency_array,self.EfficiencyPresel(ct_cut,pt_cut,centrality_cut),self.n_ev[i_cen],custom=custom,draw=draw)
     score_list = np.linspace(-3,12.5,100)
     for index in range(0,len(score_list)):
       if score_list[index]==cut:
