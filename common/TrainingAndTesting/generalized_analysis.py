@@ -16,7 +16,7 @@ from sklearn.metrics import roc_auc_score, auc
 from sklearn.model_selection import (GridSearchCV, RandomizedSearchCV,
                                      StratifiedKFold, train_test_split)
 
-import analysis_utils as au
+import training_utils as tu
 
 
 class GeneralizedAnalysis:
@@ -79,39 +79,15 @@ class GeneralizedAnalysis:
 
         return len(self.df_signal.query(total_cut))/len(self.df_generated.query(total_cut_gen))
 
-    # target function for the bayesian hyperparameter optimization
-    def evaluate_hyperparams(
-            self, dtrain, reg_params, eta, min_child_weight, max_depth, gamma, subsample, colsample_bytree,
-            scale_pos_weight, num_rounds=100, es_rounds=2, nfold=3, round_score_list=[]):
-        params = {'eval_metric': 'auc',
-                  'eta': eta,
-                  'min_child_weight': int(min_child_weight),
-                  'max_depth': int(max_depth),
-                  'gamma': gamma,
-                  'subsample': subsample,
-                  'colsample_bytree': colsample_bytree,
-                  'scale_pos_weight': scale_pos_weight}
-        params = {**reg_params, **params}
-
-        # Use around 1000 boosting rounds in the full model
-        cv_result = xgb.cv(params, dtrain, num_boost_round=num_rounds, early_stopping_rounds=es_rounds, nfold=nfold)
-
-        best_boost_rounds = cv_result['test-auc-mean'].idxmax()
-        best_score = 100 * (cv_result['test-auc-mean'].max() - 0.99)
-
-        round_score_list.append(tuple([best_score, best_boost_rounds]))
-
-        return best_score
-
     # function that manage the bayesian optimization
     def optimize_params_bayes(
-            self, dtrain, reg_params, hyperparams, num_rounds=100, es_rounds=2, nfold=3, init_points=1, n_iter=1):
+            self, dtrain, reg_params, hyperparams, num_rounds=100, es_rounds=2, nfold=3, init_points=5, n_iter=2):
         round_score_list = []
 
         # just an helper function
         def hyperparams_crossvalidation(
                 eta, min_child_weight, max_depth, gamma, subsample, colsample_bytree, scale_pos_weight):
-            return self.evaluate_hyperparams(
+            return tu.evaluate_hyperparams(
                 dtrain, reg_params, eta, min_child_weight, max_depth, gamma, subsample, colsample_bytree,
                 scale_pos_weight, num_rounds, es_rounds, nfold, round_score_list)
 
@@ -142,11 +118,35 @@ class GeneralizedAnalysis:
 
         return max_params, best_numrounds
 
+    # function that manage the grid search
+    # def optimize_params_gs(dtrain, params):
+    #     gs_dict = {'first_par': {'name': 'max_depth', 'par_values': [i for i in range(2, 10, 2)]},
+    #                'second_par': {'name': 'min_child_weight', 'par_values': [i for i in range(0, 12, 2)]},
+    #                }
+
+    #     params['max_depth'], params['min_child_weight'], _ = tu.gs_2par(
+    #         gs_dict, params, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
+
+    #     gs_dict = {'first_par': {'name': 'subsample', 'par_values': [i/10. for i in range(4, 10)]},
+    #                'second_par': {'name': 'colsample_bytree', 'par_values': [i/10. for i in range(8, 10)]},
+    #                }
+
+    #     params['subsample'], params['colsample_bytree'], _ = tu.gs_2par(
+    #         gs_dict, params, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
+
+    #     gs_dict = {'first_par': {'name': 'gamma', 'par_values': [i / 10. for i in range(0, 11)]}}
+    #     params['gamma'], _ = tu.gs_1par(gs_dict, params, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
+
+    #     gs_dict = {'first_par': {'name': 'eta', 'par_values': [0.1, 0.05, 0.01, 0.005, 0.001]}}
+    #     params['eta'], n = tu.gs_1par(gs_dict, params, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
+
+    #     return params, n
+
     # manage all the training stuffs
     def train_test(
             self, training_columns, reg_params, hyperparams=0, ct_range=[0, 100],
             pt_range=[0, 100],
-            cent_class=1, num_rounds=1000, es_rounds=20, draw=True, ROC=True, optimize=False, optimize_mode='bayes',
+            cent_class=1, num_rounds=10, es_rounds=20, draw=True, ROC=True, optimize=False, optimize_mode='bayes',
             bkg_reduct=True, bkg_factor=1):
         ct_min = ct_range[0]
         ct_max = ct_range[1]
@@ -166,7 +166,7 @@ class GeneralizedAnalysis:
         bkg = self.df_data.query(self.total_cut)
         sig = self.df_signal.query(self.total_cut)
 
-        test = False
+        test = True
         if test:
             sig = sig.sample(n=1000)
             bkg = bkg.sample(n=10000)
@@ -190,9 +190,9 @@ class GeneralizedAnalysis:
         if optimize is True:
             if optimize_mode == 'bayes':
                 max_params, best_numrounds = self.optimize_params_bayes(
-                    dtrain, reg_params, hyperparams, num_rounds=num_rounds, es_rounds=es_rounds, init_points=10,n_iter=100)
-            # if optimize_mode == 'gs'
-            #     num_rounds = self.optimize_params_gs(dtrain, params)
+                    dtrain, reg_params, hyperparams, num_rounds=num_rounds, es_rounds=es_rounds, init_points=3, n_iter=5)
+            # if optimize_mode == 'gs':
+                # max_parms, num_rounds = self.optimize_params_gs(dtrain, params)
         else:   # manage the default params
             if hyperparams == 0:
                 max_params = reg_params
