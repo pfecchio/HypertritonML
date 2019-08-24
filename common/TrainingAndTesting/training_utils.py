@@ -22,7 +22,7 @@ def evaluate_hyperparams(
     cv_result = xgb.cv(params, dtrain, num_boost_round=num_rounds, early_stopping_rounds=es_rounds, nfold=nfold)
 
     best_boost_rounds = cv_result['test-auc-mean'].idxmax()
-    best_score = 100 * (cv_result['test-auc-mean'].max() - 0.99)
+    best_score = 1000 * (cv_result['test-auc-mean'].max() - 0.999)
 
     round_score_list.append(tuple([best_score, best_boost_rounds]))
 
