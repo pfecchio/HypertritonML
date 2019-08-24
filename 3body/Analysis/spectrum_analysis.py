@@ -6,8 +6,9 @@ import warnings
 import analysis_utils as au
 import generalized_analysis as ga
 import pandas as pd
-# import type
 import xgboost as xgb
+
+import matplotlib.pyplot as plt
 
 # avoid pandas warning
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -15,11 +16,12 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 # paramaters of the xgboost regressor
 XGBOOST_PARAMS = {
     # general parameters
-    'silent': 0,  # print message (useful to understand what's happening)
+    'silent': 1,  # print message (useful to understand what's happening)
     'nthread': 8,  # number of available threads
     # learning task parameters
     'objective': 'binary:logistic',
     'random_state': 42,
+    'eval_metric': ['auc'],
     'tree_method': 'hist'
 }
 
@@ -47,7 +49,7 @@ HYPERPARAMS_RANGE = {
 #     'DCAxyPrimaryVtxPi', 'DCAzPrimaryVtxDeu', 'DCAzPrimaryVtxP', 'DCAzPrimaryVtxPi', 'DCAPrimaryVtxDeu',
 #     'DCAPrimaryVtxP', 'DCAPrimaryVtxPi', 'DCAxyDecayVtxDeu', 'DCAxyDecayVtxP', 'DCAxyDecayVtxPi', 'DCAzDecayVtxDeu',
 #     'DCAzDecayVtxP', 'DCAzDecayVtxPi', 'DCADecayVtxDeu', 'DCADecayVtxP', 'DCADecayVtxPi', 'TrackDistDeuP',
-#     'TrackDistPPi', 'TrackDistDeuPi', 'CosPA']  # 42
+#     'TrackDistPPi', 'TrackDistDeuPi', 'CosPA', 'DistOverP']  # 43
 
 # features
 TRAINING_COLUMNS = [
@@ -55,7 +57,7 @@ TRAINING_COLUMNS = [
     'trackChi2Deu', 'trackChi2P', 'DCA2xyPrimaryVtxDeu', 'DCAxyPrimaryVtxP', 'DCAxyPrimaryVtxPi', 'DCAzPrimaryVtxDeu',
     'DCAzPrimaryVtxP', 'DCAzPrimaryVtxPi', 'DCAPrimaryVtxDeu', 'DCAPrimaryVtxP', 'DCAPrimaryVtxPi', 'DCAxyDecayVtxDeu',
     'DCAxyDecayVtxP', 'DCAxyDecayVtxPi', 'DCAzDecayVtxDeu', 'DCAzDecayVtxP', 'DCAzDecayVtxPi', 'DCADecayVtxDeu',
-    'DCADecayVtxP', 'DCADecayVtxPi', 'TrackDistDeuP', 'TrackDistPPi', 'TrackDistDeuPi', 'CosPA']  # 33
+    'DCADecayVtxP', 'DCADecayVtxPi', 'TrackDistDeuP', 'TrackDistPPi', 'TrackDistDeuPi', 'CosPA', 'DistOverP']  # 33
 
 table_path = os.environ['HYPERML_TABLES_3']
 signal_table_path = '{}/HyperTritonTable_19d2.root'.format(table_path)
@@ -68,16 +70,18 @@ PT_BINS = [[1, 2], [2, 3], [3, 4], [4, 9]]
 
 print('centrality class: ', CENT_BINS[1])
 print('pT bin: ', PT_BINS[1])
-print('')
 
 # start timer for performance evaluation
 start_time = time.time()
 
 model = analysis.train_test(
     TRAINING_COLUMNS, XGBOOST_PARAMS, HYPERPARAMS_RANGE,
-    cent_class=1,
-    bkg_reduct=False, bkg_factor=10, draw=False, optimize=True)
+    cent_class=1, pt_range=PT_BINS[1],
+    bkg_reduct=True, bkg_factor=10, draw=False, optimize=True,
+    num_rounds=1000, es_rounds=20)
+
+analysis.save_model(model, CENT_BINS[1], PT_BINS[1])
 
 # print execution time to performance evaluation
 print('')
-print('--- {:.2} minutes ---'.format((time.time() - start_time)/60))
+print('--- {:.4f} minutes ---'.format((time.time() - start_time)/60))
