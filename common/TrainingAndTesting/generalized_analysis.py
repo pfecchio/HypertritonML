@@ -11,12 +11,12 @@ import xgboost as xgb
 from bayes_opt import BayesianOptimization
 from scipy import stats
 from scipy.stats import norm
-from sklearn.ensemble import AdaBoostClassifier, GradientBoostingClassifier
 from sklearn.metrics import roc_auc_score, auc
 from sklearn.model_selection import (GridSearchCV, RandomizedSearchCV,
                                      StratifiedKFold, train_test_split)
 
 import training_utils as tu
+import plot_utils as pu
 
 
 class GeneralizedAnalysis:
@@ -81,7 +81,7 @@ class GeneralizedAnalysis:
 
     # function that manage the bayesian optimization
     def optimize_params_bayes(
-            self, dtrain, reg_params, hyperparams, num_rounds=100, es_rounds=2, nfold=3, init_points=5, n_iter=2):
+            self, dtrain, reg_params, hyperparams, num_rounds=100, es_rounds=2, nfold=3, init_points=5, n_iter=20):
         round_score_list = []
 
         # just an helper function
@@ -146,7 +146,7 @@ class GeneralizedAnalysis:
     def train_test(
             self, training_columns, reg_params, hyperparams=0, ct_range=[0, 100],
             pt_range=[0, 100],
-            cent_class=1, num_rounds=10, es_rounds=20, draw=True, ROC=True, optimize=False, optimize_mode='bayes',
+            cent_class=1, num_rounds=100, es_rounds=20, draw=True, ROC=True, optimize=False, optimize_mode='bayes',
             bkg_reduct=True, bkg_factor=1):
         ct_min = ct_range[0]
         ct_max = ct_range[1]
@@ -168,56 +168,76 @@ class GeneralizedAnalysis:
 
         test = True
         if test:
-            sig = sig.sample(n=1000)
-            bkg = bkg.sample(n=10000)
+            sig = sig.sample(n=10000)
+            bkg = bkg.sample(n=100000)
 
         if bkg_reduct:
             n_bkg = len(sig) * bkg_factor
             if n_bkg < len(bkg):
                 bkg = bkg.sample(n=n_bkg)
 
-        print('number of background candidates: ', len(bkg))
-        print('number of signal candidates: ', len(sig))
-        print('')
+        print('number of background candidates: {}'.format(len(bkg)))
+        print('number of signal candidates: {}\n'.format(len(sig)))
 
         df = pd.concat([sig, bkg])
-        train_set, test_set, y_train, y_test = train_test_split(df[training_columns], df['y'], test_size=0.5)
+        train_set, test_set, y_train, y_test = train_test_split(df[training_columns], df['y'], test_size=0.3)
 
         dtrain = xgb.DMatrix(data=train_set, label=y_train, feature_names=training_columns)
         dtest = xgb.DMatrix(data=test_set, label=y_test, feature_names=training_columns)
 
+        max_params = {}
+
         # manage the optimization process
-        if optimize is True:
+        if optimize:
             if optimize_mode == 'bayes':
                 max_params, best_numrounds = self.optimize_params_bayes(
                     dtrain, reg_params, hyperparams, num_rounds=num_rounds, es_rounds=es_rounds, init_points=3, n_iter=5)
             # if optimize_mode == 'gs':
                 # max_parms, num_rounds = self.optimize_params_gs(dtrain, params)
         else:   # manage the default params
-            if hyperparams == 0:
-                max_params = reg_params
-                best_numrounds = num_rounds
+            max_params = {
+                'eta': 0.055,
+                'min_child_weight': 6,
+                'max_depth': 11,
+                'gamma': 0.33,
+                'subsample': 0.73,
+                'colsample_bytree': 0.41,
+                'scale_pos_weight': 3.6
+            }
+            best_numrounds = num_rounds
 
         # join the dictionaries of the regressor params with the maximized hyperparams
         max_params = {**max_params, **reg_params}
 
-        # get the best num_rounds
-
+        # final training with the optimized hyperparams
+        print('Trainig the final model: ...', end='\r')
         model = xgb.train(max_params, dtrain, num_boost_round=best_numrounds)
+        print('Trainig the final model: Done!\n')
 
-        au.plot_output_train_test(
+        # BDT output distributions plot
+        fig_path = os.environ['HYPERML_FIGURES_{}'.format(self.mode)] + '/TrainTest'
+        pu.plot_output_train_test(
             model, train_set[training_columns],
             y_train, test_set[training_columns],
-            y_test, branch_names=training_columns, raw=True, log=True, draw=draw, ct_range=ct_range, pt_range=pt_range,
-            cent_range=[cent_min, cent_max], mode=self.mode)
+            y_test, features=training_columns, raw=True, log=False, draw=draw, ct_range=ct_range, pt_range=pt_range,
+            cent_range=[cent_min, cent_max], path=fig_path)
 
+        pu.plot_output_train_test(
+            model, train_set[training_columns],
+            y_train, test_set[training_columns],
+            y_test, features=training_columns, raw=True, log=True, draw=draw, ct_range=ct_range, pt_range=pt_range,
+            cent_range=[cent_min, cent_max], path=fig_path)
+
+        # test the model performances
+        print('Testing the model: ...', end='\r')
         y_pred = model.predict(dtest)
         roc_score = roc_auc_score(y_test, y_pred)
+        accuracy = accuracy_score(y_test, y_pred)
+        print('Testing the model: Done!\n')
 
-        print('roc_auc_score: {}'.format(roc_score))
-
-        # if ROC is True:
-        #     au.plot_roc(y_test, y_pred)
+        print('ROC_AUC_score: {}\n'.format(roc_score))
+        print("Accuracy: %.2f%%" % (accuracy * 100.0))
+        print('==============================\n')
 
         self.train_set = train_set
         self.test_set = test_set
@@ -225,3 +245,9 @@ class GeneralizedAnalysis:
         self.y_test = y_test
 
         return model
+
+    def save_model(self, model, cent_range, pt_range):
+        models_path = os.environ['HYPERML_MODELS_3']
+        filename = '/BDT_{}{}_{}{}.sav'.format(cent_range[0], cent_range[1], pt_range[0], pt_range[1])
+
+        pickle.dump(model, open(models_path + filename, 'wb'))
