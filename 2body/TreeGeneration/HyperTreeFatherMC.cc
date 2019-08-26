@@ -20,7 +20,6 @@ void HyperTreeFatherMC(bool reject = true,TString name="HyperTritonTree_19d2.roo
 
   char *dataDir{nullptr}, *tableDir{nullptr};
   getDirs(dataDir, tableDir);
-
   TFile bwFile("../fitsM.root");
   TF1 *BlastWave{nullptr};
   TF1 *BlastWave0{(TF1 *)bwFile.Get("BlastWave/BlastWave0")};
@@ -34,7 +33,7 @@ void HyperTreeFatherMC(bool reject = true,TString name="HyperTritonTree_19d2.roo
   float max2 = BlastWave2->GetMaximum();
 
 
-  TChain mcChain("_default/fTreeV0");
+  TChain mcChain("_custom/fTreeV0");
   mcChain.AddFile(Form("%s/%s", dataDir,name.Data()));
 
   TTreeReader fReader(&mcChain);

@@ -19,7 +19,7 @@ class Table {
 
   private:
   TTree* tree;
-  float V0pt;
+  float HypCandPt;
   float TPCnSigmaHe3;
   float Ct;
   float InvMass;
@@ -47,7 +47,7 @@ class Table {
 Table::Table(std::string name, std::string title) {
   tree = new TTree(name.data(), title.data());
 
-  tree->Branch("V0pt", &V0pt);
+  tree->Branch("HypCandPt", &HypCandPt);
   tree->Branch("TPCnSigmaHe3", &TPCnSigmaHe3);
   tree->Branch("Ct", &Ct);
   tree->Branch("InvMass", &InvMass);
@@ -120,7 +120,7 @@ void Table::Fill(const RHyperTritonHe3pi& RHyper, const RCollision& RColl) {
   NpidClustersPion = RHyper.fNpidClustersPi;
   TPCnSigmaPi = RHyper.fTPCnSigmaPi;
   TPCnSigmaHe3 = RHyper.fTPCnSigmaHe3;
-  V0pt = hyperVector.Pt();
+  HypCandPt = hyperVector.Pt();
   Rapidity=hyperVector.Rapidity();
   PseudoRapidityHe3=he3Vector.PseudoRapidity();
   PseudoRapidityPion=piVector.PseudoRapidity();  

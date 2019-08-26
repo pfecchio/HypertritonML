@@ -85,7 +85,7 @@ def SignificanceScan(df,ct_cut,pt_cut,centrality_cut,efficiency_array,eff_pres,n
     index = 0
     HyTrLifetime = 206
     for i in score_list:
-        df_score = df.query('Score>@i and @ct_min<Ct<@ct_max and @pt_min<V0pt<@pt_max and @centrality_min<Centrality<@centrality_max')
+        df_score = df.query('Score>@i and @ct_min<Ct<@ct_max and @pt_min<HypCandPt<@pt_max and @centrality_min<Centrality<@centrality_max')
         counts,bins = np.histogram(df_score['InvMass'],bins=30,range=[2.96,3.05])
         bin_centers = 0.5*(bins[1:]+bins[:-1])
         sidemap = (bin_centers<2.9923-3*0.0025) + (bin_centers>2.9923+3*0.0025)
@@ -119,7 +119,7 @@ def SignificanceScan(df,ct_cut,pt_cut,centrality_cut,efficiency_array,eff_pres,n
     sign = significance_array[max_index]
     custom_sign = custom_significance_array[max_index]
     ryield = signal_array[max_index]
-    df_cut = df.query('Score>@max_score and @ct_min<Ct<@ct_max and @pt_min<V0pt<@pt_max and @centrality_min<Centrality<@centrality_max')
+    df_cut = df.query('Score>@max_score and @ct_min<Ct<@ct_max and @pt_min<HypCandPt<@pt_max and @centrality_min<Centrality<@centrality_max')
     counts_mc_0 = norm.pdf(bin_centers,loc=2.992,scale=0.0025)
     counts_mc = (ryield/sum(counts_mc_0))*counts_mc_0
     counts_data,_ = np.histogram(df_cut['InvMass'],bins=30,range=[2.96,3.05])
@@ -189,7 +189,7 @@ def gauss_function(x, a, x0, sigma):
 
 
 def TestOnData(df,score,pt,n_ev):
-    df_score = df.query('Score>@score and V0pt>=@pt[0] and V0pt<=@pt[1]')
+    df_score = df.query('Score>@score and HypCandPt>=@pt[0] and HypCandPt<=@pt[1]')
     counts,bins = np.histogram(df_score['InvMass'],bins=30,range=[2.96,3.05])
     bin_centers = 0.5*(bins[1:]+bins[:-1])
     sidemap = (bin_centers<2.9923-3*0.0025) + (bin_centers>2.9923+3*0.0025)

@@ -31,9 +31,9 @@ params_def = {
     'tree_method':'hist',
     'scale_pos_weight': 10}
 
-training_columns = [ 'V0CosPA','ProngsDCA','V0pt','ArmenterosAlpha','NpidClustersHe3','TPCnSigmaHe3','He3ProngPvDCA','PiProngPvDCA']
+training_columns = [ 'V0CosPA','ProngsDCA','PiProngPvDCAXY','He3ProngPvDCAXY','HypCandPt','ArmenterosAlpha','NpidClustersHe3','TPCnSigmaHe3','He3ProngPvDCA','PiProngPvDCA']
 
-Analysis = tu.Generalized_Analysis(os.environ['HYPERML_TABLES']+'/SignalTable.root',os.environ['HYPERML_TABLES']+'/DataTable.root','ProngsDCA<1.6 and PiProngPvDCA>0.01 and He3ProngPvDCA>0.01 and V0CosPA>0.98 and 0.4<V0radius<200 and TPCnSigmaHe3<5 and NpidClustersHe3>=50 and NpidClustersPion>=50 and He3ProngPt>1.2','(InvMass<2.98 or InvMass>3.005) and V0pt<=10')
+Analysis = tu.Generalized_Analysis(os.environ['HYPERML_TABLES']+'/SignalTable.root',os.environ['HYPERML_TABLES']+'/DataTable.root','2<=HypCandPt<=10','(InvMass<2.98 or InvMass>3.005) and HypCandPt<=10')
 
 # loop to train the models
 if not os.path.exists(os.environ['HYPERML_MODELS']):
@@ -83,7 +83,7 @@ for index_ct in range(0,len(Ct_bins)):
     centrality_min = Centrality_bins[index_cen][0]
     centrality_max = Centrality_bins[index_cen][1]
 
-    total_cut = '@ct_min<Ct<@ct_max and 0<V0pt<10 and @centrality_min<Centrality<@centrality_max'
+    total_cut = '@ct_min<Ct<@ct_max and 0<HypCandPt<10 and @centrality_min<Centrality<@centrality_max'
     filename = '/BDT_Ct_{:.2f}_{:.2f}_pT_{:.2f}_{:.2f}_Cen_{:.2f}_{:.2f}.sav'.format(Ct_bins[index_ct][0],Ct_bins[index_ct][1],0,10,Centrality_bins[index_cen][0],Centrality_bins[index_cen][1])
     model = pickle.load(open(os.environ['HYPERML_MODELS']+filename, 'rb'))
     dfDataF = Analysis.dfData.query(total_cut)

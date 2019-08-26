@@ -59,7 +59,7 @@ class Generalized_Analysis:
     pt_min = pt_cut[0]
     centrality_max = centrality_cut[1]
     centrality_min = centrality_cut[0]
-    total_cut = '@ct_min<Ct<@ct_max and @pt_min<V0pt<@pt_max and @centrality_min<Centrality<@centrality_max'
+    total_cut = '@ct_min<Ct<@ct_max and @pt_min<HypCandPt<@pt_max and @centrality_min<Centrality<@centrality_max'
     total_cut_gen = '@ct_min<Ct<@ct_max and @pt_min<Pt<@pt_max and @centrality_min<Centrality<@centrality_max'
     return len(self.dfMCSigF.query(total_cut))/len(self.dfMCGen.query(total_cut_gen))
   
@@ -91,7 +91,7 @@ class Generalized_Analysis:
     centrality_min = centrality_cut[0]
     centrality_max = centrality_cut[1]
     
-    total_cut = '@ct_min<Ct<@ct_max and @pt_min<V0pt<@pt_max and @centrality_min<Centrality<@centrality_max'
+    total_cut = '@ct_min<Ct<@ct_max and @pt_min<HypCandPt<@pt_max and @centrality_min<Centrality<@centrality_max'
     bkg = self.dfDataF.query(total_cut)
     sig = self.dfMCSigF.query(total_cut)
     print('condidates of bkg: ',len(bkg))
@@ -131,7 +131,7 @@ class Generalized_Analysis:
     pt_min = pt_cut[0]
     centrality_max = centrality_cut[1]
     centrality_min = centrality_cut[0]
-    total_cut = '@ct_min<Ct<@ct_max and @pt_min<V0pt<@pt_max and @centrality_min<Centrality<@centrality_max'
+    total_cut = '@ct_min<Ct<@ct_max and @pt_min<HypCandPt<@pt_max and @centrality_min<Centrality<@centrality_max'
     dtest = xgb.DMatrix(data=(self.testdata[training_columns]))
     self.testdata.eval('y = @self.ytest',inplace=True)   
     y_pred = model.predict(dtest,output_margin=True)
