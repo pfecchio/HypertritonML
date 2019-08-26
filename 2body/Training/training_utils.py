@@ -100,7 +100,7 @@ class Generalized_Analysis:
       print('no signal -> the model is not trained')
       return 0
     df= pd.concat([sig,bkg])
-    traindata,testdata,ytrain,ytest = train_test_split(df[training_columns], df['y'], test_size=0.2)
+    traindata,testdata,ytrain,ytest = train_test_split(df[training_columns], df['y'], test_size=0.5)
     dtrain = xgb.DMatrix(data=np.asarray(traindata), label=ytrain, feature_names=training_columns)
     
     if optimize is True:
@@ -123,7 +123,7 @@ class Generalized_Analysis:
 
   
     
-  def Significance(self,model,training_columns,ct_cut=[0,100],pt_cut=[2,3],centrality_cut=[0,10],draw=False,custom=False):
+  def Significance(self,model,training_columns,ct_cut=[0,100],pt_cut=[2,3],centrality_cut=[0,10],draw=False,custom=False,score_shift=0):
 
     ct_min = ct_cut[0]
     ct_max = ct_cut[1]
@@ -147,8 +147,14 @@ class Generalized_Analysis:
     y_pred = model.predict(dtest,output_margin=True)
     dfDataSig.eval('Score = @y_pred',inplace=True)
     cut = ST.SignificanceScan(dfDataSig,ct_cut,pt_cut,centrality_cut,efficiency_array,self.EfficiencyPresel(ct_cut,pt_cut,centrality_cut),self.n_ev[i_cen],custom=custom,draw=draw)
-    score_list = np.linspace(-3,12.5,100)
+    score_list = np.linspace(-3,12.5,156)
+    #the efficiency is computed at the score given by SignificanceScan plus something to simplify
+    #the bkg fitting
+
     for index in range(0,len(score_list)):
-      if score_list[index]==cut:
+      print(score_list[index])
+      print(cut)
+      print(score_shift)
+      if round(score_list[index],2)==round(cut+score_shift,2):
         effBDT=efficiency_array[index]
-    return (cut,effBDT)
+    return (cut+score_shift,effBDT)

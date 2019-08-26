@@ -81,7 +81,7 @@ def SignificanceScan(df,ct_cut,pt_cut,centrality_cut,efficiency_array,eff_pres,n
     significance_array = []
     custom_significance_array = []
     error_array=[]
-    score_list = np.linspace(-3,12.5,100)
+    score_list = np.linspace(-3,12.5,156)
     index = 0
     HyTrLifetime = 206
     for i in score_list:

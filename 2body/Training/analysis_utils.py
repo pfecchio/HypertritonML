@@ -264,11 +264,9 @@ def gs_2par(gs_dict, par_dict, train_data, num_rounds, seed, folds, metrics, n_e
             best_params = (first_val, second_val,boost_rounds)
     return (best_params)
 
-def EfficiencyVsCuts(df,ct_cut,pt_cut,centrality_cut,plot_ext=False):
-    if plot_ext==True:
-        cuts=np.linspace(-15,15,200)
-    else:    
-        cuts=np.linspace(-3,12.5,100)
+def EfficiencyVsCuts(df,ct_cut,pt_cut,centrality_cut):
+    
+    cuts=np.linspace(-3,12.5,156)
     eff_s=[]
     eff_b=[]
     den_s=sum(df['y'])
@@ -291,8 +289,7 @@ def EfficiencyVsCuts(df,ct_cut,pt_cut,centrality_cut,plot_ext=False):
     filename = '/EfficiencyBDT_Ct_{:.2f}_{:.2f}_pT_{:.2f}_{:.2f}_Cen_{:.2f}_{:.2f}.pdf'.format(ct_cut[0],ct_cut[1],pt_cut[0],pt_cut[1],centrality_cut[0],centrality_cut[1])
     plt.savefig(os.environ['HYPERML_FIGURES']+'/Efficiency/'+filename)
     plt.close()
-    if plot_ext==False:
-        return eff_s
+    return eff_s
     
 def optimize_params(dtrain,par):
     gs_dict = {'first_par': {'name': 'max_depth', 'par_values': [i for i in range(2, 10, 2)]},
@@ -323,9 +320,11 @@ def fit(counts,min,max,nsigma=3,recreate=False,signif=0,errsignif=0,minCent=10,m
   
   results.cd()
   cv = TCanvas("cv{}_{}".format(min,max))
-  fitTpl = TF1("fitTpl","expo(0)+pol2(2)+gausn(3)",0,5)
-  fitTpl.SetParNames("B_{exp}","#tau","B_{0}","N_{sig}","#mu","#sigma")
-  bkgTpl = TF1("fitTpl","expo(0)+pol2(2)",0,5)
+  fitTpl = TF1("fitTpl","pol2(0)+gausn(3)",0,5)
+  #fitTpl.SetParNames("B_{exp}","#tau","B_{0}","N_{sig}","#mu","#sigma")
+  fitTpl.SetParNames("B_{0}","B_{1}","B_{2}","N_{sig}","#mu","#sigma")
+  bkgTpl = TF1("fitTpl","pol2(0)",0,5)
+  sigTpl = TF1("fitTpl","gausn(0)",0,5)
   fitTpl.SetNpx(300)
   fitTpl.SetLineWidth(2)
   fitTpl.SetLineColor(2)
@@ -333,13 +332,13 @@ def fit(counts,min,max,nsigma=3,recreate=False,signif=0,errsignif=0,minCent=10,m
   bkgTpl.SetLineWidth(2)
   bkgTpl.SetLineStyle(2)
   bkgTpl.SetLineColor(2)
-  fitTpl.SetParameter(0,2)
-  fitTpl.SetParameter(1,-1)
-  fitTpl.SetParameter(2,0)
+
   fitTpl.SetParameter(3,40)
-  fitTpl.SetParameter(4,2.99)
+  fitTpl.SetParameter(4,2.991)
+  fitTpl.SetParLimits(4,2.99,3)
   fitTpl.SetParameter(5,0.002)
   fitTpl.SetParLimits(5,0.0001,0.004)
+
   gStyle.SetOptStat(0)
   gStyle.SetOptFit(0)
   ####################
@@ -350,24 +349,45 @@ def fit(counts,min,max,nsigma=3,recreate=False,signif=0,errsignif=0,minCent=10,m
   histo.SetMarkerColor(1)
   histo.SetTitle(";m (^{3}He + #pi) (GeV/#it{c})^{2};Counts")
   histo.SetMaximum(1.5 * histo.GetMaximum())
-  histo.Fit(fitTpl,"RL","",2.96,3.03)
+  histo.Fit(fitTpl,"QRM","",2.97,3.03)
+  histo.Fit(fitTpl,"QRM","",2.97,3.03)
   histo.SetDrawOption("e")
   histo.GetXaxis().SetRangeUser(2.96,3.03)
   bkgTpl.SetParameters(fitTpl.GetParameters())
   #bkgTpl.Draw("same")
-
+  sigTpl.SetParameter(0,fitTpl.GetParameter(3))
+  sigTpl.SetParameter(1,fitTpl.GetParameter(4))
+  sigTpl.SetParameter(2,fitTpl.GetParameter(5))
+  sigTpl.SetLineColor(600)
+  sigTpl.Draw("same")
   mu = fitTpl.GetParameter(4)
   sigma = fitTpl.GetParameter(5)
   signal = fitTpl.GetParameter(3) / histo.GetBinWidth(1)
   errsignal = fitTpl.GetParError(3) / histo.GetBinWidth(1)
   bkg = bkgTpl.Integral(mu - nsigma * sigma, mu + nsigma * sigma) / histo.GetBinWidth(1)
-  errbkg = math.sqrt(bkg)
+  
+  if bkg > 0:
+    errbkg = math.sqrt(bkg)
+  else:
+    errbkg = 0
 
   peak = histo.Integral(int(len(counts)*(mu-nsigma*sigma-2.96)/(3.05-2.96)),int(len(counts)*(mu+nsigma*sigma-2.96)/(3.05-2.96)))
   
   NHyTr = (peak-bkg)
   print(peak,' ',bkg)
-  ErrNHyTr = math.sqrt(peak+bkg)
+  if peak+bkg>0:
+    ErrNHyTr = math.sqrt(peak+bkg)
+    signif=signal/math.sqrt(signal+bkg)
+    deriv_sig=1/math.sqrt(signal+bkg)-signif/(2*(signal+bkg))
+    deriv_bkg=-signal/(2*(math.pow(signal+bkg,1.5)))
+    errsignif = math.sqrt((errsignal*deriv_sig)**2+(errbkg*deriv_bkg)**2)
+  else:
+    print('sig+bkg<0')
+    ErrNHyTr = 0
+    signif=0
+    errsignif=0
+
+  
 
   pinfo2= TPaveText(0.5,0.5,0.91,0.9,"NDC")
   pinfo2.SetBorderSize(0)
@@ -376,7 +396,7 @@ def fit(counts,min,max,nsigma=3,recreate=False,signif=0,errsignif=0,minCent=10,m
   pinfo2.SetTextFont(42)
   string ='ALICE Internal, Pb-Pb 2018 {}-{}'.format(minCent,maxCent)
   pinfo2.AddText(string)    
-  string='^{3}_{#Lambda}H#rightarrow ^{3}He#pi + c.c., %i #leq #it{ct} < %i GeV/#it{c} ' % (min,max)
+  string='^{3}_{#Lambda}H#rightarrow ^{3}He#pi + c.c., %i #leq #it{ct} < %i cm ' % (min,max)
   pinfo2.AddText(string)    
   string='Significance ({:.0f}#sigma) {:.1f} #pm {:.1f} '.format(nsigma,signif,errsignif)
   pinfo2.AddText(string)
@@ -394,5 +414,4 @@ def fit(counts,min,max,nsigma=3,recreate=False,signif=0,errsignif=0,minCent=10,m
   histo.Write()
   cv.Write()
   results.Close()
-  
   return (NHyTr,ErrNHyTr)
