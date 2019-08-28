@@ -22,6 +22,8 @@ private:
   TTree *tree;
 
   float fCentrality;
+  float fCt;
+  float fInvMass;
   float fHypCandPt;
   float fPtDeu;
   float fPtP;
@@ -64,14 +66,15 @@ private:
   float fTrackDistPPi;
   float fTrackDistDeuPi;
   float fCosPA;
-  float fDistOverP;
   bool fMatter;
 };
 
 Table3::Table3(std::string name, std::string title) {
   tree = new TTree(name.data(), title.data());
 
-  tree->Branch("Centrality", &fCentrality);
+  tree->Branch("centrality", &fCentrality);
+  tree->Branch("ct", &fCt);
+  tree->Branch("InvMass", &fInvMass);
   tree->Branch("HypCandPt", &fHypCandPt);
   tree->Branch("PtDeu", &fPtDeu);
   tree->Branch("PtP", &fPtP);
@@ -114,8 +117,7 @@ Table3::Table3(std::string name, std::string title) {
   tree->Branch("TrackDistPPi", &fTrackDistPPi);
   tree->Branch("TrackDistDeuPi", &fTrackDistDeuPi);
   tree->Branch("CosPA", &fCosPA);
-  tree->Branch("DistOverP", &fDistOverP);
-  tree->Branch("Matter", &fMatter);
+  tree->Branch("matter", &fMatter);
 };
 
 void Table3::Fill(const RHypertriton3 &rHyp3, const REvent &rEv) {
@@ -202,16 +204,18 @@ void Table3::Fill(const RHypertriton3 &rHyp3, const REvent &rEv) {
 
   // compute the 4-vector of the hypertriton candidate
   const TLorentzVector hyper4Vector = deu4Vector + p4Vector + pi4Vector;
-  fHypCandPt                        = hyper4Vector.Pt();
+  // fill the candidate pT and invariant mass
+  fHypCandPt = hyper4Vector.Pt();
+  fInvMass   = hyper4Vector.M();
 
   // define the decay lenght vector
   const TVector3 decayLenghtVector = decayVtxPos - primaryVtxPos;
 
+  // compute the candidate ct
+  fCt = kHyperTritonMass * decayLenghtVector.Mag() / hyper4Vector.P();
+
   // compute the cos(theta pointing)
   fCosPA = std::cos(hyper4Vector.Angle(decayLenghtVector));
-
-  // compute dist/P
-  fDistOverP = decayLenghtVector.Mag() / hyper4Vector.P();
 
   // matter or anti-matter
   fMatter = rHyp3.fIsMatter;

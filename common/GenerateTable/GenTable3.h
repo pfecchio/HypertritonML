@@ -33,12 +33,12 @@ private:
 GenTable3::GenTable3(std::string name, std::string title) {
   tree = new TTree(name.data(), title.data());
 
-  tree->Branch("Pt", &fPt);
-  tree->Branch("Rapidity", &fRapidity);
-  tree->Branch("Phi", &fPhi);
-  tree->Branch("Ct", &fCt);
-  tree->Branch("Centrality", &fCentrality);
-  tree->Branch("Matter", &fMatter);
+  tree->Branch("pT", &fPt);
+  tree->Branch("rapidity", &fRapidity);
+  tree->Branch("phi", &fPhi);
+  tree->Branch("ct", &fCt);
+  tree->Branch("centrality", &fCentrality);
+  tree->Branch("matter", &fMatter);
 };
 
 void GenTable3::Fill(const SHypertriton3 &sHyp3, const REvent &rEv) {
