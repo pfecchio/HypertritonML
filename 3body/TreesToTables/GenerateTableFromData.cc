@@ -14,20 +14,15 @@ using namespace std;
 #include "../../common/GenerateTable/Common.h"
 #include "../../common/GenerateTable/Table3.h"
 
-void GenerateTableFromData(std::string dataPeriod = "") {
+void GenerateTableFromData() {
 
   string dataDir  = getenv("HYPERML_DATA_3");
   string tableDir = getenv("HYPERML_TABLES_3");
 
-  if ((dataPeriod != "r") && (dataPeriod != "q")) {
-    cout << "Wrong data period!!" << endl;
-    return;
-  }
-
-  string inFileName = "HyperTritonTree_18" + dataPeriod + ".root";
+  string inFileName = "HyperTritonTree_18q.root";
   string inFileArg  = dataDir + "/" + inFileName;
 
-  string outFileName = "HyperTritonTable_18" + dataPeriod + ".root";
+  string outFileName = "HyperTritonTable_18q.root";
   string outFileArg  = tableDir + "/" + outFileName;
 
   // read the tree
@@ -42,9 +37,7 @@ void GenerateTableFromData(std::string dataPeriod = "") {
   Table3 table("BackgroundTable", "BackgroundTable");
 
   // info for progress bar
-  int n_entries = 0;
-  if (dataPeriod == "r") n_entries = 8616701;
-  if (dataPeriod == "q") n_entries = 13215350;
+  int n_entries = 13611290;
 
   // progress bar
   boost::progress_display show_progress(n_entries);
@@ -62,5 +55,5 @@ void GenerateTableFromData(std::string dataPeriod = "") {
   inFile->Close();
   outFile.Close();
 
-  cout << "\nDerived tree from Data period " << dataPeriod << " generated!\n" << endl;
+  cout << "\nDerived tree from Data generated!\n" << endl;
 }
