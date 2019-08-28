@@ -57,7 +57,9 @@ TRAINING_COLUMNS = [
     'trackChi2Deu', 'trackChi2P', 'DCA2xyPrimaryVtxDeu', 'DCAxyPrimaryVtxP', 'DCAxyPrimaryVtxPi', 'DCAzPrimaryVtxDeu',
     'DCAzPrimaryVtxP', 'DCAzPrimaryVtxPi', 'DCAPrimaryVtxDeu', 'DCAPrimaryVtxP', 'DCAPrimaryVtxPi', 'DCAxyDecayVtxDeu',
     'DCAxyDecayVtxP', 'DCAxyDecayVtxPi', 'DCAzDecayVtxDeu', 'DCAzDecayVtxP', 'DCAzDecayVtxPi', 'DCADecayVtxDeu',
-    'DCADecayVtxP', 'DCADecayVtxPi', 'TrackDistDeuP', 'TrackDistPPi', 'TrackDistDeuPi', 'CosPA', 'DistOverP']  # 33
+    'DCADecayVtxP', 'DCADecayVtxPi', 'TrackDistDeuP', 'TrackDistPPi', 'TrackDistDeuPi', 'CosPA']  # 33
+
+TRAIN = True
 
 table_path = os.environ['HYPERML_TABLES_3']
 signal_table_path = '{}/HyperTritonTable_19d2.root'.format(table_path)
@@ -65,23 +67,44 @@ background_table_path = '{}/HyperTritonTable_18q.root'.format(table_path)
 
 analysis = ga.GeneralizedAnalysis(3, signal_table_path, background_table_path)
 
-CENT_BINS = [[0, 10], [10, 30], [30, 50], [50, 90]]
+CENT_CLASS = [[0, 10], [10, 30], [30, 50], [50, 90]]
 PT_BINS = [[1, 2], [2, 3], [3, 4], [4, 9]]
+# CT_BINS = [[0,2],[2,4],[4,6],[6,8],[8,10],[10,14],[14,18],[18,23],[23,28]]
+CT_BINS = [0, 100]
 
-print('centrality class: ', CENT_BINS[1])
+
+print('centrality class: ', CENT_CLASS[1])
 print('pT bin: ', PT_BINS[1])
 
-# start timer for performance evaluation
-start_time = time.time()
+# train the model only if required
+if TRAIN:
+    # start timer for performance evaluation
+    start_time = time.time()
+    # train and test the model with some performance plot
+    model = analysis.train_test_model(
+        TRAINING_COLUMNS, XGBOOST_PARAMS, hyperparams=HYPERPARAMS_RANGE, cent_class=1, pt_range=PT_BINS[1],
+        bkg_reduct=True, bkg_factor=10, test=False, optimize=False, num_rounds=100, es_rounds=20)
 
-model = analysis.train_test(
-    TRAINING_COLUMNS, XGBOOST_PARAMS, HYPERPARAMS_RANGE,
-    cent_class=1, pt_range=PT_BINS[1],
-    bkg_reduct=True, bkg_factor=10, draw=False, optimize=True,
-    num_rounds=1000, es_rounds=20)
+    analysis.save_model(model, cent_class=1, pt_range=PT_BINS[1])
 
-analysis.save_model(model, CENT_BINS[1], PT_BINS[1])
+else:
+    model = analysis.train_test_model(
+        TRAINING_COLUMNS, XGBOOST_PARAMS, cent_class=1, pt_range=PT_BINS[1],
+        bkg_reduct=True, bkg_factor=10, test=False, train=False)
+    model = analysis.load_model(cent_class=1, pt_range=PT_BINS[1])
+
+cut_eff_dict = {}
+
+score_cut, bdt_efficiency = analysis.significance_scan(
+    model, TRAINING_COLUMNS, ct_range=[0, 100], cent_class=1, pt_range=PT_BINS[1], custom=False)
+cut_eff_dict['{}{}_{}{}_{}{}'.format(
+    CENT_CLASS[1][0],
+    CENT_CLASS[1][1],
+    PT_BINS[1][0],
+    PT_BINS[1][1],
+    CT_BINS[0],
+    CT_BINS[1])] = {'score_cut': score_cut, 'bdt_eff': bdt_efficiency}
 
 # print execution time to performance evaluation
 print('')
-print('--- {:.4f} minutes ---'.format((time.time() - start_time)/60))
+# print('--- {:.4f} minutes ---'.format((time.time() - start_time)/60))

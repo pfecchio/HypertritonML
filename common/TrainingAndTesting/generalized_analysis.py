@@ -15,15 +15,15 @@ from sklearn.metrics import roc_auc_score, auc
 from sklearn.model_selection import (GridSearchCV, RandomizedSearchCV,
                                      StratifiedKFold, train_test_split)
 
-import training_utils as tu
+import analysis_utils as au
 import plot_utils as pu
 
 
 class GeneralizedAnalysis:
 
     def __init__(self, mode, mc_file_name, data_file_name, cut_presel=0, bkg_selection=0):
-
         self.mode = mode
+
         self.cent_class = [[0, 10], [10, 30], [30, 50], [50, 90]]
         self.n_events = [0, 0, 0, 0]
 
@@ -36,9 +36,6 @@ class GeneralizedAnalysis:
             self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df()
             self.df_generated = uproot.open(mc_file_name)['GenTable'].pandas.df()
             self.df_data = uproot.open(data_file_name)['DataTable'].pandas.df()
-
-        self.df_data['ct'] = self.df_data['DistOverP'] * 2.99131
-        self.df_signal['ct'] = self.df_signal['DistOverP'] * 2.99131
 
         self.df_signal['y'] = 1
         self.df_data['y'] = 0
@@ -63,19 +60,20 @@ class GeneralizedAnalysis:
                 self.n_events[3] = hist_centrality[index] + self.n_events[3]
 
     # function to compute the preselection cuts efficiency
-    def preselection_efficiency(self, ct_cut=[0, 100], pt_cut=[0, 12], centrality_cut=[0, 100]):
-        ct_min = ct_cut[0]
-        ct_max = ct_cut[1]
-        pt_max = pt_cut[1]
-        pt_min = pt_cut[0]
 
-        centrality_max = centrality_cut[1]
-        centrality_min = centrality_cut[0]
+    def preselection_efficiency(self, ct_range=[0, 100], pt_range=[0, 12], cent_class=0):
+        ct_min = ct_range[0]
+        ct_max = ct_range[1]
+        pt_min = pt_range[0]
+        pt_max = pt_range[1]
 
-        total_cut = '{}<ct<{} and {}<V0pt<{} and {}<Centrality<{}'.format(
-            ct_min, ct_max, pt_min, pt_max, centrality_min, centrality_max)
-        total_cut_gen = '{}<ct<{} and {}<Pt<{} and {}<Centrality<{}'.format(
-            ct_min, ct_max, pt_min, pt_max, centrality_min, centrality_max)
+        cent_min = self.cent_class[cent_class][0]
+        cent_max = self.cent_class[cent_class][1]
+
+        total_cut = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(
+            ct_min, ct_max, pt_min, pt_max, cent_min, cent_max)
+        total_cut_gen = '{}<ct<{} and {}<pT<{} and {}<centrality<{}'.format(
+            ct_min, ct_max, pt_min, pt_max, cent_min, cent_max)
 
         return len(self.df_signal.query(total_cut))/len(self.df_generated.query(total_cut_gen))
 
@@ -87,7 +85,7 @@ class GeneralizedAnalysis:
         # just an helper function
         def hyperparams_crossvalidation(
                 eta, min_child_weight, max_depth, gamma, subsample, colsample_bytree, scale_pos_weight):
-            return tu.evaluate_hyperparams(
+            return au.evaluate_hyperparams(
                 dtrain, reg_params, eta, min_child_weight, max_depth, gamma, subsample, colsample_bytree,
                 scale_pos_weight, num_rounds, es_rounds, nfold, round_score_list)
 
@@ -124,30 +122,30 @@ class GeneralizedAnalysis:
     #                'second_par': {'name': 'min_child_weight', 'par_values': [i for i in range(0, 12, 2)]},
     #                }
 
-    #     params['max_depth'], params['min_child_weight'], _ = tu.gs_2par(
+    #     params['max_depth'], params['min_child_weight'], _ = au.gs_2par(
     #         gs_dict, params, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
 
     #     gs_dict = {'first_par': {'name': 'subsample', 'par_values': [i/10. for i in range(4, 10)]},
     #                'second_par': {'name': 'colsample_bytree', 'par_values': [i/10. for i in range(8, 10)]},
     #                }
 
-    #     params['subsample'], params['colsample_bytree'], _ = tu.gs_2par(
+    #     params['subsample'], params['colsample_bytree'], _ = au.gs_2par(
     #         gs_dict, params, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
 
     #     gs_dict = {'first_par': {'name': 'gamma', 'par_values': [i / 10. for i in range(0, 11)]}}
-    #     params['gamma'], _ = tu.gs_1par(gs_dict, params, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
+    #     params['gamma'], _ = au.gs_1par(gs_dict, params, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
 
     #     gs_dict = {'first_par': {'name': 'eta', 'par_values': [0.1, 0.05, 0.01, 0.005, 0.001]}}
-    #     params['eta'], n = tu.gs_1par(gs_dict, params, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
+    #     params['eta'], n = au.gs_1par(gs_dict, params, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
 
     #     return params, n
 
     # manage all the training stuffs
-    def train_test(
-            self, training_columns, reg_params, hyperparams=0, ct_range=[0, 100],
+    def train_test_model(
+            self, training_columns, reg_params, ct_range=[0, 100],
             pt_range=[0, 100],
-            cent_class=1, num_rounds=100, es_rounds=20, draw=True, ROC=True, optimize=False, optimize_mode='bayes',
-            bkg_reduct=True, bkg_factor=1):
+            cent_class=1, test=False, bkg_reduct=True, bkg_factor=1, hyperparams=0, num_rounds=100, es_rounds=20,
+            ROC=True, optimize=False, optimize_mode='bayes', train=True):
         ct_min = ct_range[0]
         ct_max = ct_range[1]
         pt_min = pt_range[0]
@@ -156,20 +154,15 @@ class GeneralizedAnalysis:
         cent_min = self.cent_class[cent_class][0]
         cent_max = self.cent_class[cent_class][1]
 
-        if self.mode == 2:
-            self.total_cut = '{}<ct<{} and {}<V0pT<{} and {}<Centrality<{}'.format(
-                ct_min, ct_max, pt_min, pt_max, cent_min, cent_max)
-        if self.mode == 3:
-            self.total_cut = '{}<ct<{} and {}<HypCandPt<{} and {}<Centrality<{}'.format(
-                ct_min, ct_max, pt_min, pt_max, cent_min, cent_max)
+        data_range = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(
+            ct_min, ct_max, pt_min, pt_max, cent_min, cent_max)
 
-        bkg = self.df_data.query(self.total_cut)
-        sig = self.df_signal.query(self.total_cut)
+        bkg = self.df_data.query(data_range)
+        sig = self.df_signal.query(data_range)
 
-        test = True
         if test:
-            sig = sig.sample(n=10000)
-            bkg = bkg.sample(n=100000)
+            sig = sig.sample(n=1000)
+            bkg = bkg.sample(n=10000)
 
         if bkg_reduct:
             n_bkg = len(sig) * bkg_factor
@@ -180,7 +173,15 @@ class GeneralizedAnalysis:
         print('number of signal candidates: {}\n'.format(len(sig)))
 
         df = pd.concat([sig, bkg])
-        train_set, test_set, y_train, y_test = train_test_split(df[training_columns], df['y'], test_size=0.3)
+        train_set, test_set, y_train, y_test = train_test_split(df[training_columns], df['y'], test_size=0.4)
+
+        self.train_set = train_set
+        self.test_set = test_set
+        self.y_train = y_train
+        self.y_test = y_test
+
+        if not train:
+            return 0
 
         dtrain = xgb.DMatrix(data=train_set, label=y_train, feature_names=training_columns)
         dtest = xgb.DMatrix(data=test_set, label=y_test, feature_names=training_columns)
@@ -219,35 +220,155 @@ class GeneralizedAnalysis:
         pu.plot_output_train_test(
             model, train_set[training_columns],
             y_train, test_set[training_columns],
-            y_test, features=training_columns, raw=True, log=False, draw=draw, ct_range=ct_range, pt_range=pt_range,
-            cent_range=[cent_min, cent_max], path=fig_path)
-
-        pu.plot_output_train_test(
-            model, train_set[training_columns],
-            y_train, test_set[training_columns],
-            y_test, features=training_columns, raw=True, log=True, draw=draw, ct_range=ct_range, pt_range=pt_range,
+            y_test, features=training_columns, raw=True, log=True, ct_range=ct_range, pt_range=pt_range,
             cent_range=[cent_min, cent_max], path=fig_path)
 
         # test the model performances
         print('Testing the model: ...', end='\r')
         y_pred = model.predict(dtest)
         roc_score = roc_auc_score(y_test, y_pred)
-        accuracy = accuracy_score(y_test, y_pred)
         print('Testing the model: Done!\n')
 
         print('ROC_AUC_score: {}\n'.format(roc_score))
-        print("Accuracy: %.2f%%" % (accuracy * 100.0))
         print('==============================\n')
-
-        self.train_set = train_set
-        self.test_set = test_set
-        self.y_train = y_train
-        self.y_test = y_test
 
         return model
 
-    def save_model(self, model, cent_range, pt_range):
-        models_path = os.environ['HYPERML_MODELS_3']
-        filename = '/BDT_{}{}_{}{}.sav'.format(cent_range[0], cent_range[1], pt_range[0], pt_range[1])
+    def save_model(self, model, cent_class, pt_range):
+        cent_min = self.cent_class[cent_class][0]
+        cent_max = self.cent_class[cent_class][1]
+
+        models_path = os.environ['HYPERML_MODELS_{}'.format(self.mode)]
+        filename = '/BDT_{}{}_{}{}.sav'.format(cent_min, cent_max, pt_range[0], pt_range[1])
 
         pickle.dump(model, open(models_path + filename, 'wb'))
+
+    def load_model(self, cent_class, pt_range):
+        cent_min = self.cent_class[cent_class][0]
+        cent_max = self.cent_class[cent_class][1]
+
+        models_path = os.environ['HYPERML_MODELS_{}'.format(self.mode)]
+        filename = '/BDT_{}{}_{}{}.sav'.format(cent_min, cent_max, pt_range[0], pt_range[1])
+
+        model = pickle.load(open(models_path + filename, 'rb'))
+        return model
+
+    def bdt_efficiency(self, df, ct_range=[0, 100], pt_range=[2, 3], cent_class=1, n_points=100):
+        min_score = df['Score'].min()
+        max_score = df['Score'].max()
+
+        threshold = np.linspace(min_score, max_score, n_points)
+
+        eff = []
+
+        n_sig = sum(df['y'])
+
+        for t in threshold:
+            df_selected = df.query('Score>@t')['y']
+            sig_selected = np.sum(df_selected)
+            eff.append(sig_selected / n_sig)
+
+        cent_range = [self.cent_class[cent_class][0], self.cent_class[cent_class][1]]
+
+        pu.plot_bdt_eff(threshold, eff, self.mode, ct_range, pt_range, cent_range)
+
+        return eff
+
+    def significance_scan(
+            self, model, training_columns, ct_range=[0, 100],
+            pt_range=[2, 3],
+            cent_class=1,  custom=True, n_points=100):
+        ct_min = ct_range[0]
+        ct_max = ct_range[1]
+        pt_min = pt_range[0]
+        pt_max = pt_range[1]
+
+        cent_min = self.cent_class[cent_class][0]
+        cent_max = self.cent_class[cent_class][1]
+
+        data_range_array = [ct_min, ct_max, pt_min, pt_max, cent_min, cent_max]
+        # data_range = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(
+        #     ct_min, ct_max, pt_min, pt_max, cent_min, cent_max)
+
+        dtest = xgb.DMatrix(data=(self.test_set[training_columns]))
+        dbkg = xgb.DMatrix(data=(self.df_data[training_columns]))
+
+        y_pred = model.predict(dtest, output_margin=True)
+        y_pred_bkg = model.predict(dbkg, output_margin=True)
+
+        self.test_set.eval('Score = @y_pred', inplace=True)
+        self.test_set.eval('y = @self.y_test', inplace=True)
+        self.df_data.eval('Score = @y_pred_bkg', inplace=True)
+
+        # compute the bdt score range in which study bdt efficiency and significance
+        min_score = self.test_set['Score'].min()
+        max_score = self.test_set['Score'].max()
+        threshold_space = np.linspace(min_score, max_score, n_points)
+
+        bdt_efficiency = self.bdt_efficiency(self.test_set, ct_range, pt_range, cent_class, n_points)
+
+        expected_signal = []
+        significance = []
+        significance_error = []
+        significance_custom = []
+        significance_custom_error = []
+        hyp_lifetime = 206
+
+        for index, tsd in enumerate(threshold_space):
+            df_selected = self.df_data.query('Score>@tsd')
+
+            counts, bins = np.histogram(df_selected['InvMass'], bins=30, range=[2.96, 3.05])
+            bin_centers = 0.5 * (bins[1:] + bins[:-1])
+
+            side_map = (bin_centers < 2.9923 - 3 * 0.0025) + (bin_centers > 2.9923 + 3 * 0.0025)
+            mass_map = np.logical_not(side_map)
+            bins_side = bin_centers[side_map]
+            counts_side = counts[side_map]
+
+            h, residuals, _, _, _ = np.polyfit(bins_side, counts_side, 2, full=True)
+            y = np.polyval(h, bins_side)
+
+            eff_presel = self.preselection_efficiency(ct_range, pt_range, cent_class)
+
+            exp_signal_ctint = au.expected_signal(
+                self.n_events[cent_class],
+                eff_presel, bdt_efficiency[index],
+                pt_range, cent_class)
+            ctrange_correction = (au.expo(ct_min, hyp_lifetime)-au.expo(ct_max, hyp_lifetime)
+                                  ) / (ct_max - ct_min) * hyp_lifetime * 0.029979245800
+
+            exp_signal = exp_signal_ctint * ctrange_correction
+            exp_background = sum(np.polyval(h, bin_centers[mass_map]))
+
+            expected_signal.append(exp_signal)
+
+            sig = exp_signal / np.sqrt(exp_signal + exp_background + 1e-10)
+            sig_error = au.significance_error(exp_signal, exp_background)
+
+            significance.append(sig)
+            significance_error.append(sig_error)
+
+            sig_custom = sig * bdt_efficiency[index]
+            sig_custom_error = sig_error * bdt_efficiency[index]
+
+            significance_custom.append(sig_custom)
+            significance_custom_error.append(sig_custom_error)
+
+        if custom:
+            max_index = np.argmax(significance_custom)
+            max_score = threshold_space[max_index]
+
+            pu.plot_significance_scan(
+                max_index, significance_custom, significance_custom_error, expected_signal, df_selected,
+                threshold_space, data_range_array, bin_centers, self.n_events[cent_class], custom=True)
+
+        else:
+            max_index = np.argmax(significance)
+            max_score = threshold_space[max_index]
+
+            pu.plot_significance_scan(max_index, significance, significance_error, expected_signal,
+                                      df_selected, threshold_space, data_range_array, bin_centers, self.n_events[cent_class], self.mode, custom=False)
+
+        bdt_eff_max_score = bdt_efficiency[max_index]
+
+        return max_score, bdt_eff_max_score
