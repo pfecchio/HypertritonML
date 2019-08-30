@@ -1,9 +1,12 @@
 #!/bin/bash
-HYPERML_DATA="$HOME/HypertritonAnalysis/Trees"
-HYPERML_TABLES="$HOME/HypertritonAnalysis/Tables"
-HYPERML_FIGURES="$HOME/HypertritonAnalysis/Figures"
-HYPERML_MODELS="$HOME/HypertritonAnalysis/Models"
-HYPERML_CODE="$HOME/HypertritonML"
+
+[ -z "$ALICE_PHYSICS" ] && echo "AliPhysics environment required! Load it before sourcing this." && return
+
+HYPERML_DATA="$PWD/Trees"
+HYPERML_TABLES="$PWD/Tables"
+HYPERML_FIGURES="$PWD/Figures"
+HYPERML_MODELS="$PWD/Models"
+HYPERML_CODE="$PWD"
 HYPERML_COMMON="$HYPERML_CODE/common"
 
 export PYTHONPATH="${PYTHONPATH}:$HYPERML_COMMON/TrainingAndTesting:$HYPERML_COMMON/Utils"
@@ -35,9 +38,9 @@ if [ $BODY_2 -eq 1 ]; then
       [ ! -d "$HYPERML_TABLES_2" ] && mkdir -p $HYPERML_TABLES_2
       [ ! -d "$HYPERML_FIGURES_2" ] && mkdir -p $HYPERML_FIGURES_2
       [ ! -d "$HYPERML_MODELS_2" ] && mkdir -p $HYPERML_MODELS_2
-      [ ! -f "$HYPERML_DATA_2/HyperTritonTree_18q.root"  ] &&alien:/alice/cern.ch/user/f/fmazzasc/Trees/HyperTritonTree_18q.root  $HYPERML_DATA_2/HyperTritonTree_18q.root
-      [ ! -f "$HYPERML_DATA_2/HyperTritonTree_18r.root"  ] &&alien:/alice/cern.ch/user/f/fmazzasc/Trees/HyperTritonTree_18r.root  $HYPERML_DATA_2/HyperTritonTree_18r.root
-      [ ! -f "$HYPERML_DATA_2/HyperTritonTree_19d2.root" ] &&alien:/alice/cern.ch/user/f/fmazzasc/Trees/HyperTritonTree_19d2.root $HYPERML_DATA_2/HyperTritonTree_19d2.root
+      [ ! -f "$HYPERML_DATA_2/HyperTritonTree_18q.root"  ] && alien_cp alien:/alice/cern.ch/user/f/fmazzasc/Trees/HyperTritonTree_18q.root  $HYPERML_DATA_2/HyperTritonTree_18q.root
+      [ ! -f "$HYPERML_DATA_2/HyperTritonTree_18r.root"  ] && alien_cp alien:/alice/cern.ch/user/f/fmazzasc/Trees/HyperTritonTree_18r.root  $HYPERML_DATA_2/HyperTritonTree_18r.root
+      [ ! -f "$HYPERML_DATA_2/HyperTritonTree_19d2.root" ] && alien_cp alien:/alice/cern.ch/user/f/fmazzasc/Trees/HyperTritonTree_19d2.root $HYPERML_DATA_2/HyperTritonTree_19d2.root
 fi
 
 if [ $BODY_3 -eq 1 ]; then    
