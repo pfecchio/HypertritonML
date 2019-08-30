@@ -105,3 +105,9 @@ venv.bak/
 
 #vscode 
 .vscode/*
+
+# Analysis artefacts
+Models/
+Figures/
+Tables/
+Trees/
