@@ -19,10 +19,10 @@ void GenerateTableFromData() {
   string dataDir  = getenv("HYPERML_DATA_3");
   string tableDir = getenv("HYPERML_TABLES_3");
 
-  string inFileName = "HyperTritonTree_18q.root";
+  string inFileName = "HyperTritonTree_18qr.root";
   string inFileArg  = dataDir + "/" + inFileName;
 
-  string outFileName = "HyperTritonTable_18q.root";
+  string outFileName = "HyperTritonTable_18qr.root";
   string outFileArg  = tableDir + "/" + outFileName;
 
   // read the tree
@@ -37,7 +37,7 @@ void GenerateTableFromData() {
   Table3 table("BackgroundTable", "BackgroundTable");
 
   // info for progress bar
-  int n_entries = 13611290;
+  int n_entries = 22084810;
 
   // progress bar
   boost::progress_display show_progress(n_entries);

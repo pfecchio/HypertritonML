@@ -18,8 +18,9 @@ from sklearn.metrics import auc, roc_curve
 def plot_output_train_test(
         clf, x_train, y_train, x_test, y_test, ct_range=[0, 100],
         pt_range=[0, 100],
-        cent_range=[0, 100], model='xgb', features=None, raw=True, bins=80, figsize=(7.5, 5),
-        path='', location='best', **kwds):
+        cent_class=[0, 100],
+        model='xgb', features=None, raw=True, bins=80, figsize=(7.5, 5),
+        location='best', mode=3, **kwds):
     '''
     model could be 'xgb' or 'sklearn'
     '''
@@ -71,14 +72,136 @@ def plot_output_train_test(
     # aliceleg = r'$\mathrm{\ \ \ \mathbf{ALICE \ Simulation}}$' + '\n' + r'Pb-Pb $\sqrt{s_{\mathrm{NN}}}$ = 5.02 TeV      '
     # plt.text(-14, 5, aliceleg, size='x-large')
 
-    fig_name = 'BDTscorePDF_ct_{:.2f}_{:.2f}_pT_{:.2f}_{:.2f}_cen_{:.2f}_{:.2f}'.format(
-        ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_range[0], cent_range[1])
+    fig_score_path = os.environ['HYPERML_FIGURES_{}'.format(mode)]+'/TrainTest'
+    if not os.path.exists(fig_score_path):
+        os.makedirs(fig_score_path)
 
-    plt.savefig('{}/{}.pdf'.format(path, fig_name), dpi=500, transparent=True)
+    fig_name = 'BDTscorePDF_ct{:.1f}{:.1f}_pT{:.1f}{:.1f}_cen{:.1f}{:.1f}'.format(
+        ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1])
+
+    plt.savefig('{}/{}.pdf'.format(fig_score_path, fig_name), dpi=500, transparent=True)
     plt.close()
 
 
-def plot_bdt_eff(threshold, eff_sig, mode, ct_range=[0, 100], pt_range=[0, 100], cent_range=[0, 100]):
+def plot_distr(df, column=None, figsize=None, bins=50, fig_name='features.pdf', mode=3, **kwds):
+    """Build a DataFrame and create two dataset for signal and bkg
+
+    Draw histogram of the DataFrame's series comparing the distribution
+    in `data1` to `data2`.
+
+    X: data vector
+    y: class vector
+    column: string or sequence
+        If passed, will be used to limit data to a subset of columns
+    figsize : tuple
+        The size of the figure to create in inches by default
+    bins: integer, default 10
+        Number of histogram bins to be used
+    kwds : other plotting keyword arguments
+        To be passed to hist function
+    """
+
+    data1 = df[df.y < 0.5]
+    data2 = df[df.y > 0.5]
+
+    if column is not None:
+        if not isinstance(column, (list, np.ndarray, Index)):
+            column = [column]
+        data1 = data1[column]
+        data2 = data2[column]
+
+    if figsize is None:
+        figsize = [15, 10]
+
+    axes = data1.hist(column=column, color='blue', alpha=0.5, bins=bins, figsize=figsize,
+                      label='Background', density=True, grid=False, log=True,  **kwds)
+    axes = axes.flatten()
+    axes = axes[:len(column)]
+    data2.hist(ax=axes, column=column, color='red', alpha=0.5, bins=bins, label='Signal',
+               density=True, grid=False, log=True, **kwds)[0].legend()
+    for a in axes:
+        a.set_ylabel('Counts (arb. units)')
+
+    fig_features_path = os.environ['HYPERML_FIGURES_{}'.format(mode)]+'/TrainTest'
+    if not os.path.exists(fig_features_path):
+        os.makedirs(fig_features_path)
+
+    plt.savefig('{}/{}.pdf'.format(fig_features_path, fig_name), dpi=500, transparent=True)
+    plt.close()
+
+
+def plot_corr(df, columns, mode=3, **kwds):
+    """Calculate pairwise correlation between features.
+    Extra arguments are passed on to DataFrame.corr()
+    """
+    col = columns+['y']
+    df = df[col]
+
+    data_sig = df[df.y > 0.5].drop('y', 1)
+    data_bkg = df[df.y < 0.5].drop('y', 1)
+
+    corrmat_sig = data_sig.corr(**kwds)
+    corrmat_bkg = data_bkg.corr(**kwds)
+
+    t = r'$\mathrm{\ \ \ ALICE \ Simulation}$ Pb-Pb $\sqrt{s_{\mathrm{NN}}}$ = 5.02 TeV'
+    fig = plt.figure(figsize=(20,10))
+    # plt.title(t,y=1.08,fontsize=16)
+    plt.suptitle(t, fontsize=18, ha='center')
+    grid = ImageGrid(fig, 111, nrows_ncols=(1, 2), axes_pad=0.15, share_all=True,
+                     cbar_location='right', cbar_mode='single', cbar_size='7%', cbar_pad=0.15)
+
+    opts = {'cmap': plt.get_cmap('coolwarm'), 'vmin': -1, 'vmax': +1, 'snap': True}
+
+    ax1 = grid[0]
+    ax2 = grid[1]
+    heatmap1 = ax1.pcolor(corrmat_sig, **opts)
+    heatmap2 = ax2.pcolor(corrmat_bkg, **opts)
+    ax1.set_title('Signal', fontsize=14, fontweight='bold')
+    ax2.set_title('Background', fontsize=14, fontweight='bold')
+
+    lab = corrmat_sig.columns.values
+    # lab = [r'$\it{M}_{\mathrm{He}^{3}\pi^{-}}$', r'n$\sigma_{\mathrm{TPC}}\ \mathrm{He}^{3}$',
+    #        r'$\mathrm{V}_{0} \ p_{\mathrm{T}}\ (\mathrm{GeV}/c)$', r'n$_{cluster\ \mathrm{TPC}}\ \mathrm{He}^{3}$',
+    #        r'$\alpha$-armenteros', r'L/$p$ ($\frac{cm}{\mathrm{Gev}/c}$)',
+    #        r'$\mathrm{DCA}_{\mathrm{V_{0}\ tracks}} ($cm$)$', r'$\cos{(\theta_{pointing})}$']
+    for ax in (ax1,):
+        # shift location of ticks to center of the bins
+        ax.set_xticks(np.arange(len(lab)), minor=False)
+        ax.set_yticks(np.arange(len(lab)), minor=False)
+        ax.set_xticklabels(lab, minor=False, ha='left', rotation=90, fontsize=10)
+        ax.set_yticklabels(lab, minor=False, va='bottom', fontsize=10)
+        ax.tick_params(axis='both', which='both', direction="in")
+
+        for tick in ax.xaxis.get_minor_ticks():
+            tick.tick1line.set_markersize(0)
+            tick.tick2line.set_markersize(0)
+            tick.label1.set_horizontalalignment('center')
+
+    for ax in (ax2,):
+        # shift location of ticks to center of the bins
+        ax.set_xticks(np.arange(len(lab)), minor=False)
+        ax.set_yticks(np.arange(len(lab)), minor=False)
+        ax.set_xticklabels(lab, minor=False, ha='left', rotation=90, fontsize=10)
+        ax.tick_params(axis='both', which='both', direction="in")
+        for tick in ax.xaxis.get_minor_ticks():
+            tick.tick1line.set_markersize(0)
+            tick.tick2line.set_markersize(0)
+            tick.label1.set_horizontalalignment('center')
+
+    ax1.cax.colorbar(heatmap1)
+    ax1.cax.toggle_label(True)
+
+    fig_corr_path = os.environ['HYPERML_FIGURES_{}'.format(mode)]+'/TrainTest'
+    if not os.path.exists(fig_corr_path):
+        os.makedirs(fig_corr_path)
+
+    fig_name = 'correlations.pdf'
+
+    plt.savefig('{}/{}.pdf'.format(fig_corr_path, fig_name), dpi=500, transparent=True)
+    plt.close()
+
+
+def plot_bdt_eff(threshold, eff_sig, mode, ct_range=[0, 100], pt_range=[0, 100], cent_class=[0, 100]):
     plt.plot(threshold, eff_sig, 'r.', label='Signal efficiency')
     plt.legend()
     plt.xlabel('BDT Score')
@@ -90,8 +213,8 @@ def plot_bdt_eff(threshold, eff_sig, mode, ct_range=[0, 100], pt_range=[0, 100],
     if not os.path.exists(fig_eff_path):
         os.makedirs(fig_eff_path)
 
-    fig_name = '/BDTeffct_{:.2f}_{:.2f}_pT_{:.2f}_{:.2f}_cen_{:.2f}_{:.2f}.pdf'.format(
-        ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_range[0], cent_range[1])
+    fig_name = '/BDTeffct{:.1f}{:.1f}_pT{:.1f}{:.1f}_cen{:.1f}{:.1f}.pdf'.format(
+        ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1])
     plt.savefig(fig_eff_path + fig_name)
     plt.close()
 
@@ -103,25 +226,25 @@ def plot_significance_scan(
     if custom:
         label = label + ' x Efficiency'
 
-    max_significance = significance[max_index]
-    raw_yield = expected_signal[max_index]
-    max_score = score_list[max_index]
+    # max_significance = significance[max_index]
+    # raw_yield = expected_signal[max_index]
+    # max_score = score_list[max_index]
 
-    selected_bkg = bkg_df.query('Score>@max_score')
+    # selected_bkg = bkg_df.query('Score>@max_score')
 
-    signal_counts_norm = norm.pdf(bin_cent, loc=2.992, scale=0.0025)
-    signal_counts = raw_yield * signal_counts_norm / sum(signal_counts_norm)
+    # signal_counts_norm = norm.pdf(bin_cent, loc=2.992, scale=0.0025)
+    # signal_counts = raw_yield * signal_counts_norm / sum(signal_counts_norm)
 
-    bkg_side_counts, bins = np.histogram(selected_bkg['InvMass'], bins=30, range=[2.96, 3.05])
+    # bkg_side_counts, bins = np.histogram(selected_bkg['InvMass'], bins=30, range=[2.96, 3.05])
 
-    bin_centers = 0.5 * (bins[1:] + bins[:-1])
-    side_map = (bin_centers < 2.9923 - 3 * 0.0025) + (bin_centers > 2.9923 + 3 * 0.0025)
-    bins_side = bin_centers[side_map]
-    mass_map = np.logical_not(side_map)
+    # bin_centers = 0.5 * (bins[1:] + bins[:-1])
+    # side_map = (bin_centers < 2.9923 - 3 * 0.0025) + (bin_centers > 2.9923 + 3 * 0.0025)
+    # bins_side = bin_centers[side_map]
+    # mass_map = np.logical_not(side_map)
 
-    bkg_roi_shape = np.polyfit(bins_side, bkg_side_counts[side_map], 2)
-    bkg_roi_counts = np.polyval(bkg_roi_shape, bin_centers)
-    tot_counts = bkg_roi_counts + signal_counts
+    # bkg_roi_shape = np.polyfit(bins_side, bkg_side_counts[side_map], 2)
+    # bkg_roi_counts = np.polyval(bkg_roi_shape, bin_centers)
+    # tot_counts = bkg_roi_counts + signal_counts
 
     fig, axs = plt.subplots(1, 2, figsize=(12, 4))
 
@@ -140,32 +263,32 @@ def plot_significance_scan(
     axs[0].fill_between(score_list, low_limit, up_limit, facecolor='deepskyblue', label=r'$ \pm 1\sigma$')
     axs[0].grid()
     axs[0].legend(loc='upper left')
-    plt.suptitle(r'%1.f $ \leq \rm{p}_{T} \leq $ %1.f, Cut Score = %0.2f, Significance/Events = %0.4f$x10^{-4}$, %s = %0.2f , Raw yield = %0.2f' % (
-        data_range_array[2], data_range_array[3], max_score, (max_significance / np.sqrt(n_ev) * 1e4), label, max_significance, raw_yield))
+    # plt.suptitle(r'%1.f $ \leq \rm{p}_{T} \leq $ %1.f, Cut Score = %0.2f, Significance/Events = %0.4f$x10^{-4}$, %s = %0.2f , Raw yield = %0.2f' % (
+    #     data_range_array[2], data_range_array[3], max_score, (max_significance / np.sqrt(n_ev) * 1e4), label, max_significance, raw_yield))
 
-    bkg_side_error = np.sqrt(bkg_side_counts[side_map])
-    tot_counts_error = np.sqrt(tot_counts[mass_map])
-    mass_map = bin_centers[mass_map]
-    bin_centers_map = bin_centers[side_map]
-    bkg_roi_counts_map = bkg_roi_counts[side_map]
+    # bkg_side_error = np.sqrt(bkg_side_counts[side_map])
+    # tot_counts_error = np.sqrt(tot_counts[mass_map])
+    # mass_map = bin_centers[mass_map]
+    # bin_centers_map = bin_centers[side_map]
+    # bkg_roi_counts_map = bkg_roi_counts[side_map]
 
-    axs[1].errorbar(bin_centers_map, bkg_side_error, yerr=bkg_side_error,
-                    fmt='.', ecolor='k', color='b', elinewidth=1., label='Data')
-    axs[1].errorbar(mass_map, tot_counts_error, yerr=tot_counts_error,
-                    fmt='.', ecolor='k', color='r', elinewidth=1., label='Pseudodata')
-    axs[1].plot(bin_centers_map, bkg_roi_counts_map, 'g-', label='Background fit')
+    # axs[1].errorbar(bin_centers_map, bkg_side_error, yerr=bkg_side_error,
+    #                 fmt='.', ecolor='k', color='b', elinewidth=1., label='Data')
+    # axs[1].errorbar(mass_map, tot_counts_error, yerr=tot_counts_error,
+    #                 fmt='.', ecolor='k', color='r', elinewidth=1., label='Pseudodata')
+    # axs[1].plot(bin_centers_map, bkg_roi_counts_map, 'g-', label='Background fit')
 
-    x = np.linspace(2.9923 - 3 * 0.0025, 2.9923 + 3 * 0.0025, 1000)
-    gauss_signal_counts = norm.pdf(x, loc=2.992, scale=0.0025)
-    gauss_signal_counts = (raw_yield / sum(signal_counts_norm)) * gauss_signal_counts + np.polyval(bkg_roi_shape, x)
+    # x = np.linspace(2.9923 - 3 * 0.0025, 2.9923 + 3 * 0.0025, 1000)
+    # gauss_signal_counts = norm.pdf(x, loc=2.992, scale=0.0025)
+    # gauss_signal_counts = (raw_yield / sum(signal_counts_norm)) * gauss_signal_counts + np.polyval(bkg_roi_shape, x)
 
-    axs[1].plot(x, gauss_signal_counts, 'y', color='orange', label='Signal model (Gauss)')
-    axs[1].set_xlabel(r'$m_{\ ^{3}He+\pi^{-}}$')
-    axs[1].set_ylabel(r'Events /  $3.6\ \rm{MeV}/c^{2}$')
-    axs[1].tick_params(axis='x', direction='in')
-    axs[1].tick_params(axis='y', direction='in')
-    axs[1].legend(loc=(0.37, 0.47))
-    plt.ylim(bottom=0)
+    # axs[1].plot(x, gauss_signal_counts, 'y', color='orange', label='Signal model (Gauss)')
+    # axs[1].set_xlabel(r'$m_{\ ^{3}He+\pi^{-}}$')
+    # axs[1].set_ylabel(r'Events /  $3.6\ \rm{MeV}/c^{2}$')
+    # axs[1].tick_params(axis='x', direction='in')
+    # axs[1].tick_params(axis='y', direction='in')
+    # axs[1].legend(loc=(0.37, 0.47))
+    # plt.ylim(bottom=0)
 
     # text = '\n'.join(
     #     r'%1.f GeV/c $ \leq \rm{p}_{T} < $ %1.f GeV/c ' % (data_range_array[0], data_range_array[1]),
@@ -175,7 +298,7 @@ def plot_significance_scan(
 
     # axs[1].text(0.37, 0.95, text, transform=axs[1].transAxes, verticalalignment='top', bbox=props)
 
-    fig_name = 'Significance_ct_{:.2f}_{:.2f}_pT_{:.2f}_{:.2f}_Cen_{:.2f}_{:.2f}.pdf'.format(
+    fig_name = 'Significance_ct{:.1f}{:.1f}_pT{:.1f}{:.1f}_cen{:.1f}{:.1f}.pdf'.format(
         data_range_array[0],
         data_range_array[1],
         data_range_array[2],
@@ -187,12 +310,5 @@ def plot_significance_scan(
     if not os.path.exists(fig_sig_path):
         os.makedirs(fig_sig_path)
 
-    fig_name = '/BDTeffct_{:.2f}_{:.2f}_pT_{:.2f}_{:.2f}_cen_{:.2f}_{:.2f}.pdf'.format(
-        data_range_array[0],
-        data_range_array[1],
-        data_range_array[2],
-        data_range_array[3],
-        data_range_array[4],
-        data_range_array[5])
-    plt.savefig(fig_sig_path + fig_name)
+    plt.savefig(fig_sig_path + '/' + fig_name)
     plt.close()
