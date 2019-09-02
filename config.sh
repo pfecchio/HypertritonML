@@ -10,7 +10,7 @@ HYPERML_CODE="$PWD"
 HYPERML_COMMON="$HYPERML_CODE/common"
 
 export PYTHONPATH="${PYTHONPATH}:$HYPERML_COMMON/TrainingAndTesting:$HYPERML_COMMON/Utils"
-export HYPERML_UTILS="$HOME/HypertritonAnalysis/Utils"
+export HYPERML_UTILS="$PWD/Utils"
 
 BODY_2=0
 BODY_3=0

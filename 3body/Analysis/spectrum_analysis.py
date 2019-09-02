@@ -73,6 +73,10 @@ PT_BINS = [[1, 2], [2, 3], [3, 4], [4, 5], [5, 9]]
 # CT_BINS = [[0,2],[2,4],[4,6],[6,8],[8,10],[10,14],[14,18],[18,23],[23,28]]
 CT_BINS = [0, 100]
 
+# .txt file for writing the 98% eff BDT score
+models_path = os.environ['HYPERML_MODELS_3']
+eff_file = open('{}/eff98_score.txt'.format(models_path), 'w+')
+
 # start timer for performance evaluation
 start_time = time.time()
 
@@ -86,46 +90,44 @@ for cclass in CENT_CLASS:
 
         # data[0]=train_set, data[1]=y_train, data[2]=test_set, data[3]=y_test
         data = analysis.prepare_dataframe(
-            TRAINING_COLUMNS, cclass, pt_range=ptbin, bkg_reduct=True, bkg_factor=10, test=True,)
+            TRAINING_COLUMNS, cclass, pt_range=ptbin, bkg_reduct=True, bkg_factor=10, test=True
+            )
 
         # train and test the model with some performance plot
         model = analysis.train_test_model(
             data, TRAINING_COLUMNS, XGBOOST_PARAMS, hyperparams=HYPERPARAMS_RANGE, cent_class=cclass, pt_range=ptbin,
-            optimize=False, num_rounds=5000, es_rounds=20)
+            optimize=False, num_rounds=500, es_rounds=20)
 
         print('--- model trained in {:.4f} minutes ---\n'.format((time.time() - part_time) / 60))
 
-        # TODO: mettere il ct_range nel nome del modello salvato
         analysis.save_model(model, ct_range=CT_BINS, cent_class=cclass, pt_range=ptbin)
         print('model saved\n')
 
-        dtest = xgb.DMatrix(data=(analysis.test_set[TRAINING_COLUMNS]))
+        dtest = xgb.DMatrix(data=(data[2][TRAINING_COLUMNS]))
 
         y_pred = model.predict(dtest, output_margin=True)
 
-        analysis.test_set.eval('Score = @y_pred', inplace=True)
-        analysis.test_set.eval('y = @analysis.y_test', inplace=True)
+        data[2].eval('Score = @y_pred', inplace=True)
+        data[2].eval('y = @data[3]', inplace=True)
 
         efficiency, threshold = analysis.bdt_efficiency(
-            analysis.test_set, pt_range=ptbin, cent_class=cclass, n_points=200)
+            data[2], pt_range=ptbin, cent_class=cclass, n_points=200)
 
         eff_tsd = tuple(zip(threshold, efficiency))
 
         # print on a file the score closest to efficiency 0.98
-        models_path = os.environ['HYPERML_MODELS_3']
+        for tsd, eff in reversed(eff_tsd):
+            if eff > 0.98:
+                score_eff_string = 'eff: {:>5.3f}    score: {:>8.5f}'.format(eff, tsd)
+                eff_file.write(score_eff_string)
+                print(score_eff_string)
+                break
 
-        # TODO fai stampare su file lo score che fa 98 % di efficienza
-
-        # with open('{}/eff98_score,txt'.format(models_path), 'w') as score_file:
-        #     for tsd, eff in eff_tsd:
-        #         if eff <= 0.9:
-        #             score_file.write('eff: {:>5}    score: {:>10}'.format(eff, tsd))
-        #             print('Score for Eff {:.3f}: {:.5f}'.format(eff, tsd))
-        #             break
-
-        # print execution time to performance evaluation
+eff_file.close()
+# print execution time to performance evaluation
 print('')
-print('--- {:.4f} minutes ---'.format((time.time() - start_time)/60))
+print('--- {:.4f} minutes ---'.format((time.time() - start_time) / 60))
+
 
 # model = analysis.train_test_model(
 #     TRAINING_COLUMNS, XGBOOST_PARAMS, hyperparams=HYPERPARAMS_RANGE, cent_class=CENT_CLASS[1], pt_range=PT_BINS[1],
