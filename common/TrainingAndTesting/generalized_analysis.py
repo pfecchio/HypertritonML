@@ -24,7 +24,7 @@ class GeneralizedAnalysis:
     def __init__(self, mode, mc_file_name, data_file_name, cut_presel=0, bkg_selection=0):
         self.mode = mode
 
-        self.cent_class = [[0, 10], [10, 30], [30, 50], [50, 90]]
+        cent_class = [[0, 10], [10, 30], [30, 50], [50, 90]]
         self.n_events = [0, 0, 0, 0]
 
         if mode == 3:
@@ -50,13 +50,13 @@ class GeneralizedAnalysis:
         hist_centrality = uproot.open('{}/EventCounter.root'.format(utils_file_path))['fCentrality']
 
         for index in range(1, len(hist_centrality)):
-            if index <= self.cent_class[0][1]:
+            if index <= cent_class[0][1]:
                 self.n_events[0] = hist_centrality[index] + self.n_events[0]
-            elif index <= self.cent_class[1][1]:
+            elif index <= cent_class[1][1]:
                 self.n_events[1] = hist_centrality[index] + self.n_events[1]
-            elif index <= self.cent_class[2][1]:
+            elif index <= cent_class[2][1]:
                 self.n_events[2] = hist_centrality[index] + self.n_events[2]
-            elif index <= self.cent_class[3][1]:
+            elif index <= cent_class[3][1]:
                 self.n_events[3] = hist_centrality[index] + self.n_events[3]
 
     # function to prepare the dataframe for the training and testing
@@ -91,14 +91,14 @@ class GeneralizedAnalysis:
 
     # function to compute the preselection cuts efficiency
 
-    def preselection_efficiency(self, ct_range=[0, 100], pt_range=[0, 12], cent_class=0):
+    def preselection_efficiency(self, ct_range=[0, 100], pt_range=[0, 12], cent_class=[0,100]):
         ct_min = ct_range[0]
         ct_max = ct_range[1]
         pt_min = pt_range[0]
         pt_max = pt_range[1]
 
-        cent_min = self.cent_class[cent_class][0]
-        cent_max = self.cent_class[cent_class][1]
+        cent_min = cent_class[0]
+        cent_max = cent_class[1]
 
         total_cut = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(
             ct_min, ct_max, pt_min, pt_max, cent_min, cent_max)
@@ -262,14 +262,14 @@ class GeneralizedAnalysis:
     def significance_scan(
             self, test_data, model, training_columns, ct_range=[0, 100],
             pt_range=[2, 3],
-            cent_class=1,  custom=True, n_points=100):
+            cent_class=[0,100],  custom=True, n_points=100):
         ct_min = ct_range[0]
         ct_max = ct_range[1]
         pt_min = pt_range[0]
         pt_max = pt_range[1]
 
-        cent_min = self.cent_class[cent_class][0]
-        cent_max = self.cent_class[cent_class][1]
+        cent_min = cent_class[0]
+        cent_max = cent_class[1]
 
         data_range = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(
             ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1])
