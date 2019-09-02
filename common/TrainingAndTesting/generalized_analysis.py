@@ -46,8 +46,7 @@ class GeneralizedAnalysis:
         if not bkg_selection == 0:
             self.df_signal = self.df_signal.query(cut_presel)
 
-        utils_file_path = os.environ['HYPERML_UTILS']
-        hist_centrality = uproot.open('{}/EventCounter.root'.format(utils_file_path))['fCentrality']
+        hist_centrality = uproot.open(data_file_name)['EventCounter']
 
         for index in range(1, len(hist_centrality)):
             if index <= cent_class[0][1]:
@@ -204,9 +203,9 @@ class GeneralizedAnalysis:
         max_params = {**max_params, **reg_params}
 
         # final training with the optimized hyperparams
-        print('Trainig the final model: ...', end='\r')
+        print('Training the final model: ...', end='\r')
         model = xgb.train(max_params, dtrain, num_boost_round=best_numrounds)
-        print('Trainig the final model: Done!\n')
+        print('Training the final model: Done!\n')
 
         # BDT output distributions plot
         fig_path = os.environ['HYPERML_FIGURES_{}'.format(self.mode)] + '/TrainTest'
