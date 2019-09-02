@@ -46,20 +46,20 @@ def plot_output_train_test(
 
     plt.figure(figsize=figsize)
     plt.hist(prediction[1], color='b', alpha=0.5, range=low_high, bins=bins,
-             histtype='stepfilled', density=True, label='Signal pdf Training Set')
-    plt.hist(prediction[0], color='r', alpha=0.5, range=low_high, bins=bins,
              histtype='stepfilled', density=True, label='Background pdf Training Set')
+    plt.hist(prediction[0], color='r', alpha=0.5, range=low_high, bins=bins,
+             histtype='stepfilled', density=True, label='Signal pdf Training Set')
 
     hist, bins = np.histogram(prediction[2], bins=bins, range=low_high, density=True)
     scale = len(prediction[2]) / sum(hist)
     err = np.sqrt(hist * scale) / scale
     center = (bins[:-1] + bins[1:]) / 2
-    plt.errorbar(center, hist, yerr=err, fmt='o', c='r', label='Signal pdf Test Set')
+    plt.errorbar(center, hist, yerr=err, fmt='o', c='r', label='Background pdf Test Set')
 
     hist, bins = np.histogram(prediction[3], bins=bins, range=low_high, density=True)
     scale = len(prediction[2]) / sum(hist)
     err = np.sqrt(hist * scale) / scale
-    plt.errorbar(center, hist, yerr=err, fmt='o', c='b', label='Background pdf Test Set')
+    plt.errorbar(center, hist, yerr=err, fmt='o', c='b', label='Signal pdf Test Set')
 
     # plt.gcf().subplots_adjust(left=0.14)
     plt.xlabel('BDT output', fontsize=13, ha='right', position=(1, 20))
