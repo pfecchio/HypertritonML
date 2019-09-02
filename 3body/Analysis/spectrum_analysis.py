@@ -42,69 +42,100 @@ HYPERPARAMS_RANGE = {
 }
 
 # # features
-# TRAINING_COLUMNS = [
-#     'HypCandPt', 'PtDeu', 'PtP', 'PtPi', 'nClsTPCDeu', 'nClsTPCP', 'nClsTPCPi', 'nClsITSDeu', 'nClsITSP',
-#     'nClsITSPi', 'nSigmaTPCDeu', 'nSigmaTPCP', 'nSigmaTPCPi', 'nSigmaTOFDeu', 'nSigmaTOFP', 'nSigmaTOFPi',
-#     'trackChi2Deu', 'trackChi2P', 'trackChi2Pi', 'vertexChi2', 'DCA2xyPrimaryVtxDeu', 'DCAxyPrimaryVtxP',
-#     'DCAxyPrimaryVtxPi', 'DCAzPrimaryVtxDeu', 'DCAzPrimaryVtxP', 'DCAzPrimaryVtxPi', 'DCAPrimaryVtxDeu',
-#     'DCAPrimaryVtxP', 'DCAPrimaryVtxPi', 'DCAxyDecayVtxDeu', 'DCAxyDecayVtxP', 'DCAxyDecayVtxPi', 'DCAzDecayVtxDeu',
-#     'DCAzDecayVtxP', 'DCAzDecayVtxPi', 'DCADecayVtxDeu', 'DCADecayVtxP', 'DCADecayVtxPi', 'TrackDistDeuP',
-#     'TrackDistPPi', 'TrackDistDeuPi', 'CosPA', 'DistOverP']  # 43
-
-# features
 TRAINING_COLUMNS = [
-    'PtDeu', 'PtP', 'PtPi', 'nClsTPCDeu', 'nClsITSDeu', 'nClsITSPi', 'nSigmaTPCDeu', 'nSigmaTPCP', 'nSigmaTPCPi',
-    'trackChi2Deu', 'trackChi2P', 'DCA2xyPrimaryVtxDeu', 'DCAxyPrimaryVtxP', 'DCAxyPrimaryVtxPi', 'DCAzPrimaryVtxDeu',
-    'DCAzPrimaryVtxP', 'DCAzPrimaryVtxPi', 'DCAPrimaryVtxDeu', 'DCAPrimaryVtxP', 'DCAPrimaryVtxPi', 'DCAxyDecayVtxDeu',
-    'DCAxyDecayVtxP', 'DCAxyDecayVtxPi', 'DCAzDecayVtxDeu', 'DCAzDecayVtxP', 'DCAzDecayVtxPi', 'DCADecayVtxDeu',
-    'DCADecayVtxP', 'DCADecayVtxPi', 'TrackDistDeuP', 'TrackDistPPi', 'TrackDistDeuPi', 'CosPA']  # 33
+    'PtDeu', 'PtP', 'PtPi', 'nClsTPCDeu', 'nClsTPCP', 'nClsTPCPi', 'nClsITSDeu', 'nClsITSP', 'nClsITSPi',
+    'nSigmaTPCDeu', 'nSigmaTPCP', 'nSigmaTPCPi', 'nSigmaTOFDeu', 'nSigmaTOFP', 'nSigmaTOFPi', 'DCA2xyPrimaryVtxDeu',
+    'DCAxyPrimaryVtxP', 'DCAxyPrimaryVtxPi', 'DCAzPrimaryVtxDeu', 'DCAzPrimaryVtxP', 'DCAzPrimaryVtxPi',
+    'DCAPrimaryVtxDeu', 'DCAPrimaryVtxP', 'DCAPrimaryVtxPi', 'DCAxyDecayVtxDeu', 'DCAxyDecayVtxP', 'DCAxyDecayVtxPi',
+    'DCAzDecayVtxDeu', 'DCAzDecayVtxP', 'DCAzDecayVtxPi', 'DCADecayVtxDeu', 'DCADecayVtxP', 'DCADecayVtxPi',
+    'TrackDistDeuP', 'TrackDistPPi', 'TrackDistDeuPi', 'CosPA']  # 38
+
+# # features
+# TRAINING_COLUMNS = [
+#     'PtDeu', 'PtP', 'PtPi', 'nClsTPCDeu', 'nClsITSDeu', 'nClsITSPi', 'nSigmaTPCDeu', 'nSigmaTPCP', 'nSigmaTPCPi',
+#     'trackChi2Deu', 'trackChi2P', 'DCA2xyPrimaryVtxDeu', 'DCAxyPrimaryVtxP', 'DCAxyPrimaryVtxPi', 'DCAzPrimaryVtxDeu',
+#     'DCAzPrimaryVtxP', 'DCAzPrimaryVtxPi', 'DCAPrimaryVtxDeu', 'DCAPrimaryVtxP', 'DCAPrimaryVtxPi', 'DCAxyDecayVtxDeu',
+#     'DCAxyDecayVtxP', 'DCAxyDecayVtxPi', 'DCAzDecayVtxDeu', 'DCAzDecayVtxP', 'DCAzDecayVtxPi', 'DCADecayVtxDeu',
+#     'DCADecayVtxP', 'DCADecayVtxPi', 'TrackDistDeuP', 'TrackDistPPi', 'TrackDistDeuPi', 'CosPA']  # 33
 
 TRAIN = True
 
 table_path = os.environ['HYPERML_TABLES_3']
 signal_table_path = '{}/HyperTritonTable_19d2.root'.format(table_path)
-background_table_path = '{}/HyperTritonTable_18q.root'.format(table_path)
+background_table_path = '{}/HyperTritonTable_18qr.root'.format(table_path)
+
+bkg_selection = '(InvMass<2.98 or InvMass>3.005) and HypCandPt<=10'
 
 analysis = ga.GeneralizedAnalysis(3, signal_table_path, background_table_path)
 
 CENT_CLASS = [[0, 10], [10, 30], [30, 50], [50, 90]]
-PT_BINS = [[1, 2], [2, 3], [3, 4], [4, 9]]
+PT_BINS = [[1, 2], [2, 3], [3, 4], [4, 5], [5, 9]]
 # CT_BINS = [[0,2],[2,4],[4,6],[6,8],[8,10],[10,14],[14,18],[18,23],[23,28]]
 CT_BINS = [0, 100]
 
+# start timer for performance evaluation
+start_time = time.time()
 
-print('centrality class: ', CENT_CLASS[1])
-print('pT bin: ', PT_BINS[1])
+for cclass in CENT_CLASS:
+    for ptbin in PT_BINS:
+        print('============================================')
+        print('centrality class: ', cclass)
+        print('pT bin: ', ptbin)
 
-# train the model only if required
-if TRAIN:
-    # start timer for performance evaluation
-    start_time = time.time()
-    # train and test the model with some performance plot
-    model = analysis.train_test_model(
-        TRAINING_COLUMNS, XGBOOST_PARAMS, hyperparams=HYPERPARAMS_RANGE, cent_class=1, pt_range=PT_BINS[1],
-        bkg_reduct=True, bkg_factor=10, test=False, optimize=False, num_rounds=100, es_rounds=20)
+        part_time = time.time()
 
-    analysis.save_model(model, cent_class=1, pt_range=PT_BINS[1])
+        # data[0]=train_set, data[1]=y_train, data[2]=test_set, data[3]=y_test
+        data = analysis.prepare_dataframe(
+            TRAINING_COLUMNS, cclass, pt_range=ptbin, bkg_reduct=True, bkg_factor=10, test=True,)
 
-else:
-    model = analysis.train_test_model(
-        TRAINING_COLUMNS, XGBOOST_PARAMS, cent_class=1, pt_range=PT_BINS[1],
-        bkg_reduct=True, bkg_factor=10, test=False, train=False)
-    model = analysis.load_model(cent_class=1, pt_range=PT_BINS[1])
+        # train and test the model with some performance plot
+        model = analysis.train_test_model(
+            data, TRAINING_COLUMNS, XGBOOST_PARAMS, hyperparams=HYPERPARAMS_RANGE, cent_class=cclass, pt_range=ptbin,
+            optimize=False, num_rounds=5000, es_rounds=20)
 
-cut_eff_dict = {}
+        print('--- model trained in {:.4f} minutes ---\n'.format((time.time() - part_time) / 60))
 
-score_cut, bdt_efficiency = analysis.significance_scan(
-    model, TRAINING_COLUMNS, ct_range=[0, 100], cent_class=1, pt_range=PT_BINS[1], custom=False)
-cut_eff_dict['{}{}_{}{}_{}{}'.format(
-    CENT_CLASS[1][0],
-    CENT_CLASS[1][1],
-    PT_BINS[1][0],
-    PT_BINS[1][1],
-    CT_BINS[0],
-    CT_BINS[1])] = {'score_cut': score_cut, 'bdt_eff': bdt_efficiency}
+        # TODO: mettere il ct_range nel nome del modello salvato
+        analysis.save_model(model, ct_range=CT_BINS, cent_class=cclass, pt_range=ptbin)
+        print('model saved\n')
 
-# print execution time to performance evaluation
+        dtest = xgb.DMatrix(data=(analysis.test_set[TRAINING_COLUMNS]))
+
+        y_pred = model.predict(dtest, output_margin=True)
+
+        analysis.test_set.eval('Score = @y_pred', inplace=True)
+        analysis.test_set.eval('y = @analysis.y_test', inplace=True)
+
+        efficiency, threshold = analysis.bdt_efficiency(
+            analysis.test_set, pt_range=ptbin, cent_class=cclass, n_points=200)
+
+        eff_tsd = tuple(zip(threshold, efficiency))
+
+        # print on a file the score closest to efficiency 0.98
+        models_path = os.environ['HYPERML_MODELS_3']
+
+        # TODO fai stampare su file lo score che fa 98 % di efficienza
+
+        # with open('{}/eff98_score,txt'.format(models_path), 'w') as score_file:
+        #     for tsd, eff in eff_tsd:
+        #         if eff <= 0.9:
+        #             score_file.write('eff: {:>5}    score: {:>10}'.format(eff, tsd))
+        #             print('Score for Eff {:.3f}: {:.5f}'.format(eff, tsd))
+        #             break
+
+        # print execution time to performance evaluation
 print('')
-# print('--- {:.4f} minutes ---'.format((time.time() - start_time)/60))
+print('--- {:.4f} minutes ---'.format((time.time() - start_time)/60))
+
+# model = analysis.train_test_model(
+#     TRAINING_COLUMNS, XGBOOST_PARAMS, hyperparams=HYPERPARAMS_RANGE, cent_class=CENT_CLASS[1], pt_range=PT_BINS[1],
+#     bkg_reduct=True, bkg_factor=10, test=False, optimize=True, num_rounds=500, es_rounds=20)
+# analysis.save_model(model, cent_class=CENT_CLASS[1], pt_range=PT_BINS[1])
+
+# cut_eff_dict['{}{}_{}{}_{}{}'.format(
+#     CENT_CLASS[1][0],
+#     CENT_CLASS[1][1],
+#     PT_BINS[1][0],
+#     PT_BINS[1][1],
+#     CT_BINS[0],
+#     CT_BINS[1])] = {'score_cut': score_cut, 'bdt_eff': bdt_efficiency}

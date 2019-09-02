@@ -59,6 +59,36 @@ class GeneralizedAnalysis:
             elif index <= self.cent_class[3][1]:
                 self.n_events[3] = hist_centrality[index] + self.n_events[3]
 
+    # function to prepare the dataframe for the training and testing
+    def prepare_dataframe(
+            self, training_columns, cent_class, pt_range=[0, 10],
+            ct_range=[0, 100],
+            test=False, bkg_reduct=True, bkg_factor=1):
+        data_range = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(
+            ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1])
+
+        bkg = self.df_data.query(data_range)
+        sig = self.df_signal.query(data_range)
+
+        if test:
+            if len(sig) >= 1000:
+                sig = sig.sample(n=1000)
+            if len(bkg) >= 1000:
+                bkg = bkg.sample(n=1000)
+
+        if bkg_reduct:
+            n_bkg = len(sig) * bkg_factor
+            if n_bkg < len(bkg):
+                bkg = bkg.sample(n=n_bkg)
+
+        print('number of background candidates: {}'.format(len(bkg)))
+        print('number of signal candidates: {}\n'.format(len(sig)))
+
+        df = pd.concat([sig, bkg])
+        train_set, test_set, y_train, y_test = train_test_split(df[training_columns], df['y'], test_size=0.4)
+
+        return train_set, y_train, test_set, y_test
+
     # function to compute the preselection cuts efficiency
 
     def preselection_efficiency(self, ct_range=[0, 100], pt_range=[0, 12], cent_class=0):
@@ -142,8 +172,9 @@ class GeneralizedAnalysis:
 
     # manage all the training stuffs
     def train_test_model(
-            self, training_columns, reg_params, ct_range=[0, 100],
+            self, data, training_columns, reg_params, ct_range=[0, 100],
             pt_range=[0, 100],
+<<<<<<< HEAD
             cent_class=1, test=False, bkg_reduct=True, bkg_factor=1, hyperparams=0, num_rounds=100, es_rounds=20,
             ROC=True, optimize=False, optimize_mode='bayes', train=True):
         ct_min = ct_range[0]
@@ -185,6 +216,12 @@ class GeneralizedAnalysis:
 
         dtrain = xgb.DMatrix(data=train_set, label=y_train, feature_names=training_columns)
         dtest = xgb.DMatrix(data=test_set, label=y_test, feature_names=training_columns)
+=======
+            cent_class=[0, 10], hyperparams=0, num_rounds=100, es_rounds=20,
+            ROC=True, optimize=False, optimize_mode='bayes'):
+        dtrain = xgb.DMatrix(data=data[0], label=data[1], feature_names=training_columns)
+        dtest = xgb.DMatrix(data=data[2], label=data[3], feature_names=training_columns)
+>>>>>>> introduce prepare_dataframe() methods in GA class
 
         max_params = {}
 
@@ -218,15 +255,22 @@ class GeneralizedAnalysis:
         # BDT output distributions plot
         fig_path = os.environ['HYPERML_FIGURES_{}'.format(self.mode)] + '/TrainTest'
         pu.plot_output_train_test(
+<<<<<<< HEAD
             model, train_set[training_columns],
             y_train, test_set[training_columns],
             y_test, features=training_columns, raw=True, log=True, ct_range=ct_range, pt_range=pt_range,
             cent_range=[cent_min, cent_max], path=fig_path)
+=======
+            model, data[0][training_columns],
+            data[1], data[2][training_columns],
+            data[3], features=training_columns, raw=True, log=True, ct_range=ct_range, pt_range=pt_range,
+            cent_class=cent_class, path=fig_path, mode=self.mode)
+>>>>>>> introduce prepare_dataframe() methods in GA class
 
         # test the model performances
         print('Testing the model: ...', end='\r')
         y_pred = model.predict(dtest)
-        roc_score = roc_auc_score(y_test, y_pred)
+        roc_score = roc_auc_score(data[3], y_pred)
         print('Testing the model: Done!\n')
 
         print('ROC_AUC_score: {}\n'.format(roc_score))
@@ -234,26 +278,38 @@ class GeneralizedAnalysis:
 
         return model
 
+<<<<<<< HEAD
     def save_model(self, model, cent_class, pt_range):
         cent_min = self.cent_class[cent_class][0]
         cent_max = self.cent_class[cent_class][1]
 
+=======
+    def save_model(self, model, cent_class, pt_range=[0, 10], ct_range=[0, 100]):
+>>>>>>> introduce prepare_dataframe() methods in GA class
         models_path = os.environ['HYPERML_MODELS_{}'.format(self.mode)]
-        filename = '/BDT_{}{}_{}{}.sav'.format(cent_min, cent_max, pt_range[0], pt_range[1])
+        filename = '/BDT_{}{}_{}{}_{}{}.sav'.format(cent_class[0], cent_class[1], pt_range[0], pt_range[1], ct_range[0], ct_range[1])
 
         pickle.dump(model, open(models_path + filename, 'wb'))
 
+<<<<<<< HEAD
     def load_model(self, cent_class, pt_range):
         cent_min = self.cent_class[cent_class][0]
         cent_max = self.cent_class[cent_class][1]
 
+=======
+    def load_model(self, cent_class, pt_range=[0, 10], ct_range=[0, 100]):
+>>>>>>> introduce prepare_dataframe() methods in GA class
         models_path = os.environ['HYPERML_MODELS_{}'.format(self.mode)]
-        filename = '/BDT_{}{}_{}{}.sav'.format(cent_min, cent_max, pt_range[0], pt_range[1])
+        filename = '/BDT_{}{}_{}{}_{}{}.sav'.format(cent_class[0], cent_class[1], pt_range[0], pt_range[1], ct_range[0], ct_range[1])
 
         model = pickle.load(open(models_path + filename, 'rb'))
         return model
 
+<<<<<<< HEAD
     def bdt_efficiency(self, df, ct_range=[0, 100], pt_range=[2, 3], cent_class=1, n_points=100):
+=======
+    def bdt_efficiency(self, df, ct_range=[0, 100], pt_range=[2, 3], cent_class=[0, 10], n_points=10):
+>>>>>>> introduce prepare_dataframe() methods in GA class
         min_score = df['Score'].min()
         max_score = df['Score'].max()
 
@@ -275,7 +331,7 @@ class GeneralizedAnalysis:
         return eff
 
     def significance_scan(
-            self, model, training_columns, ct_range=[0, 100],
+            self, test_data, model, training_columns, ct_range=[0, 100],
             pt_range=[2, 3],
             cent_class=1,  custom=True, n_points=100):
         ct_min = ct_range[0]
@@ -286,24 +342,29 @@ class GeneralizedAnalysis:
         cent_min = self.cent_class[cent_class][0]
         cent_max = self.cent_class[cent_class][1]
 
-        data_range_array = [ct_min, ct_max, pt_min, pt_max, cent_min, cent_max]
-        # data_range = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(
-        #     ct_min, ct_max, pt_min, pt_max, cent_min, cent_max)
+        data_range = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(
+            ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1])
 
-        dtest = xgb.DMatrix(data=(self.test_set[training_columns]))
-        dbkg = xgb.DMatrix(data=(self.df_data[training_columns]))
+        df_bkg = self.df_data.query(data_range)[training_columns]
+
+        dtest = xgb.DMatrix(data=(test_data[0][training_columns]))
+        dbkg = xgb.DMatrix(data=(df_bkg))
 
         y_pred = model.predict(dtest, output_margin=True)
         y_pred_bkg = model.predict(dbkg, output_margin=True)
 
-        self.test_set.eval('Score = @y_pred', inplace=True)
-        self.test_set.eval('y = @self.y_test', inplace=True)
-        self.df_data.eval('Score = @y_pred_bkg', inplace=True)
+        test_data[0].eval('Score = @y_pred', inplace=True)
+        test_data[0].eval('y = @test_data[1]', inplace=True)
+        df_bkg.eval('Score = @y_pred_bkg', inplace=True)
 
+<<<<<<< HEAD
         # compute the bdt score range in which study bdt efficiency and significance
         min_score = self.test_set['Score'].min()
         max_score = self.test_set['Score'].max()
         threshold_space = np.linspace(min_score, max_score, n_points)
+=======
+        bdt_efficiency, threshold_space = self.bdt_efficiency(test_data[0], ct_range, pt_range, cent_class, n_points)
+>>>>>>> introduce prepare_dataframe() methods in GA class
 
         bdt_efficiency = self.bdt_efficiency(self.test_set, ct_range, pt_range, cent_class, n_points)
 
@@ -315,7 +376,7 @@ class GeneralizedAnalysis:
         hyp_lifetime = 206
 
         for index, tsd in enumerate(threshold_space):
-            df_selected = self.df_data.query('Score>@tsd')
+            df_selected = df_bkg.query('Score>@tsd')
 
             counts, bins = np.histogram(df_selected['InvMass'], bins=30, range=[2.96, 3.05])
             bin_centers = 0.5 * (bins[1:] + bins[:-1])
