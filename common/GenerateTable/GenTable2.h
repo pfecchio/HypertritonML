@@ -32,12 +32,12 @@ class GenTable2 {
 GenTable2::GenTable2(std::string name, std::string title) {
   tree = new TTree(name.data(), title.data());
 
-  tree->Branch("Pt", &Pt);
-  tree->Branch("Rapidity", &Rapidity);
-  tree->Branch("Phi", &Phi);
-  tree->Branch("Ct", &Ct);
-  tree->Branch("Centrality", &Centrality);
-  tree->Branch("Matter", &Matter);
+  tree->Branch("pT", &Pt);
+  tree->Branch("rapidity", &Rapidity);
+  tree->Branch("phi", &Phi);
+  tree->Branch("ct", &Ct);
+  tree->Branch("centrality", &Centrality);
+  tree->Branch("matter", &Matter);
 };
 
 void GenTable2::Fill(const SHyperTritonHe3pi& SHyper, const RCollision& RColl) {

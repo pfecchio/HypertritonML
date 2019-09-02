@@ -27,6 +27,8 @@ if [ "$1" == "3" ] || [ "$1" == "3body" ] || [ "$1" == "3Body" ]; then
       BODY_3=1
 fi
 
+[ ! -d $HYPERML_UTILS ] && mkdir -p $HYPERML_UTILS
+[ ! -f $HYPERML_UTILS/BlastWaveFits.root ] && alien_cp alien:/alice/cern.ch/user/m/mpuccio/hyper_data/BlastWaveFits.root $HYPERML_UTILS/BlastWaveFits.root
 
 if [ $BODY_2 -eq 1 ]; then    
       export HYPERML_DATA_2="$HYPERML_DATA/2Body"

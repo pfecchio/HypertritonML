@@ -12,15 +12,16 @@
 #include <vector>
 
 #include "../../common/GenerateTable/Common.h"
-#include "../../common/GenerateTable/Table.h"
-#include "../../common/GenerateTable/GenTable.h"
+#include "../../common/GenerateTable/Table2.h"
+#include "../../common/GenerateTable/GenTable2.h"
 
 void HyperTreeFatherMC(bool reject = true,TString name="HyperTritonTree_19d2.root")
 {
 
   char *dataDir{nullptr}, *tableDir{nullptr};
-  getDirs(dataDir, tableDir);
-  TFile bwFile("../fitsM.root");
+  char *utilsDir{getenv("HYPERML_UTILS")};
+  getDirs2(dataDir, tableDir);
+  TFile bwFile(Form("%s/BlastWaveFits.root",utilsDir));
   TF1 *BlastWave{nullptr};
   TF1 *BlastWave0{(TF1 *)bwFile.Get("BlastWave/BlastWave0")};
   TF1 *BlastWave1{(TF1 *)bwFile.Get("BlastWave/BlastWave1")};
@@ -42,8 +43,8 @@ void HyperTreeFatherMC(bool reject = true,TString name="HyperTritonTree_19d2.roo
   TTreeReaderValue<RCollision> RColl = {fReader, "RCollision"};
 
   TFile tableFile(Form("%s/SignalTable.root", tableDir), "RECREATE");
-  Table outputTable("SignalTable", "Signal table");
-  GenTable outputGenTable("GenTable", "Generated particle table");
+  Table2 outputTable("SignalTable", "Signal table");
+  GenTable2 outputGenTable("GenTable", "Generated particle table");
 
   while (fReader.Next())
   {
