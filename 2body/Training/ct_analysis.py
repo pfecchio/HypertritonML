@@ -27,8 +27,8 @@ def ct_analysis(training_columns,params_def,Training = False,Significance=False,
   #Analysis.correlation_plot(training_columns,draw=True)
   
   # loop to train the models
-  if not os.path.exists(os.environ['HYPERML_MODELS']):
-    os.makedirs(os.environ['HYPERML_MODELS'])
+  if not os.path.exists(os.environ['HYPERML_MODELS_2']):
+    os.makedirs(os.environ['HYPERML_MODELS_2'])
   Centrality_bins = [[0,10],[10,30],[30,50],[50,90]]
   Ct_bins = [[0,2],[2,4],[4,6],[6,8],[8,10],[10,14],[14,18],[18,23],[23,28]]
   
@@ -49,13 +49,13 @@ def ct_analysis(training_columns,params_def,Training = False,Significance=False,
         # nev_MC.append(Analysis.number_events_MC(Ct_bins[index_ct],[0,10],Centrality_bins[index_cen]))
         if model is not 0:
           filename = '/BDT_Ct_{:.2f}_{:.2f}_pT_{:.2f}_{:.2f}_Cen_{:.2f}_{:.2f}.sav'.format(Ct_bins[index_ct][0],Ct_bins[index_ct][1],0,10,Centrality_bins[index_cen][0],Centrality_bins[index_cen][1])
-          pickle.dump(model, open(os.environ['HYPERML_MODELS']+filename, 'wb'))
+          pickle.dump(model, open(os.environ['HYPERML_MODELS_2']+filename, 'wb'))
           print(filename+' has been saved')
       
       if Significance is True:
         print('computing the cuts ...')
         filename = '/BDT_Ct_{:.2f}_{:.2f}_pT_{:.2f}_{:.2f}_Cen_{:.2f}_{:.2f}.sav'.format(Ct_bins[index_ct][0],Ct_bins[index_ct][1],0,10,Centrality_bins[index_cen][0],Centrality_bins[index_cen][1])
-        model = pickle.load(open(os.environ['HYPERML_MODELS']+filename, 'rb'))
+        model = pickle.load(open(os.environ['HYPERML_MODELS_2']+filename, 'rb'))
         Cut,eff = Analysis.significance_scan(data,model,training_columns,ct_range=Ct_bins[index_ct],pt_range=[0,10],cent_class=Centrality_bins[index_cen],custom=custom)
         Cut_saved.append(Cut)
         Eff_BDT.append(eff)
@@ -89,7 +89,7 @@ def ct_analysis(training_columns,params_def,Training = False,Significance=False,
       filename = '/BDT_Ct_{:.2f}_{:.2f}_pT_{:.2f}_{:.2f}_Cen_{:.2f}_{:.2f}.sav'.format(Ct_bins[index_ct][0],Ct_bins[index_ct][1],0,10,Centrality_bins[index_cen][0],Centrality_bins[index_cen][1])
       ##per testare il dev
       #filename = '/BDT_{}{}_{}{}_{}{}.sav'.format(Centrality_bins[index_cen][0],Centrality_bins[index_cen][1],0,10,Ct_bins[index_ct][0],Ct_bins[index_ct][1])
-      model = pickle.load(open(os.environ['HYPERML_MODELS']+filename, 'rb'))
+      model = pickle.load(open(os.environ['HYPERML_MODELS_2']+filename, 'rb'))
       dfDataF = Analysis.df_data.query(total_cut)
       data = xgb.DMatrix(data=(dfDataF[training_columns]))
       y_pred = model.predict(data,output_margin=True)

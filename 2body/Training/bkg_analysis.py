@@ -9,7 +9,7 @@ import analysis_utils as au
 df_bkg=uproot.open(os.environ['HYPERML_TABLES']+'/BkgTable.root')['BkgTable'].pandas.df()
 df_cut=df_bkg.query('Ct<2 and Centrality<10')
 filename='/BDT_Ct_0.00_2.00_pT_0.00_10.00_Cen_0.00_10.00.sav'
-model= model = pickle.load(open(os.environ['HYPERML_MODELS']+filename, 'rb'))
+model= model = pickle.load(open(os.environ['HYPERML_MODELS_2']+filename, 'rb'))
 training_columns = [ 'V0CosPA','ProngsDCA','PiProngPvDCAXY','He3ProngPvDCAXY','HypCandPt','ArmenterosAlpha','NpidClustersHe3','TPCnSigmaHe3','He3ProngPvDCA','PiProngPvDCA']
 data = xgb.DMatrix(data=(df_cut[training_columns]))
 y_pred = model.predict(data,output_margin=True)
