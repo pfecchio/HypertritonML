@@ -73,8 +73,8 @@ def ct_analysis(training_columns,params_def,Training = False,Significance=False,
   # loop to read the models and to do the prediction
   index_cut = 0
   plt.close()
-  if not os.path.exists(os.environ['HYPERML_FIGURES']+'/Peaks/'):
-    os.makedirs(os.environ['HYPERML_FIGURES']+'/Peaks/')
+  if not os.path.exists(os.environ['HYPERML_FIGURES_2']+'/Peaks/'):
+    os.makedirs(os.environ['HYPERML_FIGURES_2']+'/Peaks/')
   for index_ct in range(0,len(Ct_bins)):
     for index_cen in range(0,len(Centrality_bins)):
       output_cut = -3# Cut_saved[index_cut]
