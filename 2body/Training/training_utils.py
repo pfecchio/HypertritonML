@@ -197,7 +197,7 @@ class Generalized_Analysis:
   def correlation_plot(self,training_columns,filename='corr_plot',draw=False):
     training_columns.append('InvMass')
     correlation = self.dfDataF[training_columns].corr(method='pearson')
-    plt.imshow(correlation,aspect='auto',  vmin=-1,vmax=1);
+    plt.imshow(correlation,aspect='auto',  vmin=-1,vmax=1)
     plt.colorbar()
     print(correlation)
     x_pos = np.arange(len(training_columns))

@@ -273,7 +273,9 @@ class GeneralizedAnalysis:
         data_range = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(
             ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1])
 
-        df_bkg = self.df_data.query(data_range)[training_columns]
+        colums = training_columns
+        colums.append("InvMass")
+        df_bkg = self.df_data.query(data_range)[colums]
 
         dtest = xgb.DMatrix(data=(test_data[0][training_columns]))
         dbkg = xgb.DMatrix(data=(df_bkg))
