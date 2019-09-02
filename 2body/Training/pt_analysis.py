@@ -27,8 +27,8 @@ def pt_analysis(training_columns,params_def,Training = False,Significance=False,
   #Analysis.correlation_plot(training_columns,draw=True)
   
   # loop to train the models
-  if not os.path.exists(os.environ['HYPERML_MODELS']):
-    os.makedirs(os.environ['HYPERML_MODELS'])
+  if not os.path.exists(os.environ['HYPERML_MODELS_2']):
+    os.makedirs(os.environ['HYPERML_MODELS_2'])
   Centrality_bins = [[0,10],[30,50]]
   Pt_bins = [[2,3],[3,4],[4,5],[5,9]]
   
@@ -73,8 +73,8 @@ def pt_analysis(training_columns,params_def,Training = False,Significance=False,
   # loop to read the models and to do the prediction
   index_cut = 0
   plt.close()
-  if not os.path.exists(os.environ['HYPERML_FIGURES']+'/Peaks/'):
-    os.makedirs(os.environ['HYPERML_FIGURES']+'/Peaks/')
+  if not os.path.exists(os.environ['HYPERML_FIGURES_2']+'/Peaks/'):
+    os.makedirs(os.environ['HYPERML_FIGURES_2']+'/Peaks/')
   for index_pt in range(0,len(Pt_bins)):
     for index_cen in range(0,len(Centrality_bins)):
       output_cut = -3# Cut_saved[index_cut]
@@ -116,7 +116,7 @@ def pt_analysis(training_columns,params_def,Training = False,Significance=False,
     Effp.append(Analysis.preselection_efficiency(ct_range=[0,100],pt_range=[Pt_bins[index]],cent_class=[0,100]))
 
   pt_binning = array("d",[2,3,4,5,9])
-  results = TFile(os.environ['HYPERML_DATA']+"/"+file_name,"update")
+  results = TFile(os.environ['HYPERML_DATA_2']+"/"+file_name,"update")
 
   results.cd()
 
@@ -156,10 +156,10 @@ def pt_analysis(training_columns,params_def,Training = False,Significance=False,
   pinfo2.SetFillStyle(0)
   pinfo2.SetTextAlign(30+3)
   pinfo2.SetTextFont(42)
-  string ='ALICE Internal, Pb-Pb 2018 {}-{}%'.format(0,90)
+  string ='ALICE Internal, Pb-Pb 2018 {}-{}%'.format(Centrality_bins[index_cen][0],Centrality_bins[index_cen][0])
   pinfo2.AddText(string)
-  pinfo2.Draw()
-    
+  histopt.Draw()
+  pinfo2.Draw("SAME")
   histopt.Write()
   cv.Write()
   results.Close()
