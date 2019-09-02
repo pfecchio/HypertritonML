@@ -46,9 +46,9 @@ def plot_output_train_test(
 
     plt.figure(figsize=figsize)
     plt.hist(prediction[1], color='b', alpha=0.5, range=low_high, bins=bins,
-             histtype='stepfilled', density=True, label='Signal pdf Training Set', **kwds)
+             histtype='stepfilled', density=True, label='Signal pdf Training Set')
     plt.hist(prediction[0], color='r', alpha=0.5, range=low_high, bins=bins,
-             histtype='stepfilled', density=True, label='Background pdf Training Set', **kwds)
+             histtype='stepfilled', density=True, label='Background pdf Training Set')
 
     hist, bins = np.histogram(prediction[2], bins=bins, range=low_high, density=True)
     scale = len(prediction[2]) / sum(hist)
@@ -76,7 +76,7 @@ def plot_output_train_test(
     if not os.path.exists(fig_score_path):
         os.makedirs(fig_score_path)
 
-    fig_name = 'BDTscorePDF_ct{:.1f}{:.1f}_pT{:.1f}{:.1f}_cen{:.1f}{:.1f}'.format(
+    fig_name = 'BDTscorePDF_ct{}{}_pT{}{}_cen{}{}'.format(
         ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1])
 
     plt.savefig('{}/{}.pdf'.format(fig_score_path, fig_name), dpi=500, transparent=True)
@@ -213,7 +213,7 @@ def plot_bdt_eff(threshold, eff_sig, mode, ct_range=[0, 100], pt_range=[0, 100],
     if not os.path.exists(fig_eff_path):
         os.makedirs(fig_eff_path)
 
-    fig_name = '/BDTeffct{:.1f}{:.1f}_pT{:.1f}{:.1f}_cen{:.1f}{:.1f}.pdf'.format(
+    fig_name = '/BDTeffct{}{}_pT{}{}_cen{}{}.pdf'.format(
         ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1])
     plt.savefig(fig_eff_path + fig_name)
     plt.close()
@@ -298,7 +298,7 @@ def plot_significance_scan(
 
     # axs[1].text(0.37, 0.95, text, transform=axs[1].transAxes, verticalalignment='top', bbox=props)
 
-    fig_name = 'Significance_ct{:.1f}{:.1f}_pT{:.1f}{:.1f}_cen{:.1f}{:.1f}.pdf'.format(
+    fig_name = 'Significance_ct{}{}_pT{}{}_cen{}{}.pdf'.format(
         data_range_array[0],
         data_range_array[1],
         data_range_array[2],
