@@ -54,55 +54,62 @@ def plot_distr(df, column=None, figsize=None, bins=25, **kwds):
         a.set_ylabel("Arbitrary Units")
 
 
-def plot_corr(df, columns, title, figsize=(6, 6), **kwds):
+def plot_corr(df, columns, **kwds):
     """Calculate pairwise correlation between features.
-
     Extra arguments are passed on to DataFrame.corr()
     """
     col=columns+['y']
     df=df[col]
-    if title == "Signal":
-        data = df[df.y > 0.5].drop('y', 1)
-    elif title == "Background":
-        data = df[df.y < 0.5].drop('y', 1)
+    
+    data_sig = df[df.y > 0.5].drop('y', 1)
+    data_bkg = df[df.y < 0.5].drop('y', 1)
 
-    corrmat = data.corr(**kwds)
-    _, ax1 = plt.subplots(ncols=1, figsize=figsize)
+    corrmat_sig = data_sig.corr(**kwds)
+    corrmat_bkg = data_bkg.corr(**kwds)
+
+    t=r'$\mathrm{\ \ \ ALICE \ Simulation}$ Pb-Pb $\sqrt{s_{\mathrm{NN}}}$ = 5.02 TeV'
+    fig = plt.figure(figsize=(10.7, 6.6))
+    # plt.title(t,y=1.08,fontsize=16)
+    plt.suptitle(t,fontsize=18,ha='center')
+    grid =ImageGrid(fig,111,nrows_ncols=(1,2),axes_pad=0.15,share_all=True,cbar_location="right",cbar_mode="single",cbar_size="7%",cbar_pad=0.15)
+
     opts = {'cmap': plt.get_cmap("coolwarm"), 'vmin': -1, 'vmax': +1, 'snap': True}
-    heatmap1 = ax1.pcolor(corrmat, **opts)
-    plt.colorbar(heatmap1, ax=ax1)
-    ax1.set_title(title, fontsize=22)
 
-    labels = corrmat.columns.values
+    ax1 = grid[0]
+    ax2 = grid[1]
+    heatmap1 = ax1.pcolor(corrmat_sig, **opts)
+    heatmap2 = ax2.pcolor(corrmat_bkg, **opts)
+    ax1.set_title('Signal', fontsize=14,fontweight='bold')
+    ax2.set_title('Background', fontsize=14,fontweight='bold')
+
+    labels = corrmat_sig.columns.values
+    lab = [r'$\it{M}_{\mathrm{He}^{3}\pi^{-}}$',r'n$\sigma_{\mathrm{TPC}}\ \mathrm{He}^{3}$',r'$\mathrm{V}_{0} \ p_{\mathrm{T}}\ (\mathrm{GeV}/c)$',r'n$_{cluster\ \mathrm{TPC}}\ \mathrm{He}^{3}$',r'$\alpha$-armenteros',r'L/$p$ ($\frac{cm}{\mathrm{Gev}/c}$)',r'$\mathrm{DCA}_{\mathrm{V_{0}\ tracks}} ($cm$)$',r'$\cos{(\theta_{pointing})}$']
     for ax in (ax1,):
         # shift location of ticks to center of the bins
-        ax.set_xticks(np.arange(len(labels)), minor=False)
-        ax.set_yticks(np.arange(len(labels)), minor=False)
-        ax.set_xticklabels(labels, minor=False, ha='left', rotation=90, fontsize=15)
-        ax.set_yticklabels(labels, minor=False, va='bottom', fontsize=15)
+        ax.set_xticks(np.arange(len(lab)), minor=False)
+        ax.set_yticks(np.arange(len(lab)), minor=False)
+        ax.set_xticklabels(lab, minor=False, ha='left', rotation=90, fontsize=15)
+        ax.set_yticklabels(lab, minor=False, va='bottom', fontsize=15)
+        ax.tick_params(axis='both',which='both',direction="in")
 
         for tick in ax.xaxis.get_minor_ticks():
             tick.tick1line.set_markersize(0)
             tick.tick2line.set_markersize(0)
             tick.label1.set_horizontalalignment('center')
 
-    plt.tight_layout()
-
-    labels = corrmat.columns.values
-    for ax in (ax1,):
+    for ax in (ax2,):
         # shift location of ticks to center of the bins
-        ax.set_xticks(np.arange(len(labels)), minor=False)
-        ax.set_yticks(np.arange(len(labels)), minor=False)
-        ax.set_xticklabels(labels, minor=False, ha='left', rotation=90, fontsize=15)
-        ax.set_yticklabels(labels, minor=False, va='bottom', fontsize=15)
-
+        ax.set_xticks(np.arange(len(lab)), minor=False)
+        ax.set_yticks(np.arange(len(lab)), minor=False)
+        ax.set_xticklabels(lab, minor=False, ha='left', rotation=90, fontsize=15)
+        ax.tick_params(axis='both',which='both',direction="in")
         for tick in ax.xaxis.get_minor_ticks():
             tick.tick1line.set_markersize(0)
             tick.tick2line.set_markersize(0)
             tick.label1.set_horizontalalignment('center')
 
-    plt.tight_layout()
-
+    ax1.cax.colorbar(heatmap1)
+    ax1.cax.toggle_label(True)
 
 
 def plot_roc(y_truth, model_decision):
@@ -300,7 +307,7 @@ def optimize_params(dtrain,par):
     par['eta'],n = gs_1par(gs_dict, par, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
     return n
 
-def fit(counts,min,max,nsigma=3,recreate=False,signif=0,errsignif=0,minCent=10,maxCent=90,filename='results.root'):
+def fit(counts,min,max,nsigma=3,recreate=False,signif=0,errsignif=0,minCent=0,maxCent=90,filename='results.root'):
   if recreate is True:
     results = TFile(os.environ['HYPERML_DATA']+'/'+filename,"RECREATE")
   else:
@@ -314,7 +321,6 @@ def fit(counts,min,max,nsigma=3,recreate=False,signif=0,errsignif=0,minCent=10,m
   results.cd()
   cv = TCanvas("cv{}_{}".format(min,max))
   fitTpl = TF1("fitTpl","pol2(0)+gausn(3)",0,5)
-  #fitTpl.SetParNames("B_{exp}","#tau","B_{0}","N_{sig}","#mu","#sigma")
   fitTpl.SetParNames("B_{0}","B_{1}","B_{2}","N_{sig}","#mu","#sigma")
   bkgTpl = TF1("fitTpl","pol2(0)",0,5)
   sigTpl = TF1("fitTpl","gausn(0)",0,5)
@@ -342,10 +348,10 @@ def fit(counts,min,max,nsigma=3,recreate=False,signif=0,errsignif=0,minCent=10,m
   histo.SetMarkerColor(1)
   histo.SetTitle(";m (^{3}He + #pi) (GeV/#it{c})^{2};Counts")
   histo.SetMaximum(1.5 * histo.GetMaximum())
-  histo.Fit(fitTpl,"QRM","",2.97,3.03)
-  histo.Fit(fitTpl,"QRM","",2.97,3.03)
+  histo.Fit(fitTpl,"QRM","",2.98,3.03)
+  histo.Fit(fitTpl,"QRM","",2.98,3.03)
   histo.SetDrawOption("e")
-  histo.GetXaxis().SetRangeUser(2.96,3.03)
+  histo.GetXaxis().SetRangeUser(2.96,3.02)
   bkgTpl.SetParameters(fitTpl.GetParameters())
   #bkgTpl.Draw("same")
   sigTpl.SetParameter(0,fitTpl.GetParameter(3))
@@ -368,7 +374,7 @@ def fit(counts,min,max,nsigma=3,recreate=False,signif=0,errsignif=0,minCent=10,m
   
   NHyTr = (peak-bkg)
   print(peak,' ',bkg)
-  if peak+bkg>0:
+  if peak+bkg>0 and signal+bkg>0:
     ErrNHyTr = math.sqrt(peak+bkg)
     signif=signal/math.sqrt(signal+bkg)
     deriv_sig=1/math.sqrt(signal+bkg)-signif/(2*(signal+bkg))
@@ -387,7 +393,7 @@ def fit(counts,min,max,nsigma=3,recreate=False,signif=0,errsignif=0,minCent=10,m
   pinfo2.SetFillStyle(0)
   pinfo2.SetTextAlign(30+3)
   pinfo2.SetTextFont(42)
-  string ='ALICE Internal, Pb-Pb 2018 {}-{}'.format(minCent,maxCent)
+  string ='ALICE Internal, Pb-Pb 2018 {}-{}%'.format(minCent,maxCent)
   pinfo2.AddText(string)    
   string='^{3}_{#Lambda}H#rightarrow ^{3}He#pi + c.c., %i #leq #it{ct} < %i cm ' % (min,max)
   pinfo2.AddText(string)    
@@ -398,8 +404,8 @@ def fit(counts,min,max,nsigma=3,recreate=False,signif=0,errsignif=0,minCent=10,m
   pinfo2.AddText(string)
   string='B ({:.0f}#sigma) {:.0f} #pm {:.0f}'.format(nsigma,signal,errsignal)
   pinfo2.AddText(string)
-  ratio = signal/bkg
   if bkg>0: 
+    ratio = signal/bkg
     string='S/B ({:.0f}#sigma) {:.4f} '.format(nsigma,ratio)
   pinfo2.AddText(string)
   pinfo2.Draw()
@@ -408,3 +414,24 @@ def fit(counts,min,max,nsigma=3,recreate=False,signif=0,errsignif=0,minCent=10,m
   cv.Write()
   results.Close()
   return (NHyTr,ErrNHyTr)
+
+
+def Argus(x,*p):
+    return p[0]*x*math.pow(1-(x/p[1])**2,p[3])*math.exp(p[2]*(1-(x/p[1])**2))
+
+def write_array(name_file,array,mode):
+  file  = open(name_file, mode)
+  for item in array:
+    file.write(str(item)+' ')
+    if item == array[len(array)-1]:
+        file.write(str(item)+'\n')
+  file.close()
+
+def read_array(name_file):
+  file = open(name_file,'r')
+  array = []
+  string = file.readline()
+  for char in string:
+    if char is not ' ':
+      array.append(char)
+  return float(array)

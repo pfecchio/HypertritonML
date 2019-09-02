@@ -19,14 +19,12 @@ import analysis_utils as au
 def ct_analysis(training_columns,params_def,Training = False,Significance=False,custom=False,score_shift=0,file_name='results.root'):
 
   Analysis = tu.Generalized_Analysis(os.environ['HYPERML_TABLES']+'/SignalTable.root',os.environ['HYPERML_TABLES']+'/DataTable.root','2<=HypCandPt<=10','(InvMass<2.98 or InvMass>3.005) and HypCandPt<=10')
-  #Analysis_bkg = tu.Generalized_Analysis(os.environ['HYPERML_TABLES']+'/SignalTable.root',os.environ['HYPERML_TABLES']+'/DataTable_bkg.root','2<=HypCandPt<=10','(InvMass<2.98 or InvMass>3.005) and HypCandPt<=10')
-
   #Analysis.correlation_plot(training_columns,draw=True)
   
   # loop to train the models
   if not os.path.exists(os.environ['HYPERML_MODELS']):
     os.makedirs(os.environ['HYPERML_MODELS'])
-  Centrality_bins = [[0,10],[10,30],[30,50],[50,90]]
+  Centrality_bins = [[0,90]]
   Ct_bins = [[0,2],[2,4],[4,6],[6,8],[8,10],[10,14],[14,18],[18,23],[23,28]]
   
   if Training is True:
@@ -74,7 +72,7 @@ def ct_analysis(training_columns,params_def,Training = False,Significance=False,
     os.makedirs(os.environ['HYPERML_FIGURES']+'/Peaks/')
   for index_ct in range(0,len(Ct_bins)):
     for index_cen in range(0,len(Centrality_bins)):
-      output_cut = -3# Cut_saved[index_cut]
+      output_cut = Cut_saved[index_cut]
       print('centrality: ',Centrality_bins[index_cen],'Ct: ',Ct_bins[index_ct])
       
       ct_min = Ct_bins[index_ct][0]
@@ -84,8 +82,6 @@ def ct_analysis(training_columns,params_def,Training = False,Significance=False,
 
       total_cut = '@ct_min<Ct<@ct_max and 0<HypCandPt<10 and @centrality_min<Centrality<@centrality_max'
       filename = '/BDT_Ct_{:.2f}_{:.2f}_pT_{:.2f}_{:.2f}_Cen_{:.2f}_{:.2f}.sav'.format(Ct_bins[index_ct][0],Ct_bins[index_ct][1],0,10,Centrality_bins[index_cen][0],Centrality_bins[index_cen][1])
-      ##per testare il dev
-      #filename = '/BDT_{}{}_{}{}_{}{}.sav'.format(Centrality_bins[index_cen][0],Centrality_bins[index_cen][1],0,10,Ct_bins[index_ct][0],Ct_bins[index_ct][1])
       model = pickle.load(open(os.environ['HYPERML_MODELS']+filename, 'rb'))
       dfDataF = Analysis.dfData.query(total_cut)
       data = xgb.DMatrix(data=(dfDataF[training_columns]))
@@ -148,7 +144,7 @@ def ct_analysis(training_columns,params_def,Training = False,Significance=False,
 
 
   expo = TF1("","[0]*exp(-x/[1]/0.029979245800)")
-  expo.SetParLimits(1,180,280)
+  expo.SetParLimits(1,180,260)
   histoct.Fit(expo,"M")
 
   pinfo2= TPaveText(0.5,0.5,0.91,0.9,"NDC")
@@ -186,27 +182,27 @@ params_def = {
       'tree_method':'hist',
       'scale_pos_weight': 10}
 
-training_columns = [[ 'V0CosPA','ProngsDCA','PiProngPvDCAXY','He3ProngPvDCAXY','HypCandPt','He3ProngPvDCA','PiProngPvDCA','NpidClustersHe3','TPCnSigmaHe3'],
+training_columns = [[ 'V0CosPA','ProngsDCA','PiProngPvDCAXY','He3ProngPvDCAXY','HypCandPt','He3ProngPvDCA','PiProngPvDCA','TPCnSigmaHe3'],
 [ 'PiProngPvDCAXY','He3ProngPvDCAXY','He3ProngPvDCA','PiProngPvDCA','NpidClustersHe3','TPCnSigmaHe3'],
 [ 'V0CosPA','ProngsDCA','HypCandPt','ArmenterosAlpha','NpidClustersHe3','TPCnSigmaHe3'],
 [ 'V0CosPA','ProngsDCA','HypCandPt','ArmenterosAlpha','PiProngPvDCAXY','He3ProngPvDCAXY','He3ProngPvDCA','PiProngPvDCA']]
 
-ct_analysis(training_columns[0],params_def,Training=False,Significance=False,score_shift=0,custom=True,file_name='/results_bkg.root')
+ct_analysis(training_columns[0],params_def,Training=False,Significance=True,score_shift=0,custom=False,file_name='/results_0_90.root')
 
-# syst_file = TFile(os.environ['HYPERML_DATA']+"/systematic_ct.root","recreate")
-# histo_shift = TH1D("histo_shift",";cut-score;#tau [ps]",5,-1,1)
-# tau_shift = []
-# err_tau_shift = []
-# bin = 1
-# for shift in np.linspace(-1,1,5):
-#  print(shift)
-#  tau,err = ct_analysis(training_columns[0],params_def,Training=False,Significance=True,score_shift=shift,file_name='/results_'+str(shift)+'.root')
+#syst_file = TFile(os.environ['HYPERML_DATA']+"/systematic_ct.root","recreate")
+#syst_file.cd()
+#histo_shift = TH1D("histo_shift",";;",5,-1,1)
+#tau_shift = []
+#err_tau_shift = []
+#bin = 1
+#for shift in np.linspace(-1,1,5):
+#  tau,err = ct_analysis(training_columns[0],params_def,Training=False,score_shift=shift,file_name='/results_'+str(shift)+'.root')
 #  tau_shift.append(tau)
-#  err_tau_shift.append(err)
+#  err_tau_shift.append(tau)
 #  histo_shift.SetBinContent(bin,tau_shift[bin-1])
 #  histo_shift.SetBinError(bin,err_tau_shift[bin-1])
 #  bin=bin+1
-# print('syst shift :',np.std(tau_shift))
+#print('syst shift :',np.std(tau_shift))
 
 # histo_col = TH1D("histo_col",";;",len(training_columns),0,len(training_columns))
 # tau_col = []
@@ -220,6 +216,5 @@ ct_analysis(training_columns[0],params_def,Training=False,Significance=False,sco
 # print('syst col :',np.std(tau_col[0]))
 
 # histo_col.Write()
-# syst_file.cd()
-# histo_shift.Write()
-# syst_file.Close()
+#histo_shift.Write()
+#syst_file.Close()
