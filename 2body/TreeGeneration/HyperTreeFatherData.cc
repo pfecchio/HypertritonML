@@ -47,12 +47,14 @@ void HyperTreeFatherData(TString name = "HyperTritonTree_18r.root") {
   TFile tfile(Form("%s/DataTable.root", tableDir), "RECREATE");
   Table2 tree("DataTable", "Data Table");
 
+  TH1D eventCounter{"EventCounter",";Centrality (%);Events",100,0,100};
   while (fReader.Next()) {
-
+    eventCounter.Fill(RColl->fCent);
     for (auto &RHyper : RHyperVec)
       tree.Fill(RHyper, *RColl);
   }
 
   tfile.cd();
+  eventCounter.Write();
   tree.Write();
 }

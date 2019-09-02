@@ -25,7 +25,7 @@ class Generalized_Analysis:
   def __init__(self,MCfile_name,Datafile_name,cut_presel,bkg_selection):
 
     #centrality=uproot.open('../../../HypertritonData/EventCounter.root')['fCentrality']
-    centrality=uproot.open(os.environ['HYPERML_TABLES']+'/EventCounter.root')['fCentrality']
+    centrality=uproot.open(Datafile_name)['EventCounter']
     self.Centrality = [[0,10],[10,30],[30,50],[50,90]]
     self.n_ev = [0,0,0,0]
     
