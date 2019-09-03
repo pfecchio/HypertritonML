@@ -36,10 +36,11 @@ class GeneralizedAnalysis:
             self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df()
             self.df_generated = uproot.open(mc_file_name)['GenTable'].pandas.df()
             self.df_data = uproot.open(data_file_name)['DataTable'].pandas.df()
-
+        
         self.df_signal['y'] = 1
         self.df_data['y'] = 0
 
+        self.df_data_all = self.df_data
         # dataframe for signal and background with preselection
         if isinstance(cut_presel, str):
             self.df_signal = self.df_signal.query(cut_presel)

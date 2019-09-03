@@ -90,7 +90,7 @@ def ct_analysis(training_columns,params_def,Training = False,Significance=False,
       ##per testare il dev
       #filename = '/BDT_{}{}_{}{}_{}{}.sav'.format(Centrality_bins[index_cen][0],Centrality_bins[index_cen][1],0,10,Ct_bins[index_ct][0],Ct_bins[index_ct][1])
       model = pickle.load(open(os.environ['HYPERML_MODELS_2']+filename, 'rb'))
-      dfDataF = Analysis.df_data.query(total_cut)
+      dfDataF = Analysis.df_data_all.query(total_cut)
       data = xgb.DMatrix(data=(dfDataF[training_columns]))
       y_pred = model.predict(data,output_margin=True)
       dfDataF.eval('Score = @y_pred',inplace=True)
