@@ -133,10 +133,10 @@ def ct_analysis(training_columns,params_def,Training = False,Significance=False,
     histo_eff = TH1D("histo_eff_{}_{}".format([0,90][0],[0,90][1]),";ct [cm];efficiency",len(ct_binning)-1,ct_binning)
     for index_ct in range(0,len(Ct_bins)):
       errBDT = math.sqrt((1-Effp[index_ct])*Effp[index_ct])
-      errEff = math.sqrt((1-Eff_BDT[index_cen*4+index_ct])*Eff_BDT[index_cen*4+index_ct])
+      errEff = math.sqrt((1-Eff_BDT[index_ct*len(Centrality_bins)+index_cen])*Eff_BDT[index_ct*len(Centrality_bins)+index_cen])
       # errTot = Eff_BDT[index_ct+index_cen*4]*Effp[index_ct]*math.sqrt((errBDT*errBDT/Eff_BDT[index_ct+index_cen*4]/Eff_BDT[index_ct+index_cen*4]+errEff*errEff/Effp[index_ct]/Effp[index_ct])/nev_MC[index_cen*4+index_ct])
       errTot = 0
-      histo_eff.SetBinContent(index_ct+1,Effp[index_ct]*Eff_BDT[index_cen*4+index_ct])
+      histo_eff.SetBinContent(index_ct+1,Effp[index_ct]*Eff_BDT[index_ct*len(Centrality_bins)+index_cen])
       histo_eff.SetBinError(index_ct+1,errTot)
     histo_eff.Write()
 
@@ -203,4 +203,4 @@ training_columns = [[ 'V0CosPA','ProngsDCA','PiProngPvDCAXY','He3ProngPvDCAXY','
 [ 'V0CosPA','ProngsDCA','HypCandPt','ArmenterosAlpha','NpidClustersHe3','TPCnSigmaHe3'],
 [ 'V0CosPA','ProngsDCA','HypCandPt','ArmenterosAlpha','PiProngPvDCAXY','He3ProngPvDCAXY','He3ProngPvDCA','PiProngPvDCA']]
 
-ct_analysis(training_columns[0],params_def,Training=False,Significance=False,score_shift=0,custom=True,file_name='/results_ct_nocent.root')
+ct_analysis(training_columns[0],params_def,Training=True,Significance=True,score_shift=0,custom=False,file_name='/results_ct_nocent.root')
