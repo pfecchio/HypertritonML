@@ -40,7 +40,9 @@ class GeneralizedAnalysis:
         self.df_signal['y'] = 1
         self.df_data['y'] = 0
 
-        self.df_data_all = self.df_data
+        # backup of the data without any selections for the significance scan
+        self.df_data_all = self.df_data.copy()
+
         # dataframe for signal and background with preselection
         if isinstance(cut_presel, str):
             self.df_signal = self.df_signal.query(cut_presel)
