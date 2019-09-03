@@ -131,6 +131,21 @@ def expected_signal_raw(pt_range, cent_bin):
 
     return exp_yield
 
+def expected_signal_counts(pt_range, eff, cent_range, nevents): # nevents assumed to be the number of events in 1% bins
+  #TODO: this function is called in a closed loop, we cannot open the file everytime...
+  hyp2he3 = 0.4 * 0.25 # Very optimistic, considering it constant with centrality
+  bw_file = TFile(os.environ['HYPERML_UTILS'] + '/BlastWaveFits.root')
+  bw = [ bw_file.Get("BlastWave/BlastWave{}".format(i)) for i in [0,1,2] ]
+  cent_bins = [10,40,90]
+
+  signal = 0
+  for cent in range(cent_range[0]+1,cent_range[1]):
+    for index in range(0,3):
+      if cent < cent_bins[index] :
+        signal = signal + nevents[cent] * bw[index].Integral(pt_range[0], pt_range[1], 1e-8)
+        break
+
+  return int(round(signal * eff * hyp2he3))
 
 def expected_signal(n_ev, eff_presel, eff_bdt, pt_range, cent_class):
     signal_raw = expected_signal_raw(pt_range, cent_class)
