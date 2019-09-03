@@ -32,7 +32,7 @@ def ct_analysis(training_columns,params_def,Training = False,Significance=False,
   Centrality_bins = [[0,10],[10,30],[30,50],[50,90]]
   Ct_bins = [[0,2],[2,4],[4,6],[6,8],[8,10],[10,14],[14,18],[18,23],[23,28]]
   
-  nev_MC = []
+  # nev_MC = []
   Cut_saved = []
   Eff_BDT = []
   for index_ct in range(0,len(Ct_bins)):
@@ -60,15 +60,15 @@ def ct_analysis(training_columns,params_def,Training = False,Significance=False,
         Cut_saved.append(Cut)
         Eff_BDT.append(eff)
   
-  if Training is False:
-    nev_MC = [17036.0, 81426.0, 61730.0, 69320.0, 18758.0, 86913.0, 66072.0, 74971.0, 14928.0, 68138.0, 51422.0, 58989.0, 12171.0, 53709.0, 40338.0, 45018.0, 9747.0, 43213.0, 32366.0, 35994.0, 13860.0, 61172.0, 45976.0, 51552.0, 8795.0, 38118.0, 28780.0, 32175.0, 6535.0, 28367.0, 20998.0, 23548.0, 3617.0, 15522.0, 11554.0, 12734.0]
+  # if Training is False:
+  #   nev_MC = [17036.0, 81426.0, 61730.0, 69320.0, 18758.0, 86913.0, 66072.0, 74971.0, 14928.0, 68138.0, 51422.0, 58989.0, 12171.0, 53709.0, 40338.0, 45018.0, 9747.0, 43213.0, 32366.0, 35994.0, 13860.0, 61172.0, 45976.0, 51552.0, 8795.0, 38118.0, 28780.0, 32175.0, 6535.0, 28367.0, 20998.0, 23548.0, 3617.0, 15522.0, 11554.0, 12734.0]
   if Significance is False:
     Eff_BDT = [0.5234218289085546, 0.6777731636416934, 0.7574905459129254, 0.7884154960048461, 0.7386999569522169, 0.8640734366035571, 0.8986059451449998, 0.89413771960225, 0.7750755702115966, 0.8742737014219393, 0.908104309806371, 0.907210902803675, 0.7820428336079077, 0.8741094408594129, 0.9110845295055822, 0.9160441124155105, 0.7883378294251919, 0.8538539929590513, 0.8768049155145929, 0.8684430105134339, 0.7215560105293946, 0.809695551873152, 0.8176619521564519, 0.8302690149022643, 0.65860400829302, 0.7677959850360925, 0.8209389281262983, 0.5500030885168942, 0.5914747977598008, 0.6395381385584324, 0.7511467889908257, 0.8132053225534782, 0.3521613832853026, 0.6373136230406525, 0.6005835907998627, 0.7173166926677067]
     Cut_saved=  [3.2, 5.1000000000000005, 5.5, 7.9, 3.7, 5.5, 5.800000000000001, 8.0, 3.8000000000000007, 5.800000000000001, 5.9, 7.800000000000001, 3.8000000000000007, 5.800000000000001, 5.800000000000001, 7.600000000000001, 4.0, 6.1, 6.300000000000001, 7.800000000000001, 4.4, 6.4, 6.800000000000001, 8.100000000000001, 4.4, 6.5, 6.5, 9.200000000000001, 4.5, 6.9, 6.6, 7.700000000000001, 5.300000000000001, 6.4, 7.1, 7.700000000000001]
 
   print("efficiency BDT: ",Eff_BDT)
   print("cut: ",Cut_saved)
-  print("nevent: ",nev_MC)
+  # print("nevent: ",nev_MC)
   Fit_counts = []
   # loop to read the models and to do the prediction
   index_cut = 0
@@ -77,7 +77,7 @@ def ct_analysis(training_columns,params_def,Training = False,Significance=False,
     os.makedirs(os.environ['HYPERML_FIGURES_2']+'/Peaks/')
   for index_ct in range(0,len(Ct_bins)):
     for index_cen in range(0,len(Centrality_bins)):
-      output_cut = -3# Cut_saved[index_cut]
+      output_cut =  Cut_saved[index_cut]
       print('centrality: ',Centrality_bins[index_cen],'Ct: ',Ct_bins[index_ct])
       
       ct_min = Ct_bins[index_ct][0]
@@ -126,7 +126,8 @@ def ct_analysis(training_columns,params_def,Training = False,Significance=False,
     for index_ct in range(0,len(Ct_bins)):
       errBDT = math.sqrt((1-Effp[index_ct])*Effp[index_ct])
       errEff = math.sqrt((1-Eff_BDT[index_cen*4+index_ct])*Eff_BDT[index_cen*4+index_ct])
-      errTot = Eff_BDT[index_ct+index_cen*4]*Effp[index_ct]*math.sqrt((errBDT*errBDT/Eff_BDT[index_ct+index_cen*4]/Eff_BDT[index_ct+index_cen*4]+errEff*errEff/Effp[index_ct]/Effp[index_ct])/nev_MC[index_cen*4+index_ct])
+      # errTot = Eff_BDT[index_ct+index_cen*4]*Effp[index_ct]*math.sqrt((errBDT*errBDT/Eff_BDT[index_ct+index_cen*4]/Eff_BDT[index_ct+index_cen*4]+errEff*errEff/Effp[index_ct]/Effp[index_ct])/nev_MC[index_cen*4+index_ct])
+      errTot = 0
       histo_eff.SetBinContent(index_ct+1,Effp[index_ct]*Eff_BDT[index_cen*4+index_ct])
       histo_eff.SetBinError(index_ct+1,errTot)
     histo_eff.Write()

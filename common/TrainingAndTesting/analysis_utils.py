@@ -145,9 +145,11 @@ def significance_error(signal, background):
     sb = signal + background + 1e-10
     sb_sqrt = np.sqrt(sb)
 
-    s_propag = (sb_sqrt + signal / (2 * sb_sqrt)) * signal_error
-    b_propag = sb / (2 * sb_sqrt) * background_error
+    s_propag = (sb_sqrt + signal / (2 * sb_sqrt))/sb * signal_error
+    b_propag = signal / (2 * sb_sqrt)/sb * background_error
 
+    if signal+background==0:
+      return 0
     return np.sqrt(s_propag * s_propag + b_propag * b_propag)
 
 
