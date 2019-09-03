@@ -41,7 +41,7 @@ def pt_analysis(training_columns,params_def,Training = False,Significance=False,
       print('Pt: ',Pt_bins[index_pt])
 
       if Training is True or Significance is True:
-        data = Analysis.prepare_dataframe(training_columns, cent_class=index_cen, pt_range=Pt_bins[index_pt],bkg_factor=10)
+        data = Analysis.prepare_dataframe(training_columns, cent_class=Centrality_bins[index_cen], pt_range=Pt_bins[index_pt],bkg_factor=10)
       
       if Training is True:
         print('training the models ...')

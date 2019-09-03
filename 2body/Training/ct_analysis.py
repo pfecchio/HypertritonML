@@ -41,7 +41,7 @@ def ct_analysis(training_columns,params_def,Training = False,Significance=False,
       print('Ct: ',Ct_bins[index_ct])
 
       if Training is True or Significance is True:
-        data = Analysis.prepare_dataframe(training_columns, cent_class=index_cen, ct_range=Ct_bins[index_ct],bkg_factor=10)
+        data = Analysis.prepare_dataframe(training_columns, cent_class=Centrality_bins[index_cen], ct_range=Ct_bins[index_ct],bkg_factor=10)
       
       if Training is True:
         print('training the models ...')
@@ -85,7 +85,7 @@ def ct_analysis(training_columns,params_def,Training = False,Significance=False,
       centrality_min = Centrality_bins[index_cen][0]
       centrality_max = Centrality_bins[index_cen][1]
 
-      total_cut = '@ct_min<Ct<@ct_max and 0<HypCandPt<10 and @centrality_min<Centrality<@centrality_max'
+      total_cut = '@ct_min<ct<@ct_max and 0<HypCandPt<10 and @centrality_min<centrality<@centrality_max'
       filename = '/BDT_Ct_{:.2f}_{:.2f}_pT_{:.2f}_{:.2f}_Cen_{:.2f}_{:.2f}.sav'.format(Ct_bins[index_ct][0],Ct_bins[index_ct][1],0,10,Centrality_bins[index_cen][0],Centrality_bins[index_cen][1])
       ##per testare il dev
       #filename = '/BDT_{}{}_{}{}_{}{}.sav'.format(Centrality_bins[index_cen][0],Centrality_bins[index_cen][1],0,10,Ct_bins[index_ct][0],Ct_bins[index_ct][1])
@@ -194,7 +194,7 @@ training_columns = [[ 'V0CosPA','ProngsDCA','PiProngPvDCAXY','He3ProngPvDCAXY','
 [ 'V0CosPA','ProngsDCA','HypCandPt','ArmenterosAlpha','NpidClustersHe3','TPCnSigmaHe3'],
 [ 'V0CosPA','ProngsDCA','HypCandPt','ArmenterosAlpha','PiProngPvDCAXY','He3ProngPvDCAXY','He3ProngPvDCA','PiProngPvDCA']]
 
-ct_analysis(training_columns[0],params_def,Training=False,Significance=False,score_shift=0,custom=True,file_name='/results_bkg.root')
+ct_analysis(training_columns[0],params_def,Training=False,Significance=True,score_shift=0,custom=True,file_name='/results_ct.root')
 
 # syst_file = TFile(os.environ['HYPERML_DATA']+"/systematic_ct.root","recreate")
 # histo_shift = TH1D("histo_shift",";cut-score;#tau [ps]",5,-1,1)

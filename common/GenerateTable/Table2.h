@@ -21,7 +21,7 @@ class Table2 {
   TTree* tree;
   float HypCandPt;
   float TPCnSigmaHe3;
-  float Ct;
+  float ct;
   float InvMass;
   float ArmenterosAlpha;
   float V0CosPA;
@@ -35,7 +35,7 @@ class Table2 {
   float NpidClustersPion;
   float TPCnSigmaPi;
   float Lrec;
-  float Centrality;
+  float centrality;
   float V0radius;  
   float PiProngPvDCAXY;
   float He3ProngPvDCAXY;   
@@ -49,7 +49,7 @@ Table2::Table2(std::string name, std::string title) {
 
   tree->Branch("HypCandPt", &HypCandPt);
   tree->Branch("TPCnSigmaHe3", &TPCnSigmaHe3);
-  tree->Branch("Ct", &Ct);
+  tree->Branch("ct", &ct);
   tree->Branch("InvMass", &InvMass);
   tree->Branch("ArmenterosAlpha", &ArmenterosAlpha);
   tree->Branch("V0CosPA", &V0CosPA);
@@ -65,7 +65,7 @@ Table2::Table2(std::string name, std::string title) {
   tree->Branch("NpidClustersPion", &NpidClustersPion); 
   tree->Branch("TPCnSigmaPi", &TPCnSigmaPi);
   tree->Branch("Lrec", &Lrec);
-  tree->Branch("Centrality", &Centrality);
+  tree->Branch("centrality", &centrality);
   tree->Branch("V0radius", &V0radius);
   tree->Branch("Rapidity", &Rapidity);
   tree->Branch("PseudoRapidityHe3", &PseudoRapidityHe3);
@@ -73,7 +73,7 @@ Table2::Table2(std::string name, std::string title) {
 };
 
 void Table2::Fill(const RHyperTritonHe3pi& RHyper, const RCollision& RColl) {
-  Centrality = RColl.fCent;
+  centrality = RColl.fCent;
   double eHe3 = Hypot(RHyper.fPxHe3, RHyper.fPyHe3, RHyper.fPzHe3, AliPID::ParticleMass(AliPID::kHe3));
   double ePi = Hypot(RHyper.fPxPi, RHyper.fPyPi, RHyper.fPzPi, AliPID::ParticleMass(AliPID::kPion));
 
@@ -102,7 +102,7 @@ void Table2::Fill(const RHyperTritonHe3pi& RHyper, const RCollision& RColl) {
   }
 
   float alpha = (qP - qN) / (qP + qN);
-  Ct = kHyperTritonMass*(Hypot(RHyper.fDecayX, RHyper.fDecayY, RHyper.fDecayZ) / hyperVector.P());
+  ct = kHyperTritonMass*(Hypot(RHyper.fDecayX, RHyper.fDecayY, RHyper.fDecayZ) / hyperVector.P());
   InvMass = hyperVector.M();
   ArmenterosAlpha = alpha;
   V0CosPA = CosPA;
