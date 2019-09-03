@@ -105,9 +105,9 @@ def ct_analysis(training_columns,params_def,Training = False,Significance=False,
       Counts,bins = np.histogram(dfDataF.query('Score >@output_cut')['InvMass'],bins=45,range=[2.96,3.05])
       #sum over the counts in centrality intervals
       if index_cen==0:
-        CountsTot=Counts/Eff_BDT[index_ct*len(Centrality_bins)+index_cen]
+        CountsTot=Counts
       else:
-        CountsTot=CountsTot+Counts/Eff_BDT[index_ct*len(Centrality_bins)+index_cen]
+        CountsTot=CountsTot+Counts
       index_cut=index_cut+1
     
     
@@ -121,7 +121,7 @@ def ct_analysis(training_columns,params_def,Training = False,Significance=False,
   #loop to compute the efficiency
   Effp = []
   for index in range(0,len(Ct_bins)):
-    Effp.append(Analysis.preselection_efficiency(ct_range=Ct_bins[index],pt_range=[0,10],cent_class=[0,100]))
+    Effp.append(Analysis.preselection_efficiency(ct_range=Ct_bins[index],pt_range=[0,10],cent_class=[0,100]) * Eff_BDT[index])
 
   ct_binning = array("d",[0,2,4,6,8,10,14,18,23,28])
   results = TFile(os.environ['HYPERML_DATA_2']+"/"+file_name,"update")
@@ -129,16 +129,14 @@ def ct_analysis(training_columns,params_def,Training = False,Significance=False,
   results.cd()
 
   #total efficiency
-  for index_cen in range(0,len(Centrality_bins)):
-    histo_eff = TH1D("histo_eff_{}_{}".format([0,90][0],[0,90][1]),";ct [cm];efficiency",len(ct_binning)-1,ct_binning)
-    for index_ct in range(0,len(Ct_bins)):
-      errBDT = math.sqrt((1-Effp[index_ct])*Effp[index_ct])
-      errEff = math.sqrt((1-Eff_BDT[index_ct*len(Centrality_bins)+index_cen])*Eff_BDT[index_ct*len(Centrality_bins)+index_cen])
-      # errTot = Eff_BDT[index_ct+index_cen*4]*Effp[index_ct]*math.sqrt((errBDT*errBDT/Eff_BDT[index_ct+index_cen*4]/Eff_BDT[index_ct+index_cen*4]+errEff*errEff/Effp[index_ct]/Effp[index_ct])/nev_MC[index_cen*4+index_ct])
-      errTot = 0
-      histo_eff.SetBinContent(index_ct+1,Effp[index_ct]*Eff_BDT[index_ct*len(Centrality_bins)+index_cen])
-      histo_eff.SetBinError(index_ct+1,errTot)
-    histo_eff.Write()
+  histo_eff = TH1D("histo_eff_0_90",";ct [cm];efficiency",len(ct_binning)-1,ct_binning)
+  for index_ct in range(0,len(Ct_bins)):
+    errBDT = math.sqrt((1-Effp[index_ct])*Effp[index_ct])
+    errEff = math.sqrt((1-Eff_BDT[index_ct])*Eff_BDT[index_ct])
+    errTot = 0
+    histo_eff.SetBinContent(index_ct+1,Effp[index_ct]*Eff_BDT[index_ct])
+    histo_eff.SetBinError(index_ct+1,errTot)
+  histo_eff.Write()
 
   #ct distribution
   cv = TCanvas("ct")
@@ -155,8 +153,8 @@ def ct_analysis(training_columns,params_def,Training = False,Significance=False,
   histoct.SetMarkerColor(1)
 
   for index in range(0,len(Fit_counts)):
-    histoct.SetBinContent(index+1,Fit_counts[index][0]/Effp[index]/(ct_binning[index+1]-ct_binning[index]))
-    histoct.SetBinError(index+1,Fit_counts[index][1]/Effp[index]/(ct_binning[index+1]-ct_binning[index]))
+    histoct.SetBinContent(index+1,Fit_counts[index][0]/Effp[index]/Eff_BDT[index_ct]/(ct_binning[index+1]-ct_binning[index]))
+    histoct.SetBinError(index+1,Fit_counts[index][1]/Effp[index]/Eff_BDT[index_ct]/(ct_binning[index+1]-ct_binning[index]))
 
 
   expo = TF1("","[0]*exp(-x/[1]/0.029979245800)",0,28)
@@ -172,7 +170,7 @@ def ct_analysis(training_columns,params_def,Training = False,Significance=False,
   pinfo2.AddText(string)
   string='#tau = {:.0f} #pm {:.0f} ps '.format(expo.GetParameter(1),expo.GetParError(1))
   pinfo2.AddText(string)  
-  string='prob = {}'.format(expo.GetProb())
+  string='#chi^{{2}} / NDF = {}'.format(expo.GetChisquare() / (expo.GetNDF()))
   pinfo2.AddText(string)  
   pinfo2.Draw()
     
@@ -203,4 +201,4 @@ training_columns = [[ 'V0CosPA','ProngsDCA','PiProngPvDCAXY','He3ProngPvDCAXY','
 [ 'V0CosPA','ProngsDCA','HypCandPt','ArmenterosAlpha','NpidClustersHe3','TPCnSigmaHe3'],
 [ 'V0CosPA','ProngsDCA','HypCandPt','ArmenterosAlpha','PiProngPvDCAXY','He3ProngPvDCAXY','He3ProngPvDCA','PiProngPvDCA']]
 
-ct_analysis(training_columns[0],params_def,Training=True,Significance=True,score_shift=0,custom=False,file_name='/results_ct_nocent.root')
+ct_analysis(training_columns[0],params_def,Training=False,Significance=False,score_shift=0,custom=False,file_name='/results_ct_nocent.root')
