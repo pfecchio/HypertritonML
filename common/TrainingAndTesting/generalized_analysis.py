@@ -41,10 +41,11 @@ class GeneralizedAnalysis:
         self.df_data['y'] = 0
 
         # dataframe for signal and background with preselection
-        if not cut_presel == 0:
-            self.df_data = self.df_data.query(bkg_selection)
-        if not bkg_selection == 0:
+        if isinstance(cut_presel, str):
             self.df_signal = self.df_signal.query(cut_presel)
+        if isinstance(bkg_selection, str):
+            self.df_data = self.df_data.query(bkg_selection)
+
         if mode==2:
             hist_centrality = uproot.open(data_file_name)['EventCounter']
 
@@ -93,6 +94,7 @@ class GeneralizedAnalysis:
     def preselection_efficiency(self, ct_range=[0, 100], pt_range=[0, 12], cent_class=[0,100]):
         ct_min = ct_range[0]
         ct_max = ct_range[1]
+
         pt_min = pt_range[0]
         pt_max = pt_range[1]
 
@@ -263,8 +265,10 @@ class GeneralizedAnalysis:
             cent_class=[0,100],  custom=True, n_points=100):
         ct_min = ct_range[0]
         ct_max = ct_range[1]
+
         pt_min = pt_range[0]
         pt_max = pt_range[1]
+
         cent_ref=[[0, 10], [10, 30], [30, 50], [50, 90]]
         cent_min = cent_class[0]
         cent_max = cent_class[1]
