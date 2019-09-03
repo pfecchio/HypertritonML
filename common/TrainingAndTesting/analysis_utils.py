@@ -211,7 +211,7 @@ def fit(counts,min,max,nsigma=3,recreate=False,signif=0,errsignif=0,minCent=0,ma
   histo.SetLineColor(1)
   histo.SetMarkerStyle(20)
   histo.SetMarkerColor(1)
-  histo.SetTitle(";m (^{3}He + #pi) (GeV/#it{c})^{2};Counts")
+  histo.SetTitle(";m (^{3}He + #pi) (GeV/#it{c})^{2};Counts / 2 MeV")
   histo.SetMaximum(1.5 * histo.GetMaximum())
   histo.Fit(fitTpl,"QRM","",2.97,3.03)
   histo.Fit(fitTpl,"QRM","",2.97,3.03)
@@ -262,14 +262,14 @@ def fit(counts,min,max,nsigma=3,recreate=False,signif=0,errsignif=0,minCent=0,ma
   pinfo2.SetTextFont(42)
   string ='ALICE Internal, Pb-Pb 2018 {}-{}%'.format(minCent,maxCent)
   pinfo2.AddText(string)    
-  string='^{3}_{#Lambda}H#rightarrow ^{3}He#pi + c.c., %i #leq #it{ct} < %i cm ' % (min,max)
+  string='{}^{3}_{#Lambda}H#rightarrow ^{3}He#pi + c.c., %i #leq #it{ct} < %i cm ' % (min,max)
   pinfo2.AddText(string)    
   string='Significance ({:.0f}#sigma) {:.1f} #pm {:.1f} '.format(nsigma,signif,errsignif)
   pinfo2.AddText(string)
   
   string='S ({:.0f}#sigma) {:.0f} #pm {:.0f} '.format(nsigma,signal,errsignal)
   pinfo2.AddText(string)
-  string='B ({:.0f}#sigma) {:.0f} #pm {:.0f}'.format(nsigma,signal,errsignal)
+  string='B ({:.0f}#sigma) {:.0f} #pm {:.0f}'.format(nsigma,bkg,errbkg)
   pinfo2.AddText(string)
   if bkg>0: 
     ratio = signal/bkg
