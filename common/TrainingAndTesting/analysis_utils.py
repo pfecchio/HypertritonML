@@ -5,6 +5,7 @@ from contextlib import redirect_stdout
 import numpy as np
 
 import xgboost as xgb
+import math
 from ROOT import TF1, TFile, gDirectory
 from ROOT import TH2D,TH1D,TCanvas,TFile,TF1,gStyle,TPaveText
 

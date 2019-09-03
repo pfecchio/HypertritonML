@@ -43,19 +43,19 @@ def ct_analysis(training_columns,params_def,Training = False,Significance=False,
       if Training is True or Significance is True:
         data = Analysis.prepare_dataframe(training_columns, cent_class=Centrality_bins[index_cen], ct_range=Ct_bins[index_ct],bkg_factor=10)
       
+          
+      filename = os.environ['HYPERML_MODELS_2']+'/BDT_Ct_{:.2f}_{:.2f}_pT_{:.2f}_{:.2f}_Cen_{:.2f}_{:.2f}.sav'.format(Ct_bins[index_ct][0],Ct_bins[index_ct][1],0,10,Centrality_bins[index_cen][0],Centrality_bins[index_cen][1])
       if Training is True:
         print('training the models ...')
         model =Analysis.train_test_model(data, training_columns, params_def, Ct_bins[index_ct],[0,10],Centrality_bins[index_cen],optimize=False)
         # nev_MC.append(Analysis.number_events_MC(Ct_bins[index_ct],[0,10],Centrality_bins[index_cen]))
         if model is not 0:
-          filename = '/BDT_Ct_{:.2f}_{:.2f}_pT_{:.2f}_{:.2f}_Cen_{:.2f}_{:.2f}.sav'.format(Ct_bins[index_ct][0],Ct_bins[index_ct][1],0,10,Centrality_bins[index_cen][0],Centrality_bins[index_cen][1])
-          pickle.dump(model, open(os.environ['HYPERML_MODELS_2']+filename, 'wb'))
+          pickle.dump(model, open(filename, 'wb'))
           print(filename+' has been saved')
       
       if Significance is True:
         print('computing the cuts ...')
-        filename = '/BDT_Ct_{:.2f}_{:.2f}_pT_{:.2f}_{:.2f}_Cen_{:.2f}_{:.2f}.sav'.format(Ct_bins[index_ct][0],Ct_bins[index_ct][1],0,10,Centrality_bins[index_cen][0],Centrality_bins[index_cen][1])
-        model = pickle.load(open(os.environ['HYPERML_MODELS_2']+filename, 'rb'))
+        model = pickle.load(open(filename, 'rb'))
         Cut,eff = Analysis.significance_scan(data,model,training_columns,ct_range=Ct_bins[index_ct],pt_range=[0,10],cent_class=Centrality_bins[index_cen],custom=custom)
         Cut_saved.append(Cut)
         Eff_BDT.append(eff)
