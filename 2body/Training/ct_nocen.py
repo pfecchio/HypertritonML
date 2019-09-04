@@ -153,8 +153,8 @@ def ct_analysis(training_columns,params_def,Training = False,Significance=False,
   histoct.SetMarkerColor(1)
 
   for index in range(0,len(Fit_counts)):
-    histoct.SetBinContent(index+1,Fit_counts[index][0]/Effp[index]/Eff_BDT[index_ct]/(ct_binning[index+1]-ct_binning[index]))
-    histoct.SetBinError(index+1,Fit_counts[index][1]/Effp[index]/Eff_BDT[index_ct]/(ct_binning[index+1]-ct_binning[index]))
+    histoct.SetBinContent(index+1,Fit_counts[index][0]/Effp[index]/Eff_BDT[index]/(ct_binning[index+1]-ct_binning[index]))
+    histoct.SetBinError(index+1,Fit_counts[index][1]/Effp[index]/Eff_BDT[index]/(ct_binning[index+1]-ct_binning[index]))
 
 
   expo = TF1("","[0]*exp(-x/[1]/0.029979245800)",0,28)
