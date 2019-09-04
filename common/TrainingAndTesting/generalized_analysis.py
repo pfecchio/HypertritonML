@@ -21,7 +21,12 @@ import plot_utils as pu
 
 class GeneralizedAnalysis:
 
-    def __init__(self, mode, mc_file_name, data_file_name, cut_presel=0, bkg_selection=0, cent_class=[[0, 10], [10, 30], [30, 50], [50, 90]]):
+    def __init__(
+            self, mode, mc_file_name, data_file_name, sig_selection=0, bkg_selection=0,
+            cent_class=[[0, 10],
+                        [10, 30],
+                        [30, 50],
+                        [50, 90]]):
         self.mode = mode
 
         self.cent_class = cent_class.copy()
@@ -36,7 +41,7 @@ class GeneralizedAnalysis:
             self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df()
             self.df_generated = uproot.open(mc_file_name)['GenTable'].pandas.df()
             self.df_data = uproot.open(data_file_name)['DataTable'].pandas.df()
-        
+
         self.df_signal['y'] = 1
         self.df_data['y'] = 0
 
@@ -44,12 +49,12 @@ class GeneralizedAnalysis:
         self.df_data_all = self.df_data.copy()
 
         # dataframe for signal and background with preselection
-        if isinstance(cut_presel, str):
-            self.df_signal = self.df_signal.query(cut_presel)
+        if isinstance(sig_selection, str):
+            self.df_signal = self.df_signal.query(sig_selection)
         if isinstance(bkg_selection, str):
             self.df_data = self.df_data.query(bkg_selection)
 
-        if mode==2:
+        if mode == 2:
             self.hist_centrality = uproot.open(data_file_name)['EventCounter']
             self.n_events = []
             for cent in self.cent_class:
@@ -59,7 +64,7 @@ class GeneralizedAnalysis:
     def prepare_dataframe(
             self, training_columns, cent_class, pt_range=[0, 10],
             ct_range=[0, 100],
-            test=False, bkg_reduct=True, bkg_factor=1):
+            test=False, bkg_reduct=False, bkg_factor=1):
         data_range = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(
             ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1])
 
@@ -87,7 +92,7 @@ class GeneralizedAnalysis:
 
     # function to compute the preselection cuts efficiency
 
-    def preselection_efficiency(self, ct_range=[0, 100], pt_range=[0, 12], cent_class=[0,100]):
+    def preselection_efficiency(self, ct_range=[0, 100], pt_range=[0, 10], cent_class=[0, 100]):
         ct_min = ct_range[0]
         ct_max = ct_range[1]
 
@@ -169,7 +174,7 @@ class GeneralizedAnalysis:
     # manage all the training stuffs
     def train_test_model(
             self, data, training_columns, reg_params, ct_range=[0, 100],
-            pt_range=[0, 100],
+            pt_range=[0, 10],
             cent_class=[0, 10], hyperparams=0, num_rounds=100, es_rounds=20,
             ROC=True, optimize=False, optimize_mode='bayes'):
         dtrain = xgb.DMatrix(data=data[0], label=data[1], feature_names=training_columns)
@@ -181,7 +186,7 @@ class GeneralizedAnalysis:
         if optimize:
             if optimize_mode == 'bayes':
                 max_params, best_numrounds = self.optimize_params_bayes(
-                    dtrain, reg_params, hyperparams, num_rounds=num_rounds, es_rounds=es_rounds, init_points=3, n_iter=5)
+                    dtrain, reg_params, hyperparams, num_rounds=num_rounds, es_rounds=es_rounds, init_points=3, n_iter=12)
             # if optimize_mode == 'gs':
                 # max_parms, num_rounds = self.optimize_params_gs(dtrain, params)
         else:   # manage the default params
@@ -225,18 +230,28 @@ class GeneralizedAnalysis:
 
     def save_model(self, model, cent_class, pt_range=[0, 10], ct_range=[0, 100]):
         models_path = os.environ['HYPERML_MODELS_{}'.format(self.mode)]
-        filename = '/BDT_{}{}_{}{}_{}{}.sav'.format(cent_class[0], cent_class[1], pt_range[0], pt_range[1], ct_range[0], ct_range[1])
+        filename = '/BDT_{}{}_{}{}_{}{}.sav'.format(cent_class[0],
+                                                    cent_class[1],
+                                                    pt_range[0],
+                                                    pt_range[1],
+                                                    ct_range[0],
+                                                    ct_range[1])
 
         pickle.dump(model, open(models_path + filename, 'wb'))
 
     def load_model(self, cent_class, pt_range=[0, 10], ct_range=[0, 100]):
         models_path = os.environ['HYPERML_MODELS_{}'.format(self.mode)]
-        filename = '/BDT_{}{}_{}{}_{}{}.sav'.format(cent_class[0], cent_class[1], pt_range[0], pt_range[1], ct_range[0], ct_range[1])
+        filename = '/BDT_{}{}_{}{}_{}{}.sav'.format(cent_class[0],
+                                                    cent_class[1],
+                                                    pt_range[0],
+                                                    pt_range[1],
+                                                    ct_range[0],
+                                                    ct_range[1])
 
         model = pickle.load(open(models_path + filename, 'rb'))
         return model
 
-    def bdt_efficiency(self, df, ct_range=[0, 100], pt_range=[2, 3], cent_class=[0, 10], n_points=10):
+    def bdt_efficiency(self, df, ct_range=[0, 100], pt_range=[0, 10], cent_class=[0, 10], n_points=10):
         min_score = df['Score'].min()
         max_score = df['Score'].max()
 
@@ -257,8 +272,8 @@ class GeneralizedAnalysis:
 
     def significance_scan(
             self, test_data, model, training_columns, ct_range=[0, 100],
-            pt_range=[2, 3],
-            cent_class=[0,100],  custom=True, n_points=100):
+            pt_range=[0, 10],
+            cent_class=[0, 100],  custom=True, n_points=100):
         ct_min = ct_range[0]
         ct_max = ct_range[1]
 
@@ -332,21 +347,22 @@ class GeneralizedAnalysis:
             significance_custom_error.append(sig_custom_error)
 
         nevents = sum(self.hist_centrality[cent_class[0]+1:cent_class[1]])
-        
+
         if custom:
             max_index = np.argmax(significance_custom)
             max_score = threshold_space[max_index]
 
             pu.plot_significance_scan(
                 max_index, significance_custom, significance_custom_error, expected_signal, df_selected,
-                threshold_space, data_range_array, bin_centers, nevents,self.mode ,custom=True)
+                threshold_space, data_range_array, bin_centers, nevents, self.mode, custom=True)
 
         else:
             max_index = np.argmax(significance)
             max_score = threshold_space[max_index]
 
-            pu.plot_significance_scan(max_index, significance, significance_error, expected_signal,
-                                      df_selected, threshold_space, data_range_array, bin_centers, nevents, self.mode, custom=False)
+            pu.plot_significance_scan(
+                max_index, significance, significance_error, expected_signal, df_selected, threshold_space,
+                data_range_array, bin_centers, nevents, self.mode, custom=False)
 
         bdt_eff_max_score = bdt_efficiency[max_index]
 

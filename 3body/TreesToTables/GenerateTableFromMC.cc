@@ -78,7 +78,7 @@ void GenerateTableFromMC(bool reject = true) {
       BlastWave = BlastWave0;
       max       = max0;
     }
-    if (cent > 10. && cent <= 30.) {
+    if (cent > 10. && cent <= 40.) {
       BlastWave = BlastWave1;
       max       = max1;
     } else {

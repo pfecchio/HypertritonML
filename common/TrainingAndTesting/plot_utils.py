@@ -46,9 +46,9 @@ def plot_output_train_test(
 
     plt.figure(figsize=figsize)
     plt.hist(prediction[1], color='b', alpha=0.5, range=low_high, bins=bins,
-             histtype='stepfilled', density=True, label='Background pdf Training Set')
+             histtype='stepfilled', density=True, log=True, label='Background pdf Training Set')
     plt.hist(prediction[0], color='r', alpha=0.5, range=low_high, bins=bins,
-             histtype='stepfilled', density=True, label='Signal pdf Training Set')
+             histtype='stepfilled', density=True, log=True, label='Signal pdf Training Set')
 
     hist, bins = np.histogram(prediction[2], bins=bins, range=low_high, density=True)
     scale = len(prediction[2]) / sum(hist)
