@@ -121,7 +121,7 @@ def ct_analysis(training_columns,params_def,Training = False,Significance=False,
   #loop to compute the efficiency
   Effp = []
   for index in range(0,len(Ct_bins)):
-    Effp.append(Analysis.preselection_efficiency(ct_range=Ct_bins[index],pt_range=[0,10],cent_class=[0,100]) * Eff_BDT[index])
+    Effp.append(Analysis.preselection_efficiency(ct_range=Ct_bins[index],pt_range=[0,10],cent_class=[0,100]))
 
   ct_binning = array("d",[0,2,4,6,8,10,14,18,23,28])
   results = TFile(os.environ['HYPERML_DATA_2']+"/"+file_name,"update")
