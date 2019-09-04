@@ -81,7 +81,7 @@ for ctbin in CT_BINS:
 
     print('--- model trained in {:.4f} minutes ---\n'.format((time.time() - part_time) / 60))
 
-    analysis.save_model(model, ct_range=CT_BINS, cent_class=cclass)
+    analysis.save_model(model, ct_range=ctbin, cent_class=cclass)
     print('model saved\n')
 
     dtest = xgb.DMatrix(data=(data[2][TRAINING_COLUMNS]))
