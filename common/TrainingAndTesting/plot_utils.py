@@ -242,7 +242,7 @@ def plot_efficiency_significance(mode, tsd, significance, efficiency, data_range
     if not os.path.exists(fig_eff_path):
         os.makedirs(fig_eff_path)
 
-    fig_name = '/sign_eff{}{}_pT{}{}_cen{}{}.pdf'.format(
+    fig_name = '/sign_eff_ct{}{}_pT{}{}_cen{}{}.pdf'.format(
         data_range_array[0], data_range_array[1], data_range_array[2], data_range_array[3], data_range_array[4], data_range_array[5])
     plt.savefig(fig_eff_path + fig_name)
     plt.close()
