@@ -1,17 +1,14 @@
 import io
+import math
 import os
 from contextlib import redirect_stdout
 
 import numpy as np
 
 import xgboost as xgb
-import math
-from ROOT import TF1, TFile, gDirectory
-from ROOT import TH2D, TH1D, TCanvas, TFile, TF1, gStyle, TPaveText
+from ROOT import TF1, TH1D, TH2D, TCanvas, TFile, TPaveText, gDirectory, gStyle
 
 # target function for the bayesian hyperparameter optimization
-
-
 def evaluate_hyperparams(
         dtrain, reg_params, eta, min_child_weight, max_depth, gamma, subsample, colsample_bytree,
         scale_pos_weight, num_rounds=100, es_rounds=2, nfold=3, round_score_list=[]):
@@ -134,11 +131,8 @@ def expected_signal_raw(pt_range, cent_bin):
     return exp_yield
 
 
-def expected_signal_counts(pt_range, eff, cent_range, nevents):  # nevents assumed to be the number of events in 1% bins
-    # TODO: this function is called in a closed loop, we cannot open the file everytime...
+def expected_signal_counts(bw, pt_range, eff, cent_range, nevents):  # nevents assumed to be the number of events in 1% bins
     hyp2he3 = 0.4 * 0.25  # Very optimistic, considering it constant with centrality
-    bw_file = TFile(os.environ['HYPERML_UTILS'] + '/BlastWaveFits.root')
-    bw = [bw_file.Get("BlastWave/BlastWave{}".format(i)) for i in [0, 1, 2]]
     cent_bins = [10, 40, 90]
 
     signal = 0

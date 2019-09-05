@@ -144,7 +144,7 @@ def plot_corr(df, columns, mode=3, **kwds):
     corrmat_bkg = data_bkg.corr(**kwds)
 
     t = r'$\mathrm{\ \ \ ALICE \ Simulation}$ Pb-Pb $\sqrt{s_{\mathrm{NN}}}$ = 5.02 TeV'
-    fig = plt.figure(figsize=(20,10))
+    fig = plt.figure(figsize=(20, 10))
     # plt.title(t,y=1.08,fontsize=16)
     plt.suptitle(t, fontsize=18, ha='center')
     grid = ImageGrid(fig, 111, nrows_ncols=(1, 2), axes_pad=0.15, share_all=True,
@@ -226,25 +226,27 @@ def plot_significance_scan(
     if custom:
         label = label + ' x Efficiency'
 
-    # max_significance = significance[max_index]
-    # raw_yield = expected_signal[max_index]
-    # max_score = score_list[max_index]
+    raw_yield = expected_signal[max_index]
+    max_score = score_list[max_index]
 
-    # selected_bkg = bkg_df.query('Score>@max_score')
+    selected_bkg = bkg_df.query('Score>@max_score')
 
-    # signal_counts_norm = norm.pdf(bin_cent, loc=2.992, scale=0.0025)
-    # signal_counts = raw_yield * signal_counts_norm / sum(signal_counts_norm)
+    signal_counts_norm = norm.pdf(bin_cent, loc=2.992, scale=0.0025)
+    signal_counts = raw_yield * signal_counts_norm / sum(signal_counts_norm)
 
-    # bkg_side_counts, bins = np.histogram(selected_bkg['InvMass'], bins=30, range=[2.96, 3.05])
+    bkg_counts, bins = np.histogram(selected_bkg['InvMass'], bins=25, range=[2.96, 3.05])
 
-    # bin_centers = 0.5 * (bins[1:] + bins[:-1])
-    # side_map = (bin_centers < 2.9923 - 3 * 0.0025) + (bin_centers > 2.9923 + 3 * 0.0025)
-    # bins_side = bin_centers[side_map]
-    # mass_map = np.logical_not(side_map)
+    bin_centers = 0.5 * (bins[1:] + bins[:-1])
+    side_map = (bin_centers < 2.9923 - 3 * 0.0025) + (bin_centers > 2.9923 + 3 * 0.0025)
+    bins_side = bin_centers[side_map]
+    mass_map = np.logical_not(side_map)
 
-    # bkg_roi_shape = np.polyfit(bins_side, bkg_side_counts[side_map], 2)
-    # bkg_roi_counts = np.polyval(bkg_roi_shape, bin_centers)
-    # tot_counts = bkg_roi_counts + signal_counts
+    bkg_side_counts = bkg_counts[side_map]
+
+    bkg_roi_shape = np.polyfit(bins_side, bkg_side_counts, 2)
+    bkg_roi_counts = np.polyval(bkg_roi_shape, bin_centers)
+
+    tot_counts = (bkg_roi_counts + signal_counts)[mass_map]
 
     fig, axs = plt.subplots(1, 2, figsize=(12, 4))
 
@@ -252,7 +254,7 @@ def plot_significance_scan(
     axs[0].set_ylabel(label)
     axs[0].tick_params(axis='x', direction='in')
     axs[0].tick_params(axis='y', direction='in')
-    axs[0].plot(score_list, significance, 'b', label='Expected significance')
+    axs[0].plot(score_list, significance, 'b', label='Expected {}'.format(label))
 
     significance = np.asarray(significance)
     significance_error = np.asarray(significance_error)
@@ -263,32 +265,39 @@ def plot_significance_scan(
     axs[0].fill_between(score_list, low_limit, up_limit, facecolor='deepskyblue', label=r'$ \pm 1\sigma$')
     axs[0].grid()
     axs[0].legend(loc='upper left')
-    # plt.suptitle(r'%1.f $ \leq \rm{p}_{T} \leq $ %1.f, Cut Score = %0.2f, Significance/Events = %0.4f$x10^{-4}$, %s = %0.2f , Raw yield = %0.2f' % (
-    #     data_range_array[2], data_range_array[3], max_score, (max_significance / np.sqrt(n_ev) * 1e4), label, max_significance, raw_yield))
 
-    # bkg_side_error = np.sqrt(bkg_side_counts[side_map])
-    # tot_counts_error = np.sqrt(tot_counts[mass_map])
-    # mass_map = bin_centers[mass_map]
-    # bin_centers_map = bin_centers[side_map]
-    # bkg_roi_counts_map = bkg_roi_counts[side_map]
+    bkg_side_error = np.sqrt(bkg_side_counts)
+    tot_counts_error = np.sqrt(tot_counts)
 
-    # axs[1].errorbar(bin_centers_map, bkg_side_error, yerr=bkg_side_error,
-    #                 fmt='.', ecolor='k', color='b', elinewidth=1., label='Data')
-    # axs[1].errorbar(mass_map, tot_counts_error, yerr=tot_counts_error,
-    #                 fmt='.', ecolor='k', color='r', elinewidth=1., label='Pseudodata')
-    # axs[1].plot(bin_centers_map, bkg_roi_counts_map, 'g-', label='Background fit')
+    bins_mass = bin_centers[mass_map]
 
-    # x = np.linspace(2.9923 - 3 * 0.0025, 2.9923 + 3 * 0.0025, 1000)
-    # gauss_signal_counts = norm.pdf(x, loc=2.992, scale=0.0025)
-    # gauss_signal_counts = (raw_yield / sum(signal_counts_norm)) * gauss_signal_counts + np.polyval(bkg_roi_shape, x)
+    print(bins_side)
 
-    # axs[1].plot(x, gauss_signal_counts, 'y', color='orange', label='Signal model (Gauss)')
-    # axs[1].set_xlabel(r'$m_{\ ^{3}He+\pi^{-}}$')
-    # axs[1].set_ylabel(r'Events /  $3.6\ \rm{MeV}/c^{2}$')
-    # axs[1].tick_params(axis='x', direction='in')
-    # axs[1].tick_params(axis='y', direction='in')
-    # axs[1].legend(loc=(0.37, 0.47))
-    # plt.ylim(bottom=0)
+    axs[1].errorbar(bins_side, bkg_side_counts, yerr=5,
+                    fmt='.', ecolor='k', color='b', elinewidth=1., label='Data')
+    axs[1].errorbar(bins_mass, tot_counts, yerr=tot_counts_error,
+                    fmt='.', ecolor='k', color='r', elinewidth=1., label='Pseudodata')
+    axs[1].plot(bin_centers, bkg_roi_counts, 'g-', label='Background fit')
+
+    x = np.linspace(2.9923 - 3 * 0.0025, 2.9923 + 3 * 0.0025, 1000)
+    gauss_signal_counts = norm.pdf(x, loc=2.992, scale=0.0025)
+    gauss_signal_counts = (raw_yield / sum(signal_counts_norm)) * gauss_signal_counts + np.polyval(bkg_roi_shape, x)
+
+    axs[1].plot(x, gauss_signal_counts, 'y', color='orange', label='Signal model (Gauss)')
+    axs[1].set_xlabel(r'$m_{\ ^{3}He+\pi^{-}}$')
+    axs[1].set_ylabel(r'Events /  $3.6\ \rm{MeV}/c^{2}$')
+    axs[1].tick_params(axis='x', direction='in')
+    axs[1].tick_params(axis='y', direction='in')
+    axs[1].legend(loc='best', frameon=False)
+    plt.ylim(bottom=0)
+
+    s = sum(tot_counts) - sum(bkg_roi_counts[mass_map])
+    b = sum(bkg_roi_counts[mass_map])
+
+    sign_score = s / np.sqrt(s + b)
+
+    plt.suptitle(r'%1.f$\leq ct \leq$%1.f %1.f$\leq \rm{p}_{T} \leq$%1.f  Cut Score=%0.2f  Significance=%0.2f  Raw yield=%0.2f' % (
+        data_range_array[0], data_range_array[1], data_range_array[2], data_range_array[3], max_score,  sign_score, raw_yield))
 
     # text = '\n'.join(
     #     r'%1.f GeV/c $ \leq \rm{p}_{T} < $ %1.f GeV/c ' % (data_range_array[0], data_range_array[1]),

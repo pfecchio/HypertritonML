@@ -5,18 +5,19 @@ import os
 import pickle
 
 import numpy as np
+
+import analysis_utils as au
 import pandas as pd
+import plot_utils as pu
 import uproot
 import xgboost as xgb
 from bayes_opt import BayesianOptimization
+from ROOT import TF1, TFile, gDirectory
 from scipy import stats
 from scipy.stats import norm
-from sklearn.metrics import roc_auc_score, auc
+from sklearn.metrics import auc, roc_auc_score
 from sklearn.model_selection import (GridSearchCV, RandomizedSearchCV,
                                      StratifiedKFold, train_test_split)
-
-import analysis_utils as au
-import plot_utils as pu
 
 
 class GeneralizedAnalysis:
@@ -185,10 +186,14 @@ class GeneralizedAnalysis:
         # manage the optimization process
         if optimize:
             if optimize_mode == 'bayes':
+                print('Hyperparameters optimization: ...', end='\r')
                 max_params, best_numrounds = self.optimize_params_bayes(
                     dtrain, reg_params, hyperparams, num_rounds=num_rounds, es_rounds=es_rounds, init_points=3, n_iter=12)
+                print('Hyperparameters optimization: Done!\n')
             # if optimize_mode == 'gs':
+                # print('Hyperparameters optimization...', end='\r')
                 # max_parms, num_rounds = self.optimize_params_gs(dtrain, params)
+                # print('Hyperparameters optimization: Done!\n')
         else:   # manage the default params
             max_params = {
                 'eta': 0.055,
@@ -238,6 +243,7 @@ class GeneralizedAnalysis:
                                                     ct_range[1])
 
         pickle.dump(model, open(models_path + filename, 'wb'))
+        print('Model saved\n')
 
     def load_model(self, cent_class, pt_range=[0, 10], ct_range=[0, 100]):
         models_path = os.environ['HYPERML_MODELS_{}'.format(self.mode)]
@@ -249,6 +255,7 @@ class GeneralizedAnalysis:
                                                     ct_range[1])
 
         model = pickle.load(open(models_path + filename, 'rb'))
+        print('Model loaded\n')
         return model
 
     def bdt_efficiency(self, df, ct_range=[0, 100], pt_range=[0, 10], cent_class=[0, 10], n_points=10):
@@ -273,7 +280,9 @@ class GeneralizedAnalysis:
     def significance_scan(
             self, test_data, model, training_columns, ct_range=[0, 100],
             pt_range=[0, 10],
-            cent_class=[0, 100],  custom=True, n_points=100):
+            cent_class=[0, 100], custom=True, n_points=100):
+        print('Significance scan: ...', end='\r')
+
         ct_min = ct_range[0]
         ct_max = ct_range[1]
 
@@ -289,7 +298,9 @@ class GeneralizedAnalysis:
 
         colums = training_columns.copy()
         colums.append("InvMass")
+
         df_bkg = self.df_data.query(data_range)[colums]
+
         dtest = xgb.DMatrix(data=(test_data[0][training_columns]))
         dbkg = xgb.DMatrix(data=(df_bkg[training_columns]))
 
@@ -308,10 +319,14 @@ class GeneralizedAnalysis:
         significance_custom = []
         significance_custom_error = []
         hyp_lifetime = 206
+
+        bw_file = TFile(os.environ['HYPERML_UTILS'] + '/BlastWaveFits.root')
+        bw = [bw_file.Get("BlastWave/BlastWave{}".format(i)) for i in [0, 1, 2]]
+
         for index, tsd in enumerate(threshold_space):
             df_selected = df_bkg.query('Score>@tsd')
 
-            counts, bins = np.histogram(df_selected['InvMass'], bins=30, range=[2.96, 3.05])
+            counts, bins = np.histogram(df_selected['InvMass'], bins=25, range=[2.96, 3.05])
             bin_centers = 0.5 * (bins[1:] + bins[:-1])
 
             side_map = (bin_centers < 2.9923 - 3 * 0.0025) + (bin_centers > 2.9923 + 3 * 0.0025)
@@ -325,7 +340,8 @@ class GeneralizedAnalysis:
             eff_presel = self.preselection_efficiency(ct_range, pt_range, cent_class)
 
             exp_signal_ctint = au.expected_signal_counts(
-                pt_range, eff_presel * bdt_efficiency[index], cent_class, self.hist_centrality)
+                bw, pt_range, eff_presel * bdt_efficiency[index],
+                cent_class, self.hist_centrality)
             ctrange_correction = (au.expo(ct_min, hyp_lifetime)-au.expo(ct_max, hyp_lifetime)
                                   ) / (ct_max - ct_min) * hyp_lifetime * 0.029979245800
 
@@ -333,6 +349,9 @@ class GeneralizedAnalysis:
             exp_background = sum(np.polyval(h, bin_centers[mass_map]))
 
             expected_signal.append(exp_signal)
+
+            if (exp_background < 0):
+                exp_background = 0
 
             sig = exp_signal / np.sqrt(exp_signal + exp_background + 1e-10)
             sig_error = au.significance_error(exp_signal, exp_background)
@@ -353,7 +372,7 @@ class GeneralizedAnalysis:
             max_score = threshold_space[max_index]
 
             pu.plot_significance_scan(
-                max_index, significance_custom, significance_custom_error, expected_signal, df_selected,
+                max_index, significance_custom, significance_custom_error, expected_signal, df_bkg,
                 threshold_space, data_range_array, bin_centers, nevents, self.mode, custom=True)
 
         else:
@@ -361,9 +380,11 @@ class GeneralizedAnalysis:
             max_score = threshold_space[max_index]
 
             pu.plot_significance_scan(
-                max_index, significance, significance_error, expected_signal, df_selected, threshold_space,
+                max_index, significance, significance_error, expected_signal, df_bkg, threshold_space,
                 data_range_array, bin_centers, nevents, self.mode, custom=False)
 
         bdt_eff_max_score = bdt_efficiency[max_index]
+
+        print('Significance scan: Done!\n')
 
         return max_score, bdt_eff_max_score
