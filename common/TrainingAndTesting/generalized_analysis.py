@@ -365,6 +365,8 @@ class GeneralizedAnalysis:
             significance_custom.append(sig_custom)
             significance_custom_error.append(sig_custom_error)
 
+        pu.plot_efficiency_significance(self.mode, threshold_space, significance, bdt_efficiency, data_range_array)
+
         nevents = sum(self.hist_centrality[cent_class[0]+1:cent_class[1]])
 
         if custom:

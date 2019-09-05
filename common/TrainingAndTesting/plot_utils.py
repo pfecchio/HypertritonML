@@ -219,6 +219,35 @@ def plot_bdt_eff(threshold, eff_sig, mode, ct_range=[0, 100], pt_range=[0, 100],
     plt.close()
 
 
+def plot_efficiency_significance(mode, tsd, significance, efficiency, data_range_array):
+    fig, ax1 = plt.subplots()
+
+    color = 'tab:blue'
+
+    ax1.set_xlabel('BDT Score')
+    ax1.set_ylabel('Significance', color=color)
+    ax1.plot(tsd, significance, color=color)
+    ax1.tick_params(axis='y', labelcolor=color, direction='in')
+
+    ax2 = ax1.twinx()
+
+    color = 'tab:red'
+    ax2.set_ylabel('BDT efficiency', color=color)  # we already handled the x-label with ax1
+    ax2.plot(tsd, efficiency, color=color)
+    ax2.tick_params(axis='y', labelcolor=color, direction='in')
+
+    fig.tight_layout()
+
+    fig_eff_path = os.environ['HYPERML_FIGURES_{}'.format(mode)]+'/Significance'
+    if not os.path.exists(fig_eff_path):
+        os.makedirs(fig_eff_path)
+
+    fig_name = '/sign_eff{}{}_pT{}{}_cen{}{}.pdf'.format(
+        data_range_array[0], data_range_array[1], data_range_array[2], data_range_array[3], data_range_array[4], data_range_array[5])
+    plt.savefig(fig_eff_path + fig_name)
+    plt.close()
+
+
 def plot_significance_scan(
         max_index, significance, significance_error, expected_signal, bkg_df, score_list, data_range_array, bin_cent,
         n_ev, mode, custom=True):

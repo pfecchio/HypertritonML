@@ -67,7 +67,7 @@ for cclass in params['CENTRALITY_CLASS']:
                 model = analysis.load_model(ct_range=ctbin, cent_class=cclass, pt_range=ptbin)
 
             analysis.significance_scan([data[2], data[3]], model, params['TRAINING_COLUMNS'],
-                                       ct_range=ctbin, pt_range=ptbin, custom=True, n_points=200)
+                                       ct_range=ctbin, pt_range=ptbin, custom=False, n_points=200)
 
 # print execution time to performance evaluation
 print('')
