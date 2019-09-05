@@ -258,7 +258,7 @@ class GeneralizedAnalysis:
         print('Model loaded\n')
         return model
 
-    def bdt_efficiency(self, df, ct_range=[0, 100], pt_range=[0, 10], cent_class=[0, 10], n_points=10):
+    def bdt_efficiency_array(self, df, ct_range=[0, 100], pt_range=[0, 10], cent_class=[0, 10], n_points=10):
         min_score = df['Score'].min()
         max_score = df['Score'].max()
 
@@ -277,6 +277,13 @@ class GeneralizedAnalysis:
 
         return efficiency, threshold
 
+    def bdt_efficiency=(self, df, cut):
+        n_sig = sum(df['y'])
+        df_selected = df.query('Score>@cut')['y']
+        sig_selected = np.sum(df_selected)
+
+        return sig_selected / n_sig
+    
     def significance_scan(
             self, test_data, model, training_columns, ct_range=[0, 100],
             pt_range=[0, 10],
@@ -311,7 +318,7 @@ class GeneralizedAnalysis:
         test_data[0].eval('y = @test_data[1]', inplace=True)
         df_bkg.eval('Score = @y_pred_bkg', inplace=True)
 
-        bdt_efficiency, threshold_space = self.bdt_efficiency(test_data[0], ct_range, pt_range, cent_class, n_points)
+        bdt_efficiency, threshold_space = self.bdt_efficiency_array(test_data[0], ct_range, pt_range, cent_class, n_points)
 
         expected_signal = []
         significance = []
