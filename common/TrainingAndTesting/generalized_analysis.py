@@ -149,28 +149,34 @@ class GeneralizedAnalysis:
         return max_params, best_numrounds
 
     # function that manage the grid search
-    # def optimize_params_gs(dtrain, params):
-    #     gs_dict = {'first_par': {'name': 'max_depth', 'par_values': [i for i in range(2, 10, 2)]},
-    #                'second_par': {'name': 'min_child_weight', 'par_values': [i for i in range(0, 12, 2)]},
-    #                }
+    def optimize_params_gs(self,dtrain, params):
 
-    #     params['max_depth'], params['min_child_weight'], _ = au.gs_2par(
-    #         gs_dict, params, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
+        num_rounds=200
+        scoring='auc'
+        cv=StratifiedKFold(n_splits=5,shuffle=True,random_state=25)
+        early_stopping_rounds=50
 
-    #     gs_dict = {'first_par': {'name': 'subsample', 'par_values': [i/10. for i in range(4, 10)]},
-    #                'second_par': {'name': 'colsample_bytree', 'par_values': [i/10. for i in range(8, 10)]},
-    #                }
+        gs_dict = {'first_par': {'name': 'max_depth', 'par_values': [i for i in range(2, 10, 2)]},
+                   'second_par': {'name': 'min_child_weight', 'par_values': [i for i in range(0, 12, 2)]},
+                   }
 
-    #     params['subsample'], params['colsample_bytree'], _ = au.gs_2par(
-    #         gs_dict, params, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
+        params['max_depth'], params['min_child_weight'], _ = au.gs_2par(
+            gs_dict, params, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
 
-    #     gs_dict = {'first_par': {'name': 'gamma', 'par_values': [i / 10. for i in range(0, 11)]}}
-    #     params['gamma'], _ = au.gs_1par(gs_dict, params, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
+        gs_dict = {'first_par': {'name': 'subsample', 'par_values': [i/10. for i in range(4, 10)]},
+                   'second_par': {'name': 'colsample_bytree', 'par_values': [i/10. for i in range(8, 10)]},
+                   }
 
-    #     gs_dict = {'first_par': {'name': 'eta', 'par_values': [0.1, 0.05, 0.01, 0.005, 0.001]}}
-    #     params['eta'], n = au.gs_1par(gs_dict, params, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
+        params['subsample'], params['colsample_bytree'], _ = au.gs_2par(
+            gs_dict, params, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
 
-    #     return params, n
+        gs_dict = {'first_par': {'name': 'gamma', 'par_values': [i / 10. for i in range(0, 11)]}}
+        params['gamma'], _ = au.gs_1par(gs_dict, params, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
+
+        gs_dict = {'first_par': {'name': 'eta', 'par_values': [0.1, 0.05, 0.01, 0.005, 0.001]}}
+        params['eta'], n = au.gs_1par(gs_dict, params, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
+
+        return params, n
 
     # manage all the training stuffs
     def train_test_model(
@@ -190,10 +196,10 @@ class GeneralizedAnalysis:
                 max_params, best_numrounds = self.optimize_params_bayes(
                     dtrain, reg_params, hyperparams, num_rounds=num_rounds, es_rounds=es_rounds, init_points=3, n_iter=12)
                 print('Hyperparameters optimization: Done!\n')
-            # if optimize_mode == 'gs':
-                # print('Hyperparameters optimization...', end='\r')
-                # max_parms, num_rounds = self.optimize_params_gs(dtrain, params)
-                # print('Hyperparameters optimization: Done!\n')
+            if optimize_mode == 'gs':
+                print('Hyperparameters optimization...', end='\r')
+                max_params, best_numrounds = self.optimize_params_gs(dtrain, params)
+                print('Hyperparameters optimization: Done!\n')
         else:   # manage the default params
             max_params = {
                 'eta': 0.055,
