@@ -183,7 +183,7 @@ class GeneralizedAnalysis:
             self, data, training_columns, reg_params, ct_range=[0, 100],
             pt_range=[0, 10],
             cent_class=[0, 10], hyperparams=0, num_rounds=100, es_rounds=20,
-            ROC=True, optimize=False, optimize_mode='bayes'):
+            ROC=True, optimize=False, optimize_mode='gs'):
         dtrain = xgb.DMatrix(data=data[0], label=data[1], feature_names=training_columns)
         dtest = xgb.DMatrix(data=data[2], label=data[3], feature_names=training_columns)
 
@@ -198,7 +198,7 @@ class GeneralizedAnalysis:
                 print('Hyperparameters optimization: Done!\n')
             if optimize_mode == 'gs':
                 print('Hyperparameters optimization...', end='\r')
-                max_params, best_numrounds = self.optimize_params_gs(dtrain, params)
+                max_params, best_numrounds = self.optimize_params_gs(dtrain, reg_params)
                 print('Hyperparameters optimization: Done!\n')
         else:   # manage the default params
             max_params = {
