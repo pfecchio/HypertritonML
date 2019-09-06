@@ -53,7 +53,7 @@ if os.path.isfile('mydirectory/myfile.txt') and not args.significance:
     score_selection = data['eff_bdt']
 
 if not os.path.isfile('mydirectory/myfile.txt') and not args.significance:
-    arg.significance = True # does it work?
+    args.significance = True # does it work?
 
 significance_results = {}
 
