@@ -266,7 +266,7 @@ def plot_significance_scan(
     bkg_counts, bins = np.histogram(selected_bkg['InvMass'], bins=25, range=[2.96, 3.05])
 
     bin_centers = 0.5 * (bins[1:] + bins[:-1])
-    side_map = (bin_centers < 2.9923 - 3 * 0.0025) + (bin_centers > 2.9923 + 3 * 0.0025)
+    side_map = (bin_centers < 2.98) + (bin_centers > 3.005 )
     bins_side = bin_centers[side_map]
     mass_map = np.logical_not(side_map)
 
