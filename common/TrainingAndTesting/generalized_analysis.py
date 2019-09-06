@@ -283,7 +283,7 @@ class GeneralizedAnalysis:
 
         return efficiency, threshold
 
-    def bdt_efficiency=(self, df, cut):
+    def bdt_efficiency(self, df, cut):
         n_sig = sum(df['y'])
         df_selected = df.query('Score>@cut')['y']
         sig_selected = np.sum(df_selected)
