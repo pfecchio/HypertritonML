@@ -31,14 +31,6 @@ with open(os.path.expandvars(args.config), 'r') as stream:
     except yaml.YAMLError as exc:
         print(exc)
 
-HYPERPARAMS = {'eta': 0.05,
-               'min_child_weight': 8,
-               'max_depth': 10,
-               'gamma': 0.7,
-               'subsample': 0.8,
-               'colsample_bytree': 0.9,
-               'scale_pos_weight': 10}
-
 signal_selection = '2<=HypCandPt<=10'
 backgound_selection = '(InvMass<2.98 or InvMass>3.005) and HypCandPt<=10'
 
@@ -65,6 +57,9 @@ if not os.path.isfile('mydirectory/myfile.txt') and not args.significance:
 
 significance_results = {}
 
+optimisation_params = params['HYPERPARAMS'] if params['OPTIMIZATION_STRATEGY'] == 'gs' else params['HYPERPARAMS_RANGE']
+optimisation_strategy = 'gs' if params['OPTIMIZATION_STRATEGY'] == 'gs' else 'bayes'
+
 for cclass in params['CENTRALITY_CLASS']:
     for ptbin in params['PT_BINS']:
         for ctbin in params['CT_BINS']:
@@ -85,9 +80,9 @@ for cclass in params['CENTRALITY_CLASS']:
                 # train and test the model with some performance plots
                 model = analysis.train_test_model(
                     data, params['TRAINING_COLUMNS'], params['XGBOOST_PARAMS'],
-                    hyperparams=HYPERPARAMS, ct_range=ctbin,
-                    cent_class=cclass, pt_range=ptbin, optimize=args.optimize, optimize_mode='gs',
-                    num_rounds=500, es_rounds=20)
+                    hyperparams=optimisation_params, ct_range=ctbin,
+                    cent_class=cclass, pt_range=ptbin, optimize=args.optimize, 
+                    optimize_mode=optimisation_strategy, num_rounds=500, es_rounds=20)
                 print('--- model trained in {:.4f} minutes ---\n'.format((time.time() - part_time) / 60))
                 analysis.save_model(model, ct_range=ctbin, cent_class=cclass, pt_range=ptbin)
                 print('Model saved\n')
