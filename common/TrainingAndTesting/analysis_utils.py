@@ -34,7 +34,6 @@ def evaluate_hyperparams(
 
 
 def gs_1par(gs_dict, par_dict, train_data, num_rounds, seed, folds, metrics, n_early_stop):
-
     fp_dict = gs_dict['first_par']
     gs_params = fp_dict['par_values']
 
@@ -54,21 +53,20 @@ def gs_1par(gs_dict, par_dict, train_data, num_rounds, seed, folds, metrics, n_e
         mean_auc = cv_results['test-auc-mean'].max()
         boost_rounds = cv_results['test-auc-mean'].idxmax()
         mean_std = cv_results['test-auc-std'][boost_rounds]
+
         if mean_auc > max_auc:
             max_auc = mean_auc
             max_std = mean_std
             best_params = (val, boost_rounds)
+
     return (best_params)
 
 
 def gs_2par(gs_dict, par_dict, train_data, num_rounds, seed, folds, metrics, n_early_stop):
-
     fp_dict = gs_dict['first_par']
     sp_dict = gs_dict['second_par']
-    gs_params = [(first_val, second_val)
-                 for first_val in fp_dict['par_values']
-                 for second_val in sp_dict['par_values']
-                 ]
+
+    gs_params = [(first_val, second_val) for first_val in fp_dict['par_values'] for second_val in sp_dict['par_values']]
 
     max_auc = 0.
     best_params = None
@@ -87,10 +85,12 @@ def gs_2par(gs_dict, par_dict, train_data, num_rounds, seed, folds, metrics, n_e
         mean_auc = cv_results['test-auc-mean'].max()
         boost_rounds = cv_results['test-auc-mean'].idxmax()
         mean_std = cv_results['test-auc-std'][boost_rounds]
+
         if mean_auc > max_auc:
             max_auc = mean_auc
             max_std = mean_std
             best_params = (first_val, second_val, boost_rounds)
+
     return (best_params)
 
 
@@ -131,7 +131,8 @@ def expected_signal_raw(pt_range, cent_bin):
     return exp_yield
 
 
-def expected_signal_counts(bw, pt_range, eff, cent_range, nevents):  # nevents assumed to be the number of events in 1% bins
+# nevents assumed to be the number of events in 1% bins
+def expected_signal_counts(bw, pt_range, eff, cent_range, nevents):
     hyp2he3 = 0.4 * 0.25  # Very optimistic, considering it constant with centrality
     cent_bins = [10, 40, 90]
 

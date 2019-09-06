@@ -149,32 +149,32 @@ class GeneralizedAnalysis:
         return max_params, best_numrounds
 
     # function that manage the grid search
-    def optimize_params_gs(self,dtrain, params):
+    def optimize_params_gs(self, dtrain, params):
+        num_rounds = 500
+        early_stopping_rounds = 50
 
-        num_rounds=200
-        scoring='auc'
-        cv=StratifiedKFold(n_splits=5,shuffle=True,random_state=25)
-        early_stopping_rounds=50
+        scoring = 'auc'
 
-        gs_dict = {'first_par': {'name': 'max_depth', 'par_values': [i for i in range(2, 10, 2)]},
-                   'second_par': {'name': 'min_child_weight', 'par_values': [i for i in range(0, 12, 2)]},
-                   }
+        folds = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+        gs_dict = {'first_par': {'name': 'max_depth', 'par_values': [i for i in range(2, 10, 2)]}, 'second_par': {
+            'name': 'min_child_weight', 'par_values': [i for i in range(0, 12, 2)]}, }
 
         params['max_depth'], params['min_child_weight'], _ = au.gs_2par(
-            gs_dict, params, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
+            gs_dict, params, dtrain, num_rounds, 42, folds, scoring, early_stopping_rounds)
 
-        gs_dict = {'first_par': {'name': 'subsample', 'par_values': [i/10. for i in range(4, 10)]},
-                   'second_par': {'name': 'colsample_bytree', 'par_values': [i/10. for i in range(8, 10)]},
-                   }
+        gs_dict = {
+            'first_par': {'name': 'subsample', 'par_values': [i / 10. for i in range(4, 10)]},
+            'second_par': {'name': 'colsample_bytree', 'par_values': [i / 10. for i in range(8, 10)]}, }
 
         params['subsample'], params['colsample_bytree'], _ = au.gs_2par(
-            gs_dict, params, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
+            gs_dict, params, dtrain, num_rounds, 42, folds, scoring, early_stopping_rounds)
 
         gs_dict = {'first_par': {'name': 'gamma', 'par_values': [i / 10. for i in range(0, 11)]}}
-        params['gamma'], _ = au.gs_1par(gs_dict, params, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
+        params['gamma'], _ = au.gs_1par(gs_dict, params, dtrain, num_rounds, 42, folds, scoring, early_stopping_rounds)
 
         gs_dict = {'first_par': {'name': 'eta', 'par_values': [0.1, 0.05, 0.01, 0.005, 0.001]}}
-        params['eta'], n = au.gs_1par(gs_dict, params, dtrain, num_rounds, 42, cv, scoring, early_stopping_rounds)
+        params['eta'], n = au.gs_1par(gs_dict, params, dtrain, num_rounds, 42, folds, scoring, early_stopping_rounds)
 
         return params, n
 
@@ -197,8 +197,8 @@ class GeneralizedAnalysis:
                     dtrain, reg_params, hyperparams, num_rounds=num_rounds, es_rounds=es_rounds, init_points=3, n_iter=12)
                 print('Hyperparameters optimization: Done!\n')
             if optimize_mode == 'gs':
-                print('Hyperparameters optimization...', end='\r')
-                max_params, best_numrounds = self.optimize_params_gs(dtrain, reg_params)
+                print('Hyperparameters optimization: ...', end='\r')
+                max_parms, best_numrounds = self.optimize_params_gs(dtrain, hyperparams)
                 print('Hyperparameters optimization: Done!\n')
         else:   # manage the default params
             max_params = {
@@ -289,7 +289,6 @@ class GeneralizedAnalysis:
         sig_selected = np.sum(df_selected)
 
         return sig_selected / n_sig
-    
     def significance_scan(
             self, test_data, model, training_columns, ct_range=[0, 100],
             pt_range=[0, 10],
@@ -324,7 +323,8 @@ class GeneralizedAnalysis:
         test_data[0].eval('y = @test_data[1]', inplace=True)
         df_bkg.eval('Score = @y_pred_bkg', inplace=True)
 
-        bdt_efficiency, threshold_space = self.bdt_efficiency_array(test_data[0], ct_range, pt_range, cent_class, n_points)
+        bdt_efficiency, threshold_space = self.bdt_efficiency_array(
+            test_data[0], ct_range, pt_range, cent_class, n_points)
 
         expected_signal = []
         significance = []
