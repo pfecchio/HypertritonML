@@ -90,7 +90,7 @@ for cclass in params['CENTRALITY_CLASS']:
                 model = analysis.load_model(ct_range=ctbin, cent_class=cclass, pt_range=ptbin)
             
             if args.significance:
-                score,bdt_eff = analysis.significance_scan(data[2:3],model,params['TRAINING_COLUMNS'], ct_range=ctbin,
+                score,bdt_eff = analysis.significance_scan(data[2:4],model,params['TRAINING_COLUMNS'], ct_range=ctbin,
                     pt_range=ptbin, cent_class=cclass,
                     custom=params['MAX_SIGXEFF'], n_points=100)
                 score_selection.append(score)
@@ -101,7 +101,10 @@ for cclass in params['CENTRALITY_CLASS']:
 
             data[2].eval('Score = @y_pred', inplace=True)
             data[2].eval('y = @data[3]', inplace=True)
-            bdt_efficiency.append(analysis.bdt_efficiency(data[2],score_selection[cclass*len(params['CENTRALITY_CLASS'])+ptbin*len(params['PT_BINS'])+ctbin]))
+            cc_index=params['CENTRALITY_CLASS'].index(cclass)
+            pt_index=params['PT_BINS'].index(ptbin)
+            ct_index=params['CT_BINS'].index(ctbin)
+            bdt_efficiency.append(analysis.bdt_efficiency(data[2],score_selection[len(params['CT_BINS'])*len(params['PT_BINS'])*cc_index+len(params['CT_BINS'])*pt_index+ct_index]))
 
             #the real analysis is still missing
 
