@@ -1,0 +1,64 @@
+NBODY: 2
+CENTRALITY_CLASS:
+  - [0, 10]
+CT_BINS:
+  - [0, 90]
+PT_BINS:
+  - [2, 3]
+  - [3, 4]
+  - [4, 5]
+  - [5, 9]
+
+MAX_SIGXEFF: True
+CUT_SHIFT: [0]
+
+MC_PATH: $HYPERML_TABLES_2/SignalTable.root
+DATA_PATH: $HYPERML_TABLES_2/DataTable.root
+
+XGBOOST_PARAMS:
+  # general parameters
+  silent: 1  # print message (useful to understand whats happening)
+  nthread: 8  # number of available threads
+  # learning task parameters
+  objective: binary:logistic
+  random_state: 42
+  eval_metric:
+    - auc
+  tree_method: hist
+
+
+OPTIMIZATION_STRATEGY: gs
+
+HYPERPARAMS:
+  eta: 0.05
+  min_child_weight: 8
+  max_depth: 10
+  gamma: 0.7
+  subsample: 0.8
+  colsample_bytree: 0.9
+  scale_pos_weight: 10
+
+HYPERPARAMS_RANGE: #TODO: check if it works without tuples
+  # booster parameters
+  eta: !!python/tuple [0.0001, 0.3]  # a kind of learning rate
+  # defines the min sum of weights of all observations required in a child (regularization)
+  min_child_weight: !!python/tuple [1, 12]
+  max_depth: !!python/tuple [2, 20]  # defines the maximum depth of a single tree (regularization)
+  gamma: !!python/tuple [0, 1.1]  # specifies the minimum loss reduction required to make a split
+  subsample: !!python/tuple [0.3, 1.]  # denotes the fraction of observations to be randomly samples for each tree
+  colsample_bytree: !!python/tuple [0.3, 0.95]  # denotes the fraction of columns to be randomly samples for each tree
+  # lambda: (0,10]  # L2 regularization term on weights
+  # alpha: (0,10]  # L1 regularization term on weight
+  # should be used in case of high class imbalance as it helps in faster convergence
+  scale_pos_weight: !!python/tuple [1., 10.]
+
+TRAINING_COLUMNS: 
+  - V0CosPA
+  - ProngsDCA
+  - PiProngPvDCAXY
+  - He3ProngPvDCAXY
+  - HypCandPt
+  - He3ProngPvDCA
+  - PiProngPvDCA
+  - NpidClustersHe3
+  - TPCnSigmaHe3

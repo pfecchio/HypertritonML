@@ -73,7 +73,7 @@ for cclass in params['CENTRALITY_CLASS']:
             # data[0]=train_set, data[1]=y_train, data[2]=test_set, data[3]=y_test
             data = analysis.prepare_dataframe(
                 params['TRAINING_COLUMNS'],
-                cclass, ct_range=ctbin, pt_range=ptbin, test=True)
+                cclass, ct_range=ctbin, pt_range=ptbin, test=False)
 
             if args.train:
                 print("Training model...")
