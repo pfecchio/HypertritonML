@@ -355,8 +355,7 @@ class GeneralizedAnalysis:
             exp_signal_ctint = au.expected_signal_counts(
                 bw, pt_range, eff_presel * bdt_efficiency[index],
                 cent_class, self.hist_centrality)
-            ctrange_correction = (au.expo(ct_min, hyp_lifetime)-au.expo(ct_max, hyp_lifetime)
-                                  ) / (ct_max - ct_min) * hyp_lifetime * 0.029979245800
+            ctrange_correction = au.expo(ct_min, hyp_lifetime)-au.expo(ct_max, hyp_lifetime)
 
             exp_signal = exp_signal_ctint * ctrange_correction
             exp_background = sum(np.polyval(h, bin_centers[mass_map]))
