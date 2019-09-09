@@ -295,6 +295,40 @@ class GeneralizedAnalysis:
 
         return sig_selected / n_sig
 
+    def score_from_efficiency(self, model, test_data, efficiency_cut, training_columns, ct_range, pt_range, cent_class):
+        dtest = xgb.DMatrix(data=(test_data[0][training_columns]))
+
+        y_pred = model.predict(dtest, output_margin=True)
+
+        test_data[0].eval('Score = @y_pred', inplace=True)
+        test_data[0].eval('y = @test_data[1]', inplace=True)
+
+        bdt_efficiency, threshold_space = self.bdt_efficiency_array(
+            test_data[0], ct_range, pt_range, cent_class, n_points=1000)
+
+        for index in range(0,len(bdt_efficiency)):
+            bdt_efficiency[index] = round(bdt_efficiency[index],2)
+
+        threshold_cut = []
+        index=-1
+        for cut in efficiency_cut:
+            done = False
+            for (bdt,threshold) in zip(bdt_efficiency,threshold_space):
+                if cut==bdt:
+                    if not done:
+                        threshold_cut.append(threshold)
+                        index = index + 1
+                        done = True
+                    else:
+                        threshold_cut[index] = threshold
+            if not done:
+                threshold_cut.append(20)
+        
+        return threshold_cut
+
+
+        
+    
     def significance_scan(
             self, test_data, model, training_columns, ct_range=[0, 100],
             pt_range=[0, 10],
@@ -410,8 +444,6 @@ class GeneralizedAnalysis:
         return max_score, bdt_eff_max_score
 
     def save_score_eff(self, score_eff_array, cent_class=[0, 90], pt_range=[0, 10], ct_range=[0, 100]):
-        models_path = os.environ['HYPERML_MODELS_{}'.format(self.mode)]
-        filename =
 
         models_path = os.environ['HYPERML_MODELS_{}'.format(self.mode)]
         filename = '/score_eff_{}{}_{}{}_{}{}.csv'.format(cent_class[0],
@@ -429,9 +461,7 @@ class GeneralizedAnalysis:
         print('Score_BDTefficiency array saved.\n')
 
     def load_score_eff(self, cent_class=[0, 90], pt_range=[0, 10], ct_range=[0, 100]):
-        models_path = os.environ['HYPERML_MODELS_{}'.format(self.mode)]
-        filename =
-
+        
         models_path = os.environ['HYPERML_MODELS_{}'.format(self.mode)]
         filename = '/score_eff_{}{}_{}{}_{}{}.csv'.format(cent_class[0],
                                                           cent_class[1],

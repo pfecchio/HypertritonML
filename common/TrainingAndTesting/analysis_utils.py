@@ -97,7 +97,6 @@ def gs_2par(gs_dict, par_dict, train_data, num_rounds, seed, folds, metrics, n_e
 
 
 def expected_signal_raw(pt_range, cent_bin):
-    bw_ = os.environ['HYPERML_UTILS']
     bw_file = TFile(os.environ['HYPERML_UTILS'] + '/BlastWaveFits.root')
 
     scale_factor = [3.37e-5, 1.28e-5, 0.77e-5, 0.183e-5]
@@ -173,19 +172,18 @@ def expo(x, tau):
     return np.exp(-x / tau / 0.029979245800)
 
 
-def fit(counts, min, max, nsigma=3, recreate=False, signif=0, errsignif=0, minCent=0, maxCent=90, filename='results.root'):
+def fit(counts, ct_range, pt_range, cent_class, nsigma=3, recreate=False, signif=0, errsignif=0, filename='results.root'):
     if recreate is True:
         results = TFile(os.environ['HYPERML_DATA_2']+'/'+filename, "RECREATE")
     else:
         results = TFile(os.environ['HYPERML_DATA_2']+'/'+filename, "UPDATE")
 
-    histo = TH1D("histo{}_{}".format(min, max), ";ct[cm];dN/dct [cm^{-1}]", 45, 2.96, 3.05)
+    histo = TH1D("histo_ct_{}_{}_pT_{}_{}_cen_{}_{}".format(ct_range[0],ct_range[1],pt_range[0],pt_range[1],cent_class[0],cent_class[1]), ";ct[cm];dN/dct [cm^{-1}]", 45, 2.96, 3.05)
     for index in range(0, len(counts)):
         histo.SetBinContent(index+1, counts[index])
         histo.SetBinError(index+1, math.sqrt(counts[index]))
 
-    results.cd()
-    cv = TCanvas("cv{}_{}".format(min, max))
+    # cv = TCanvas("cv_ct_{}_{}_pT_{}_{}_cen_{}_{}".format(ct_range[0],ct_range[1],pt_range[0],pt_range[1],cent_class[0],cent_class[1]))
     fitTpl = TF1("fitTpl", "pol2(0)+gausn(3)", 0, 5)
     fitTpl.SetParNames("B_{0}", "B_{1}", "B_{2}", "N_{sig}", "#mu", "#sigma")
     bkgTpl = TF1("fitTpl", "pol2(0)", 0, 5)
@@ -204,8 +202,8 @@ def fit(counts, min, max, nsigma=3, recreate=False, signif=0, errsignif=0, minCe
     fitTpl.SetParameter(5, 0.002)
     fitTpl.SetParLimits(5, 0.0001, 0.004)
 
-    gStyle.SetOptStat(0)
-    gStyle.SetOptFit(0)
+    # gStyle.SetOptStat(0)
+    # gStyle.SetOptFit(0)
     ####################
 
     histo.UseCurrentStyle()
@@ -260,9 +258,9 @@ def fit(counts, min, max, nsigma=3, recreate=False, signif=0, errsignif=0, minCe
     pinfo2.SetFillStyle(0)
     pinfo2.SetTextAlign(30+3)
     pinfo2.SetTextFont(42)
-    string = 'ALICE Internal, Pb-Pb 2018 {}-{}%'.format(minCent, maxCent)
+    string = 'ALICE Internal, Pb-Pb 2018 {}-{}%'.format(cent_class[0], cent_class[1])
     pinfo2.AddText(string)
-    string = '{}^{3}_{#Lambda}H#rightarrow ^{3}He#pi + c.c., %i #leq #it{ct} < %i cm ' % (min, max)
+    string = '{}^{3}_{#Lambda}H#rightarrow ^{3}He#pi + c.c., %i #leq #it{ct} < %i cm %i #leq #it{pT} < %i GeV/c ' % (ct_range[0],ct_range[1],pt_range[0],pt_range[1])
     pinfo2.AddText(string)
     string = 'Significance ({:.0f}#sigma) {:.1f} #pm {:.1f} '.format(nsigma, signif, errsignif)
     pinfo2.AddText(string)
@@ -276,9 +274,9 @@ def fit(counts, min, max, nsigma=3, recreate=False, signif=0, errsignif=0, minCe
         string = 'S/B ({:.0f}#sigma) {:.4f} '.format(nsigma, ratio)
     pinfo2.AddText(string)
     pinfo2.Draw()
-
+    results.cd()
     histo.Write()
-    cv.Write()
+    # cv.Write()
     results.Close()
     return (NHyTr, ErrNHyTr)
 

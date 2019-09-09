@@ -13,6 +13,11 @@ from scipy import stats
 from scipy.stats import norm
 from sklearn.metrics import auc, roc_curve
 
+from ROOT import TH1D,TCanvas,TFile,gStyle
+from array import array
+import math
+import numpy as np
+
 
 # plot the BDT score distribution in the train and in the test set for both signal and background
 def plot_output_train_test(
@@ -247,6 +252,35 @@ def plot_efficiency_significance(mode, tsd, significance, efficiency, data_range
     plt.savefig(fig_eff_path + fig_name)
     plt.close()
 
+def plot_eff_ct(analysis, file_name, pt_range = [2,10], cent_class = [0,90], ct_bins = [[0,2],[2,4],[4,6],[6,8],[8,10],[10,14],[14,18],[18,23],[23,28]]):
+  
+  Analysis = GeneralizedAnalysis(2,os.environ['HYPERML_TABLES_2']+'/SignalTable.root',os.environ['HYPERML_TABLES_2']+'/DataTable.root','2<=HypCandPt<=10','(InvMass<2.98 or InvMass>3.005) and HypCandPt<=10',cent_class=[[0,90]])
+ 
+  results = TFile(os.environ['HYPERML_DATA_2']+"/"+file_name,"update")
+  results.cd()
+  ct_binning = [ct_bins[0][0]]
+  for ct in ct_bins:
+    ct_binning.append(ct[1])
+  ct_binning = array("d",ct_binning)
+  cv = TCanvas("presel_efficiency")
+  histo_eff = TH1D("histo_eff_ct",";ct (cm);preselection efficiency",len(ct_binning)-1,ct_binning)
+  gStyle.SetOptStat(0)
+  gStyle.SetOptFit(0)
+  for ct in Ct_bins:
+    Effp = (Analysis.preselection_efficiency(ct_range=ct,pt_range=pt_range,cent_class=cent_class))
+
+    selection = '{}<ct<{} and {}<centrality<{} and {}<pT<{}'.format(ct[0],ct[1],pt_range[0],pt_range[1],cent_class[0],cent_class[1])
+    n_gen = sum(Analysis.df_generated.query(selection)['y'])
+
+    errEff = math.sqrt((1-Effp)*Effp/n_gen)
+
+    ct_index=ct_bins.index(ct)
+    histo_eff.SetBinContent(ct_index+1,Effp)
+    histo_eff.SetBinError(ct_index+1,errEff)
+
+  histo_eff.Draw()
+  cv.Write()
+  cv.SaveAs(os.environ['HYPERML_DATA_2']+'/presel_efficiency.pdf')
 
 def plot_significance_scan(
         max_index, significance, significance_error, expected_signal, bkg_df, score_list, data_range_array, bin_cent,
