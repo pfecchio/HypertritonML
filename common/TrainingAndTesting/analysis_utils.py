@@ -10,8 +10,8 @@ from ROOT import TF1, TH1D, TH2D, TCanvas, TFile, TPaveText, gDirectory, gStyle
 
 # target function for the bayesian hyperparameter optimization
 def evaluate_hyperparams(
-        dtrain, reg_params, eta, min_child_weight, max_depth, gamma, subsample, colsample_bytree,
-        scale_pos_weight, num_rounds=100, es_rounds=2, nfold=3, round_score_list=[]):
+        data, training_columns, reg_params, eta, min_child_weight, max_depth, gamma, subsample, colsample_bytree, num_rounds=100,
+        es_rounds=2, nfold=3, round_score_list=[]):
     params = {'eval_metric': 'auc',
               'eta': eta,
               'min_child_weight': int(min_child_weight),
@@ -19,8 +19,10 @@ def evaluate_hyperparams(
               'gamma': gamma,
               'subsample': subsample,
               'colsample_bytree': colsample_bytree,
-              'scale_pos_weight': scale_pos_weight}
+              'scale_pos_weight':  len(data[1][data[1] < 0.5])/len(data[1][data[1] > 0.5])}
     params = {**reg_params, **params}
+
+    dtrain = xgb.DMatrix(data=data[0], label=data[1], feature_names=training_columns)
 
     # Use around 1000 boosting rounds in the full model
     cv_result = xgb.cv(params, dtrain, num_boost_round=num_rounds, early_stopping_rounds=es_rounds, nfold=nfold)

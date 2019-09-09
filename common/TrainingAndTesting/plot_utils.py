@@ -300,8 +300,6 @@ def plot_significance_scan(
 
     bins_mass = bin_centers[mass_map]
 
-    print(bins_side)
-
     axs[1].errorbar(bins_side, bkg_side_counts, yerr=5,
                     fmt='.', ecolor='k', color='b', elinewidth=1., label='Data')
     axs[1].errorbar(bins_mass, tot_counts, yerr=tot_counts_error,

@@ -2,15 +2,15 @@ NBODY: 2
 CENTRALITY_CLASS:
   - [0, 90]
 CT_BINS:
-  - [0, 2]
+  # - [0, 2]
   - [2, 4]
-  - [4, 6]
-  - [6, 8]
-  - [8, 10]
-  - [10, 14]
-  - [14, 18]
-  - [18, 23]
-  - [23, 28]
+  # - [4, 6]
+  # - [6, 8]
+  # - [8, 10]
+  # - [10, 14]
+  # - [14, 18]
+  # - [18, 23]
+  # - [23, 28]
 PT_BINS:
   - [2, 10]
 
@@ -31,8 +31,7 @@ XGBOOST_PARAMS:
     - auc
   tree_method: hist
 
-
-OPTIMIZATION_STRATEGY: gs
+OPTIMIZATION_STRATEGY: bayes
 
 HYPERPARAMS:
   eta: 0.05
@@ -41,7 +40,6 @@ HYPERPARAMS:
   gamma: 0.7
   subsample: 0.8
   colsample_bytree: 0.9
-  scale_pos_weight: 10
 
 HYPERPARAMS_RANGE: #TODO: check if it works without tuples
   # booster parameters
@@ -55,7 +53,7 @@ HYPERPARAMS_RANGE: #TODO: check if it works without tuples
   # lambda: (0,10]  # L2 regularization term on weights
   # alpha: (0,10]  # L1 regularization term on weight
   # should be used in case of high class imbalance as it helps in faster convergence
-  scale_pos_weight: !!python/tuple [1., 10.]
+  # scale_pos_weight: !!python/tuple [1., 10.]
 
 TRAINING_COLUMNS: 
   - V0CosPA
