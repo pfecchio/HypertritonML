@@ -37,8 +37,8 @@ with open(os.path.expandvars(args.config), 'r') as stream:
     except yaml.YAMLError as exc:
         print(exc)
 
-signal_selection = '2<=HypCandPt<=10'
-backgound_selection = '(InvMass<2.98 or InvMass>3.005) and HypCandPt<=10'
+signal_selection = '{}<=HypCandPt<={}'.format(params['PT_BINS'][0],params['PT_BINS'][-1])
+backgound_selection = '(InvMass<2.98 or InvMass>3.005) and {}<=HypCandPt<={}'.format(params['PT_BINS'][0],params['PT_BINS'][-1])
 
 mc_path = os.path.expandvars(params['MC_PATH'])
 data_path = os.path.expandvars(params['DATA_PATH'])
@@ -61,8 +61,8 @@ optimisation_strategy = 'gs' if params['OPTIMIZATION_STRATEGY'] == 'gs' else 'ba
 
 
 for cclass in params['CENTRALITY_CLASS']:
-    for ptbin in params['PT_BINS']:
-        for ctbin in params['CT_BINS']:
+    for ptbin in zip(params['PT_BINS'][:-1],params['PT_BINS'][1:]):
+        for ctbin in zip(params['CT_BINS'][:-1],params['CT_BINS'][1:]):
             print('============================================')
             print('centrality: ',cclass,' ct: ',ctbin,' pT: ',ptbin)
             part_time = time.time()
@@ -120,6 +120,7 @@ for cclass in params['CENTRALITY_CLASS']:
             print('score array: ',score)
             print('bdt efficiency array: ',bdt_efficiency)
 
+            recreate=True
             for index in range(0,len(score)):
                 print('bdt efficiency: ',bdt_efficiency[index])
                 #file_name should be improved
@@ -141,12 +142,11 @@ for cclass in params['CENTRALITY_CLASS']:
                 Counts,bins = np.histogram(dfDataF.query('Score >@score[@index]')['InvMass'],bins=45,range=[2.96,3.05])
                 
                 # to save the plots
-                recreate=False
-                if ctbin==params['CT_BINS'][0]:
-                    recreate=True
+                if recreate:
                     n_hytr.append([])
                 # the labels of the plots are still for a ct analysis
                 n_hytr[index].append(au.fit(Counts,ctbin,ptbin,cent_class=cclass,recreate=recreate,filename=file_name))
+                recreate=False
             
             score_selection.append(score)
             #bdt_efficiency.append(bdt_eff)

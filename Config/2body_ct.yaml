@@ -2,18 +2,8 @@ NBODY: 2
 FILE_PREFIX: "ct_analysis"
 CENTRALITY_CLASS:
   - [0, 90]
-CT_BINS:
-  - [0, 2]
-  - [2, 4]
-  - [4, 6]
-  - [6, 8]
-  - [8, 10]
-  - [10, 14]
-  - [14, 18]
-  - [18, 23]
-  - [23, 28]
-PT_BINS:
-  - [2, 10]
+CT_BINS: [0, 2, 4, 6, 8, 10, 14, 18, 23, 28]
+PT_BINS: [2, 10]
 BDT_EFFICIENCY:
   -0.99
   -0.95
