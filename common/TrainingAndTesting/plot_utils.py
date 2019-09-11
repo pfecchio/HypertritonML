@@ -11,7 +11,17 @@ import xgboost as xgb
 from pandas.core.index import Index
 from scipy import stats
 from scipy.stats import norm
-from sklearn.metrics import auc, roc_curve
+
+from sklearn import svm, datasets
+from sklearn.metrics import auc, roc_curve, confusion_matrix, precision_recall_curve, average_precision_score
+from sklearn.model_selection import train_test_split
+from sklearn.utils.multiclass import unique_labels
+ 
+from inspect import signature
+
+import numpy as np
+import matplotlib.pyplot as plt
+
 
 from ROOT import TH1D,TCanvas,TFile,gStyle
 from array import array
@@ -133,7 +143,6 @@ def plot_distr(df, column=None, figsize=None, bins=50, fig_name='features.pdf', 
 
     plt.savefig('{}/{}.pdf'.format(fig_features_path, fig_name), dpi=500, transparent=True)
     plt.close()
-
 
 def plot_corr(df, columns, mode=3, **kwds):
     """Calculate pairwise correlation between features.
@@ -282,6 +291,8 @@ def plot_eff_ct(analysis, file_name, pt_range = [2,10], cent_class = [0,90], ct_
   cv.Write()
   cv.SaveAs(os.environ['HYPERML_DATA_2']+'/presel_efficiency.pdf')
 
+
+
 def plot_significance_scan(
         max_index, significance, significance_error, expected_signal, bkg_df, score_list, data_range_array, bin_cent,
         n_ev, mode, custom=True):
@@ -377,6 +388,136 @@ def plot_significance_scan(
         data_range_array[5])
 
     fig_sig_path = os.environ['HYPERML_FIGURES_{}'.format(mode)]+'/Significance'
+    if not os.path.exists(fig_sig_path):
+        os.makedirs(fig_sig_path)
+
+    plt.savefig(fig_sig_path + '/' + fig_name)
+    plt.close()
+
+def plot_roc(y_truth, model_decision, mode, fig_name = '/roc_curve.pdf'):
+    # Compute ROC curve and area under the curve
+    fpr, tpr, _ = roc_curve(y_truth, model_decision)
+    roc_auc = auc(fpr, tpr)
+
+    plt.plot(fpr, tpr, lw=1, label='ROC (area = %0.4f)' % (roc_auc))
+    plt.plot([0, 1], [0, 1], '--', color=(0.6, 0.6, 0.6), label='Luck')
+    plt.xlim([-0.05, 1.05])
+    plt.ylim([-0.05, 1.05])
+    plt.xlabel('False Positive Rate', fontsize=12)
+    plt.ylabel('True Positive Rate', fontsize=12)
+    plt.legend(loc="lower right")
+    plt.grid()
+    fig_sig_path = os.environ['HYPERML_FIGURES_{}'.format(mode)]+'/ROC_curve'
+    if not os.path.exists(fig_sig_path):
+        os.makedirs(fig_sig_path)
+
+    plt.savefig(fig_sig_path + '/' + fig_name)
+    plt.close()
+
+from xgboost import plot_importance
+
+
+def plot_feature_imp(model, mode, fig_name = 'feature_imp.pdf'):
+
+    importance = model.get_fscore()
+    importance_df = pd.DataFrame({
+        'Splits':list(importance.values()),
+        'Feature':list(importance.keys())
+        })
+    importance_df.sort_values(by='Splits', inplace=True)
+    importance_df.plot(kind='barh', x='Feature', figsize=(10,6), color='blue' ,legend=False)
+    
+    fig_sig_path = os.environ['HYPERML_FIGURES_{}'.format(mode)]+'/Feature_Imp'
+    if not os.path.exists(fig_sig_path):
+        os.makedirs(fig_sig_path)
+    plt.savefig(fig_sig_path + '/' + fig_name)
+
+    plt.close()
+
+def plot_confusion_matrix(y_true, df, mode, score,
+                          normalize=False, 
+                          title=None,
+                          cmap=plt.cm.Blues, fig_name = 'confusion.pdf'):
+    """
+    This function prints and plots the confusion matrix.
+    Normalization can be applied by setting `normalize=True`.
+    """
+    if not title:
+        if normalize:
+            title = 'Normalized confusion matrix'
+        else:
+            title = 'Confusion matrix, without normalization'
+
+    #if the score is closer to max then to min it's recognised as signal
+    y_pred = [1 if i>score else 0 for i in df['Score']]
+
+    # Compute confusion matrix
+    cm = confusion_matrix(y_true, y_pred)
+    # Only use the labels that appear in the data
+    classes = ['Background','Signal']
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        print("Normalized confusion matrix")
+    else:
+        print('Confusion matrix, without normalization')
+
+    print(cm)
+
+    fig, ax = plt.subplots()
+    im = ax.imshow(cm, interpolation='nearest', cmap=cmap)
+    ax.figure.colorbar(im, ax=ax)
+    # We want to show all ticks...
+    ax.set(xticks=np.arange(cm.shape[1]),
+           yticks=np.arange(cm.shape[0]),
+           # ... and label them with the respective list entries
+           xticklabels=classes, yticklabels=classes,
+           title=title,
+           ylabel='True label',
+           xlabel='Predicted label')
+
+    # Rotate the tick labels and set their alignment.
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+             rotation_mode="anchor")
+
+    # Loop over data dimensions and create text annotations.
+    fmt = '.2f' if normalize else 'd'
+    thresh = cm.max() / 2.
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            ax.text(j, i, format(cm[i, j], fmt),
+                    ha="center", va="center",
+                    color="white" if cm[i, j] > thresh else "black")
+    fig.tight_layout()
+
+    fig_sig_path = os.environ['HYPERML_FIGURES_{}'.format(mode)]+'/Confusion'
+    if not os.path.exists(fig_sig_path):
+        os.makedirs(fig_sig_path)
+
+    plt.savefig(fig_sig_path + '/' + fig_name)
+    plt.close()
+
+    return ax
+
+def plot_precision_recall(y_test, y_score, mode, fig_name = 'precision_recall.pdf'):
+    precision, recall, _ = precision_recall_curve(y_test, y_score)
+
+    # In matplotlib < 1.5, plt.fill_between does not have a 'step' argument
+    step_kwargs = ({'step': 'post'}
+                if 'step' in signature(plt.fill_between).parameters
+                else {})
+    plt.step(recall, precision, color='b', alpha=0.2,
+            where='post')
+    plt.fill_between(recall, precision, alpha=0.2, color='b', **step_kwargs)
+
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.ylim([0.0, 1.05])
+    plt.xlim([0.0, 1.0])
+    average_precision = average_precision_score(y_test, y_score)
+    plt.title('2-class Precision-Recall curve: AP={0:0.2f}'.format(
+            average_precision))
+
+    fig_sig_path = os.environ['HYPERML_FIGURES_{}'.format(mode)]+'/precision_recall'
     if not os.path.exists(fig_sig_path):
         os.makedirs(fig_sig_path)
 
