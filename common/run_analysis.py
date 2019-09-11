@@ -19,7 +19,9 @@ import json
 from array import array
 import numpy as np
 
-from ROOT import TFile,TF1,TH2D,TH1D,TCanvas,TPaveText,gStyle
+from ROOT import TFile,TF1,TH2D,TH1D,TCanvas,TPaveText,gStyle,gROOT
+
+gROOT.SetBatch()
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-t", "--train", help="Do the training", action="store_true")
