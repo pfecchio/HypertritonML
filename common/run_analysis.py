@@ -19,10 +19,11 @@ import json
 from array import array
 import numpy as np
 
-from ROOT import TFile,TF1,TH1D,TCanvas,TPaveText,gStyle
+from ROOT import TFile,TF1,TH2D,TH1D,TCanvas,TPaveText,gStyle
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-t", "--train", help="Do the training", action="store_true")
+parser.add_argument("--test", help="Just test the functionalities (training with reduced number of candidates)", action="store_true")
 parser.add_argument("-o", "--optimize", help="Run the optimization", action="store_true")
 parser.add_argument("-s", "--significance", help="Run the significance optimisation studies", action="store_true")
 parser.add_argument("config", help="Path to the YAML configuration file")
@@ -54,15 +55,24 @@ bdt_efficiency = []
 score_selection = []
 n_hytr = []
 preselection_efficiency = []
-score_bdteff_array = []
 
 optimisation_params = params['HYPERPARAMS'] if params['OPTIMIZATION_STRATEGY'] == 'gs' else params['HYPERPARAMS_RANGE']
 optimisation_strategy = 'gs' if params['OPTIMIZATION_STRATEGY'] == 'gs' else 'bayes'
 
-
+resultsSysDir = os.environ['HYPERML_RESULTS_{}'.format(params['NBODY'])]
+file_name = resultsSysDir +  '/' + params['FILE_PREFIX'] + '_results.root'
+resultFile = TFile(file_name,"recreate")
 for cclass in params['CENTRALITY_CLASS']:
+    centDir = resultFile.mkdir("{}-{}".format(cclass[0],cclass[1]))
+    h2BDTeff = TH2D("BDTeff",";#it{p}_{T} (GeV/#it{c});c#it{t} (cm);BDT efficiency",len(params['PT_BINS'])-1,np.array(params['PT_BINS'],'double'),len(params['CT_BINS'])-1,np.array(params['CT_BINS'],'double'))
+    h2SelEff = TH2D("SelEff",";#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Preselection efficiency",len(params['PT_BINS'])-1,np.array(params['PT_BINS'],'double'),len(params['CT_BINS'])-1,np.array(params['CT_BINS'],'double'))
+    h2RawCounts = TH2D("RawCounts",";#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Raw counts",len(params['PT_BINS'])-1,np.array(params['PT_BINS'],'double'),len(params['CT_BINS'])-1,np.array(params['CT_BINS'],'double'))
+    fitDirectory = centDir.mkdir("Fits")    
     for ptbin in zip(params['PT_BINS'][:-1],params['PT_BINS'][1:]):
+        ptBinIndex = h2BDTeff.GetXaxis().FindBin(0.5 * (ptbin[0] + ptbin[1]))
         for ctbin in zip(params['CT_BINS'][:-1],params['CT_BINS'][1:]):
+            ctBinIndex = h2BDTeff.GetYaxis().FindBin(0.5 * (ctbin[0] + ctbin[1]))
+
             print('============================================')
             print('centrality: ',cclass,' ct: ',ctbin,' pT: ',ptbin)
             part_time = time.time()
@@ -72,7 +82,7 @@ for cclass in params['CENTRALITY_CLASS']:
             # data[0]=train_set, data[1]=y_train, data[2]=test_set, data[3]=y_test
             data = analysis.prepare_dataframe(
                 params['TRAINING_COLUMNS'],
-                cclass, ct_range=ctbin, pt_range=ptbin, test=True)
+                cclass, ct_range=ctbin, pt_range=ptbin, test=args.test)
 
             if args.train:
                 # train and test the model with some performance plots
@@ -86,6 +96,7 @@ for cclass in params['CENTRALITY_CLASS']:
             else:
                 model = analysis.load_model(ct_range=ctbin, cent_class=cclass, pt_range=ptbin)
             
+            score_bdteff_array = []
             if args.significance:
                 score,bdt_eff = analysis.significance_scan(data[2:4],model,params['TRAINING_COLUMNS'], ct_range=ctbin,
                     pt_range=ptbin, cent_class=cclass,
@@ -96,6 +107,8 @@ for cclass in params['CENTRALITY_CLASS']:
                 score_bdteff_array = analysis.load_score_eff(ct_range=ctbin, pt_range=ptbin, cent_class=cclass)
             
             bdt_efficiency = [score_bdteff_array[0][1]]
+            h2BDTeff.SetBinContent(ptBinIndex, ctBinIndex, score_bdteff_array[0][1])
+            h2SelEff.SetBinContent(ptBinIndex, ctBinIndex, preselection_efficiency[-1])
         
             dtest = xgb.DMatrix(data=(data[2][params['TRAINING_COLUMNS']]))
             y_pred = model.predict(dtest, output_margin=True)
@@ -120,16 +133,10 @@ for cclass in params['CENTRALITY_CLASS']:
             print('score array: ',score)
             print('bdt efficiency array: ',bdt_efficiency)
 
-            recreate=True
+            hypYield = 0
+            eYield = 0
             for index in range(0,len(score)):
                 print('bdt efficiency: ',bdt_efficiency[index])
-                #file_name should be improved
-                if params['BDT_EFF_CUTS']:
-                    file_name = params['FILE_PREFIX'] + '_results_{:.2f}_eff.root'.format(bdt_efficiency[index])
-                elif params['SYST_UNCERTANTIES']:
-                    file_name = params['FILE_PREFIX'] + '_results_{:.1f}_shift.root'.format(params['CUT_SHIFT'][index])
-                else:
-                    file_name = params['FILE_PREFIX'] + '_results.root'
 
                 total_cut = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(
                     ctbin[0], ctbin[1], ptbin[0], ptbin[1], cclass[0], cclass[1])
@@ -140,19 +147,16 @@ for cclass in params['CENTRALITY_CLASS']:
                 y_pred = model.predict(data,output_margin=True)
                 dfDataF.eval('Score = @y_pred',inplace=True)
                 Counts,bins = np.histogram(dfDataF.query('Score >@score[@index]')['InvMass'],bins=45,range=[2.96,3.05])
-                
-                # to save the plots
-                if recreate:
-                    n_hytr.append([])
-                # the labels of the plots are still for a ct analysis
-                n_hytr[index].append(au.fit(Counts,ctbin,ptbin,cent_class=cclass,recreate=recreate,filename=file_name))
-                recreate=False
-            
-            score_selection.append(score)
-            #bdt_efficiency.append(bdt_eff)
-            #TODO:
-            #save n_hytr,score_selection,bdt_efficiency,presel_efficiency
-    
+                hypYield, eYield = au.fit(Counts,ctbin,ptbin,cclass,fitDirectory)
+            h2RawCounts.SetBinContent(ptBinIndex, ctBinIndex, hypYield)
+            h2RawCounts.SetBinError(ptBinIndex, ctBinIndex, eYield)
+           
+    centDir.cd()
+    h2BDTeff.Write()
+    h2RawCounts.Write()
+    h2SelEff.Write()
+
+resultFile.Close()
 # print execution time to performance evaluation
 print('')
 print('--- {:.4f} minutes ---'.format((time.time() - start_time) / 60))

@@ -172,18 +172,15 @@ def expo(x, tau):
     return np.exp(-x / tau / 0.029979245800)
 
 
-def fit(counts, ct_range, pt_range, cent_class, nsigma=3, recreate=False, signif=0, errsignif=0, filename='results.root'):
-    if recreate is True:
-        results = TFile(os.environ['HYPERML_DATA_2']+'/'+filename, "RECREATE")
-    else:
-        results = TFile(os.environ['HYPERML_DATA_2']+'/'+filename, "UPDATE")
+def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, recreate=False, signif=0, errsignif=0):
+    tdirectory.cd()
 
     histo = TH1D("histo_ct_{}_{}_pT_{}_{}_cen_{}_{}".format(ct_range[0],ct_range[1],pt_range[0],pt_range[1],cent_class[0],cent_class[1]), ";ct[cm];dN/dct [cm^{-1}]", 45, 2.96, 3.05)
     for index in range(0, len(counts)):
         histo.SetBinContent(index+1, counts[index])
         histo.SetBinError(index+1, math.sqrt(counts[index]))
 
-    # cv = TCanvas("cv_ct_{}_{}_pT_{}_{}_cen_{}_{}".format(ct_range[0],ct_range[1],pt_range[0],pt_range[1],cent_class[0],cent_class[1]))
+    cv = TCanvas("cv_ct_{}_{}_pT_{}_{}_cen_{}_{}".format(ct_range[0],ct_range[1],pt_range[0],pt_range[1],cent_class[0],cent_class[1]))
     fitTpl = TF1("fitTpl", "pol2(0)+gausn(3)", 0, 5)
     fitTpl.SetParNames("B_{0}", "B_{1}", "B_{2}", "N_{sig}", "#mu", "#sigma")
     bkgTpl = TF1("fitTpl", "pol2(0)", 0, 5)
@@ -274,10 +271,9 @@ def fit(counts, ct_range, pt_range, cent_class, nsigma=3, recreate=False, signif
         string = 'S/B ({:.0f}#sigma) {:.4f} '.format(nsigma, ratio)
     pinfo2.AddText(string)
     pinfo2.Draw()
-    results.cd()
+    tdirectory.cd()
     histo.Write()
-    # cv.Write()
-    results.Close()
+    cv.Write()
     return (NHyTr, ErrNHyTr)
 
 
