@@ -24,11 +24,11 @@ from ROOT import TFile,TF1,TH2D,TH1D,TCanvas,TPaveText,gStyle,gROOT
 gROOT.SetBatch()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-t", "--train", help="Do the training", action="store_true")
-parser.add_argument("--test", help="Just test the functionalities (training with reduced number of candidates)", action="store_true")
-parser.add_argument("-o", "--optimize", help="Run the optimization", action="store_true")
-parser.add_argument("-s", "--significance", help="Run the significance optimisation studies", action="store_true")
-parser.add_argument("config", help="Path to the YAML configuration file")
+parser.add_argument('-t', '--train', help='Do the training', action='store_true')
+parser.add_argument('--test', help='Just test the functionalities (training with reduced number of candidates)', action='store_true')
+parser.add_argument('-o', '--optimize', help='Run the optimization', action='store_true')
+parser.add_argument('-s', '--significance', help='Run the significance optimisation studies', action='store_true')
+parser.add_argument('config', help='Path to the YAML configuration file')
 args = parser.parse_args()
 
 # avoid pandas warning
@@ -40,12 +40,32 @@ with open(os.path.expandvars(args.config), 'r') as stream:
     except yaml.YAMLError as exc:
         print(exc)
 
-signal_selection = '{}<=HypCandPt<={}'.format(params['PT_BINS'][0],params['PT_BINS'][-1])
-backgound_selection = '(InvMass<2.98 or InvMass>3.005) and {}<=HypCandPt<={}'.format(params['PT_BINS'][0],params['PT_BINS'][-1])
-
+# define paths for loading data and storing results
 mc_path = os.path.expandvars(params['MC_PATH'])
 data_path = os.path.expandvars(params['DATA_PATH'])
 
+results_dir = os.environ['HYPERML_RESULTS_{}'.format(params['NBODY'])]
+
+# initialize support dict
+score_bdteff_dict = {}
+preselection_efficiency = {}
+n_hytr = {}
+
+# load saved score-BDTeff dict or open a file for saving the new ones
+score_bdteff_name = results_dir + '/{}_score_bdteff.yaml'.format(params['FILE_PREFIX'])
+if params['LOAD_SCORE_EFF']:
+    with open(score_bdteff_name, 'r') as stream:
+        try:
+            score_bdteff_dict = yaml.full_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
+
+# define data selection
+signal_selection = '{}<=HypCandPt<={}'.format(params['PT_BINS'][0], params['PT_BINS'][-1])
+backgound_selection = '(InvMass<2.98 or InvMass>3.005) and {}<=HypCandPt<={}'.format(
+    params['PT_BINS'][0], params['PT_BINS'][-1])
+
+# initilize the analysis object
 analysis = GeneralizedAnalysis(params['NBODY'], mc_path, data_path,
                                signal_selection, backgound_selection,
                                cent_class=params['CENTRALITY_CLASS'])
@@ -53,39 +73,57 @@ analysis = GeneralizedAnalysis(params['NBODY'], mc_path, data_path,
 # start timer for performance evaluation
 start_time = time.time()
 
-bdt_efficiency = []
-score_selection = []
-n_hytr = []
-preselection_efficiency = []
-
+# params for config the analysis
 optimisation_params = params['HYPERPARAMS'] if params['OPTIMIZATION_STRATEGY'] == 'gs' else params['HYPERPARAMS_RANGE']
 optimisation_strategy = 'gs' if params['OPTIMIZATION_STRATEGY'] == 'gs' else 'bayes'
 
-resultsSysDir = os.environ['HYPERML_RESULTS_{}'.format(params['NBODY'])]
-file_name = resultsSysDir +  '/' + params['FILE_PREFIX'] + '_results.root'
-resultFile = TFile(file_name,"recreate")
+
+file_name = results_dir + '/' + params['FILE_PREFIX'] + '_results.root'
+results_file = TFile(file_name, 'recreate')
+
 for cclass in params['CENTRALITY_CLASS']:
-    centDir = resultFile.mkdir("{}-{}".format(cclass[0],cclass[1]))
-    h2BDTeff = TH2D("BDTeff",";#it{p}_{T} (GeV/#it{c});c#it{t} (cm);BDT efficiency",len(params['PT_BINS'])-1,np.array(params['PT_BINS'],'double'),len(params['CT_BINS'])-1,np.array(params['CT_BINS'],'double'))
-    h2SelEff = TH2D("SelEff",";#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Preselection efficiency",len(params['PT_BINS'])-1,np.array(params['PT_BINS'],'double'),len(params['CT_BINS'])-1,np.array(params['CT_BINS'],'double'))
-    h2RawCounts = TH2D("RawCounts",";#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Raw counts",len(params['PT_BINS'])-1,np.array(params['PT_BINS'],'double'),len(params['CT_BINS'])-1,np.array(params['CT_BINS'],'double'))
-    fitDirectory = centDir.mkdir("Fits")    
-    for ptbin in zip(params['PT_BINS'][:-1],params['PT_BINS'][1:]):
-        ptBinIndex = h2BDTeff.GetXaxis().FindBin(0.5 * (ptbin[0] + ptbin[1]))
-        for ctbin in zip(params['CT_BINS'][:-1],params['CT_BINS'][1:]):
-            ctBinIndex = h2BDTeff.GetYaxis().FindBin(0.5 * (ctbin[0] + ctbin[1]))
+    cent_dir = results_file.mkdir('{}-{}'.format(cclass[0], cclass[1]))
+
+    # create the histos for storing analysis stuff
+    h2BDTeff = TH2D('BDTeff', ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);BDT efficiency', len(params['PT_BINS'])-1, np.array(
+        params['PT_BINS'], 'double'), len(params['CT_BINS'])-1, np.array(params['CT_BINS'], 'double'))
+    h2SelEff = TH2D('SelEff', ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Preselection efficiency', len(params['PT_BINS'])-1, np.array(
+        params['PT_BINS'], 'double'), len(params['CT_BINS'])-1, np.array(params['CT_BINS'], 'double'))
+    h2RawCounts = TH2D('RawCounts', ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Raw counts', len(params['PT_BINS'])-1, np.array(
+        params['PT_BINS'], 'double'), len(params['CT_BINS']) - 1, np.array(params['CT_BINS'], 'double'))
+
+    if params['BDT_EFF_CUTS']:
+        h2RawCountsFixEffDict = {}
+        for fix_eff in  params['BDT_EFFICIENCY']:
+            print('{}'.format(fix_eff))
+            h2RawCountsFixEffDict['eff{}'.format(fix_eff)] = TH2D('RawCounts{}'.format(fix_eff), ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Raw counts', len(params['PT_BINS'])-1, np.array(params['PT_BINS'], 'double'), len(params['CT_BINS']) - 1, np.array(params['CT_BINS'], 'double'))
+
+    fitDirectory = cent_dir.mkdir('Fits')
+
+    for ptbin in zip(params['PT_BINS'][:-1], params['PT_BINS'][1:]):
+
+        ptbin_index = h2BDTeff.GetXaxis().FindBin(0.5 * (ptbin[0] + ptbin[1]))
+        for ctbin in zip(params['CT_BINS'][:-1], params['CT_BINS'][1:]):
+
+            ctbin_index = h2BDTeff.GetYaxis().FindBin(0.5 * (ctbin[0] + ctbin[1]))
+
+            # key for accessing the correct value of the dict
+            key = 'CENT{}_PT{}_CT{}'.format(cclass, ptbin, ctbin)
 
             print('============================================')
-            print('centrality: ',cclass,' ct: ',ctbin,' pT: ',ptbin)
+            print('centrality: ', cclass, ' ct: ', ctbin, ' pT: ', ptbin)
             part_time = time.time()
 
-            preselection_efficiency.append(analysis.preselection_efficiency(ct_range=ctbin,pt_range=ptbin,cent_class=cclass))
+            score_bdteff_dict[key] = {}
+            preselection_efficiency[key] = analysis.preselection_efficiency(
+                ct_range=ctbin, pt_range=ptbin, cent_class=cclass)
 
             # data[0]=train_set, data[1]=y_train, data[2]=test_set, data[3]=y_test
             data = analysis.prepare_dataframe(
                 params['TRAINING_COLUMNS'],
                 cclass, ct_range=ctbin, pt_range=ptbin, test=args.test)
 
+            # train the models if required or load trained models
             if args.train:
                 # train and test the model with some performance plots
                 model = analysis.train_test_model(
@@ -97,71 +135,85 @@ for cclass in params['CENTRALITY_CLASS']:
                 analysis.save_model(model, ct_range=ctbin, cent_class=cclass, pt_range=ptbin)
             else:
                 model = analysis.load_model(ct_range=ctbin, cent_class=cclass, pt_range=ptbin)
-            
-            score_bdteff_array = []
-            if args.significance:
-                score,bdt_eff = analysis.significance_scan(data[2:4],model,params['TRAINING_COLUMNS'], ct_range=ctbin,
-                    pt_range=ptbin, cent_class=cclass,
-                    custom=params['MAX_SIGXEFF'], n_points=100)
-                score_bdteff_array.append([score, bdt_eff])
-                analysis.save_score_eff(score_bdteff_array, ct_range=ctbin, pt_range=ptbin, cent_class=cclass)
-            else:
-                score_bdteff_array = analysis.load_score_eff(ct_range=ctbin, pt_range=ptbin, cent_class=cclass)
-            
-            bdt_efficiency = [score_bdteff_array[0][1]]
-            h2BDTeff.SetBinContent(ptBinIndex, ctBinIndex, score_bdteff_array[0][1])
-            h2SelEff.SetBinContent(ptBinIndex, ctBinIndex, preselection_efficiency[-1])
-        
-            dtest = xgb.DMatrix(data=(data[2][params['TRAINING_COLUMNS']]))
-            y_pred = model.predict(dtest, output_margin=True)
 
-            data[2].eval('Score = @y_pred', inplace=True)
-            data[2].eval('y = @data[3]', inplace=True)
+            # significance scan if required, store best score cut and related bdt eff
+            if args.significance and not params['LOAD_SCORE_EFF']:
+                score_cut, bdt_efficiency = analysis.significance_scan(
+                    data[2: 4],
+                    model, params['TRAINING_COLUMNS'],
+                    ct_range=ctbin, pt_range=ptbin, cent_class=cclass, custom=params['MAX_SIGXEFF'],
+                    n_points=100)
 
-            
-            if params['SYST_UNCERTANTIES']:
-                bdt_efficiency = []
-                for shift in params['CUT_SHIFT']:
-                    bdt_efficiency.append(analysis.bdt_efficiency(data[2],score_bdteff_array[0][0]+shift))
-                    score.append(score_bdteff_array[0][0]+shift)
-            else:
-                score = [score_bdteff_array[0][0]]
-        
-            
-            if params['BDT_EFF_CUTS']:
-                bdt_efficiency = params['BDT_EFFICIENCY']
-                score = analysis.score_from_efficiency(model,[data[2],data[3]],bdt_efficiency,params['TRAINING_COLUMNS'],ct_range=ctbin,pt_range=ptbin,cent_class=cclass)
-            
-            print('score array: ',score)
-            print('bdt efficiency array: ',bdt_efficiency)
+                score_bdteff_dict[key]['sig_scan'] = [float(score_cut), float(bdt_efficiency)]
 
-            hypYield = 0
-            eYield = 0
-            for index in range(0,len(score)):
-                print('bdt efficiency: ',bdt_efficiency[index])
+            h2BDTeff.SetBinContent(ptbin_index, ctbin_index, score_bdteff_dict[key]['sig_scan'][0])
+            h2SelEff.SetBinContent(ptbin_index, ctbin_index, score_bdteff_dict[key]['sig_scan'][1])
 
-                total_cut = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(
-                    ctbin[0], ctbin[1], ptbin[0], ptbin[1], cclass[0], cclass[1])
+            # compute and store score cut for fixed efficiencies, if required
+            if params['BDT_EFF_CUTS'] and not params['LOAD_SCORE_EFF']:
+                score_eff = analysis.score_from_efficiency(
+                    model, data[2: 4],
+                    params['BDT_EFFICIENCY'],
+                    params['TRAINING_COLUMNS'],
+                    ct_range=ctbin, pt_range=ptbin, cent_class=cclass)
 
-                dfDataF = analysis.df_data_all.query(total_cut)
-                data = xgb.DMatrix(data=(analysis.df_data_all.query(total_cut)[params['TRAINING_COLUMNS']]))
-        
-                y_pred = model.predict(data,output_margin=True)
-                dfDataF.eval('Score = @y_pred',inplace=True)
-                Counts,bins = np.histogram(dfDataF.query('Score >@score[@index]')['InvMass'],bins=45,range=[2.96,3.05])
-                hypYield, eYield = au.fit(Counts,ctbin,ptbin,cclass,fitDirectory)
-            h2RawCounts.SetBinContent(ptBinIndex, ctBinIndex, hypYield)
-            h2RawCounts.SetBinError(ptBinIndex, ctBinIndex, eYield)
-           
-    centDir.cd()
+                for se in score_eff:
+                    score_bdteff_dict[key]['eff{}'.format(se[1])] = [float(se[0]), float(se[1])]
+
+            # prediction on the test set for systematics only if required
+            # if params['SYST_UNCERTANTIES']:
+            #     dtest = xgb.DMatrix(data=(data[2][params['TRAINING_COLUMNS']]))
+            #     y_pred = model.predict(dtest, output_margin=True)
+
+            #     data[2].eval('Score = @y_pred', inplace=True)
+            #     data[2].eval('y = @data[3]', inplace=True)
+
+            total_cut = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(ctbin[0], ctbin[1], ptbin[0], ptbin[1], cclass[0], cclass[1])
+
+            dfDataF = analysis.df_data_all.query(total_cut)
+            data = xgb.DMatrix(data=(analysis.df_data_all.query(total_cut)[params['TRAINING_COLUMNS']]))
+
+            y_pred = model.predict(data, output_margin=True)
+            dfDataF.eval('Score = @y_pred', inplace=True)
+
+            # extract the signal for each bdtscore-eff configuration
+            for k, se in score_bdteff_dict[key].items():
+                # systematics stuff
+                # if params['SYST_UNCERTANTIES']:
+                #     bdt_efficiency_vars = []
+                #     score_cut_vars = []
+                #     for shift in params['CUT_SHIFT']:
+                #         bdt_efficiency_vars.append(analysis.bdt_efficiency(data[2], score_cut + shift))
+                #         score_cut_vars.append(score_cut + shift)
+
+                # obtain the selected invariant mass dist
+                counts, bins = np.histogram(dfDataF.query('Score >@se[0]')['InvMass'], bins=45, range=[2.96, 3.05])
+
+                hypYield, eYield = au.fit(counts, ctbin, ptbin, cclass, fitDirectory, name=k)
+
+                if k is 'sig_scan':
+                    h2RawCounts.SetBinContent(ptbin_index, ctbin_index, hypYield)
+                    h2RawCounts.SetBinError(ptbin_index, ctbin_index, eYield)
+                else:
+                    h2RawCountsFixEffDict[k].SetBinContent(ptbin_index, ctbin_index, hypYield)
+                    h2RawCountsFixEffDict[k].SetBinError(ptbin_index, ctbin_index, eYield)
+
+    # write on file
+    cent_dir.cd()
     h2BDTeff.Write()
     h2RawCounts.Write()
     h2SelEff.Write()
+    for th2 in h2RawCountsFixEffDict.values():
+        th2.Write()
 
-resultFile.Close()
+results_file.Close()
+
+if not params['LOAD_SCORE_EFF']:
+    with open(score_bdteff_name, 'w') as out_file:
+        yaml.safe_dump(score_bdteff_dict, out_file, default_flow_style=False)
 # print execution time to performance evaluation
 print('')
 print('--- {:.4f} minutes ---'.format((time.time() - start_time) / 60))
 
-#TODO:
+# TODO:
 # -TCanvas has been commented to solve a understood issue

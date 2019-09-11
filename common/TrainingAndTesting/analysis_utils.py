@@ -172,15 +172,15 @@ def expo(x, tau):
     return np.exp(-x / tau / 0.029979245800)
 
 
-def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, recreate=False, signif=0, errsignif=0):
+def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, errsignif=0, name=''):
     tdirectory.cd()
 
-    histo = TH1D("histo_ct_{}_{}_pT_{}_{}_cen_{}_{}".format(ct_range[0],ct_range[1],pt_range[0],pt_range[1],cent_class[0],cent_class[1]), ";ct[cm];dN/dct [cm^{-1}]", 45, 2.96, 3.05)
+    histo = TH1D("histo_ct{}{}_pT{}{}_cen{}{}_{}".format(ct_range[0],ct_range[1],pt_range[0],pt_range[1],cent_class[0],cent_class[1], name), ";ct[cm];dN/dct [cm^{-1}]", 45, 2.96, 3.05)
     for index in range(0, len(counts)):
         histo.SetBinContent(index+1, counts[index])
         histo.SetBinError(index+1, math.sqrt(counts[index]))
 
-    cv = TCanvas("cv_ct_{}_{}_pT_{}_{}_cen_{}_{}".format(ct_range[0],ct_range[1],pt_range[0],pt_range[1],cent_class[0],cent_class[1]))
+    cv = TCanvas("cv_ct{}{}_pT{}{}_cen{}{}_{}".format(ct_range[0],ct_range[1],pt_range[0],pt_range[1],cent_class[0],cent_class[1], name))
     fitTpl = TF1("fitTpl", "pol2(0)+gausn(3)", 0, 5)
     fitTpl.SetParNames("B_{0}", "B_{1}", "B_{2}", "N_{sig}", "#mu", "#sigma")
     bkgTpl = TF1("fitTpl", "pol2(0)", 0, 5)

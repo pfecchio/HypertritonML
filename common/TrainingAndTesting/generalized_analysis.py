@@ -306,15 +306,15 @@ class GeneralizedAnalysis:
         bdt_efficiency, threshold_space = self.bdt_efficiency_array(
             test_data[0], ct_range, pt_range, cent_class, n_points=1000)
 
-        for index in range(0,len(bdt_efficiency)):
-            bdt_efficiency[index] = round(bdt_efficiency[index],2)
+        for index in range(0, len(bdt_efficiency)):
+            bdt_efficiency[index] = round(bdt_efficiency[index], 2)
 
         threshold_cut = []
-        index=-1
+        index = -1
         for cut in efficiency_cut:
             done = False
-            for (bdt,threshold) in zip(bdt_efficiency,threshold_space):
-                if cut==bdt:
+            for (bdt, threshold) in zip(bdt_efficiency, threshold_space):
+                if cut == bdt:
                     if not done:
                         threshold_cut.append(threshold)
                         index = index + 1
@@ -323,12 +323,9 @@ class GeneralizedAnalysis:
                         threshold_cut[index] = threshold
             if not done:
                 threshold_cut.append(20)
-        
-        return threshold_cut
 
+        return [[a, b] for a, b in zip(threshold_cut, efficiency_cut)]
 
-        
-    
     def significance_scan(
             self, test_data, model, training_columns, ct_range=[0, 100],
             pt_range=[0, 10],
@@ -461,7 +458,7 @@ class GeneralizedAnalysis:
         print('Score_BDTefficiency array saved.\n')
 
     def load_score_eff(self, cent_class=[0, 90], pt_range=[0, 10], ct_range=[0, 100]):
-        
+
         models_path = os.environ['HYPERML_MODELS_{}'.format(self.mode)]
         filename = '/score_eff_{}{}_{}{}_{}{}.csv'.format(cent_class[0],
                                                           cent_class[1],
