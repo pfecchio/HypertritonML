@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 import argparse
 import collections.abc
-import json
 import os
 import time
 import warnings
-
-import yaml
 
 import analysis_utils as au
 import generalized_analysis as ga
@@ -14,7 +11,6 @@ import pandas as pd
 import xgboost as xgb
 from generalized_analysis import GeneralizedAnalysis
 import yaml
-import json
 
 from array import array
 import numpy as np
@@ -81,6 +77,7 @@ optimisation_strategy = 'gs' if params['OPTIMIZATION_STRATEGY'] == 'gs' else 'ba
 file_name = results_dir + '/' + params['FILE_PREFIX'] + '_results.root'
 results_file = TFile(file_name, 'recreate')
 
+
 for cclass in params['CENTRALITY_CLASS']:
     cent_dir = results_file.mkdir('{}-{}'.format(cclass[0], cclass[1]))
 
@@ -94,9 +91,11 @@ for cclass in params['CENTRALITY_CLASS']:
 
     if params['BDT_EFF_CUTS']:
         h2RawCountsFixEffDict = {}
+        h2BDTeffFixEffDict = {}
         for fix_eff in  params['BDT_EFFICIENCY']:
             print('{}'.format(fix_eff))
             h2RawCountsFixEffDict['eff{}'.format(fix_eff)] = TH2D('RawCounts{}'.format(fix_eff), ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Raw counts', len(params['PT_BINS'])-1, np.array(params['PT_BINS'], 'double'), len(params['CT_BINS']) - 1, np.array(params['CT_BINS'], 'double'))
+            h2BDTeffFixEffDict['eff{}'.format(fix_eff)] = TH2D('BDTeff{}'.format(fix_eff),':#it{p}_{T} (GeV/#it{c});c#it{t} (cm);BDT efficiency', len(params['PT_BINS'])-1, np.array(params['PT_BINS'], 'double'), len(params['CT_BINS']) - 1, np.array(params['CT_BINS'], 'double'))
 
     fitDirectory = cent_dir.mkdir('Fits')
 
@@ -146,8 +145,9 @@ for cclass in params['CENTRALITY_CLASS']:
 
                 score_bdteff_dict[key]['sig_scan'] = [float(score_cut), float(bdt_efficiency)]
 
-            h2BDTeff.SetBinContent(ptbin_index, ctbin_index, score_bdteff_dict[key]['sig_scan'][0])
-            h2SelEff.SetBinContent(ptbin_index, ctbin_index, score_bdteff_dict[key]['sig_scan'][1])
+                h2BDTeff.SetBinContent(ptbin_index, ctbin_index, score_bdteff_dict[key]['sig_scan'][0])
+        
+            h2SelEff.SetBinContent(ptbin_index, ctbin_index, preselection_efficiency[key])
 
             # compute and store score cut for fixed efficiencies, if required
             if params['BDT_EFF_CUTS'] and not params['LOAD_SCORE_EFF']:
@@ -157,8 +157,9 @@ for cclass in params['CENTRALITY_CLASS']:
                     params['TRAINING_COLUMNS'],
                     ct_range=ctbin, pt_range=ptbin, cent_class=cclass)
 
-                for se in score_eff:
+                for se,fix_eff in zip(score_eff,params['BDT_EFFICIENCY']):
                     score_bdteff_dict[key]['eff{}'.format(se[1])] = [float(se[0]), float(se[1])]
+                    h2BDTeffFixEffDict['eff{}'.format(fix_eff)].SetBinContent(ptbin_index, ctbin_index, fix_eff)
 
             # prediction on the test set for systematics only if required
             # if params['SYST_UNCERTANTIES']:
@@ -175,7 +176,6 @@ for cclass in params['CENTRALITY_CLASS']:
 
             y_pred = model.predict(data, output_margin=True)
             dfDataF.eval('Score = @y_pred', inplace=True)
-
             # extract the signal for each bdtscore-eff configuration
             for k, se in score_bdteff_dict[key].items():
                 # systematics stuff
@@ -203,8 +203,9 @@ for cclass in params['CENTRALITY_CLASS']:
     h2BDTeff.Write()
     h2RawCounts.Write()
     h2SelEff.Write()
-    for th2 in h2RawCountsFixEffDict.values():
+    for th2,theff in zip(h2RawCountsFixEffDict.values(),h2BDTeffFixEffDict.values()):
         th2.Write()
+        theff.Write()
 
 results_file.Close()
 
@@ -214,6 +215,3 @@ if not params['LOAD_SCORE_EFF']:
 # print execution time to performance evaluation
 print('')
 print('--- {:.4f} minutes ---'.format((time.time() - start_time) / 60))
-
-# TODO:
-# -TCanvas has been commented to solve a understood issue
