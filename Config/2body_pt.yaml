@@ -1,15 +1,17 @@
 NBODY: 2
+FILE_PREFIX: "pt_analysis"
 CENTRALITY_CLASS:
   - [0, 10]
-CT_BINS:
-  - [0, 90]
-PT_BINS:
-  - [2, 3]
-  - [3, 4]
-  - [4, 5]
-  - [5, 9]
+  - [30, 50]
+CT_BINS: [0, 100]
+PT_BINS: [2, 3, 4, 5, 6, 9]
 
+BDT_EFFICIENCY: [0.99, 0.95, 0.90, 0.80, 0.70]
+
+LOAD_SCORE_EFF: False
+BDT_EFF_CUTS: True
 MAX_SIGXEFF: True
+SYST_UNCERTANTIES: False
 CUT_SHIFT: [0]
 
 MC_PATH: $HYPERML_TABLES_2/SignalTable.root
@@ -26,8 +28,7 @@ XGBOOST_PARAMS:
     - auc
   tree_method: hist
 
-
-OPTIMIZATION_STRATEGY: gs
+OPTIMIZATION_STRATEGY: bayes
 
 HYPERPARAMS:
   eta: 0.05
@@ -36,7 +37,6 @@ HYPERPARAMS:
   gamma: 0.7
   subsample: 0.8
   colsample_bytree: 0.9
-  scale_pos_weight: 10
 
 HYPERPARAMS_RANGE: #TODO: check if it works without tuples
   # booster parameters
@@ -50,14 +50,14 @@ HYPERPARAMS_RANGE: #TODO: check if it works without tuples
   # lambda: (0,10]  # L2 regularization term on weights
   # alpha: (0,10]  # L1 regularization term on weight
   # should be used in case of high class imbalance as it helps in faster convergence
-  scale_pos_weight: !!python/tuple [1., 10.]
+  # scale_pos_weight: !!python/tuple [1., 10.]
 
 TRAINING_COLUMNS: 
   - V0CosPA
   - ProngsDCA
   - PiProngPvDCAXY
   - He3ProngPvDCAXY
-  - HypCandPt
+  - ct
   - He3ProngPvDCA
   - PiProngPvDCA
   - NpidClustersHe3

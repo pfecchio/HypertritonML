@@ -91,11 +91,10 @@ for cclass in params['CENTRALITY_CLASS']:
 
     if params['BDT_EFF_CUTS']:
         h2RawCountsFixEffDict = {}
-        h2BDTeffFixEffDict = {}
+
         for fix_eff in  params['BDT_EFFICIENCY']:
-            print('{}'.format(fix_eff))
             h2RawCountsFixEffDict['eff{}'.format(fix_eff)] = TH2D('RawCounts{}'.format(fix_eff), ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Raw counts', len(params['PT_BINS'])-1, np.array(params['PT_BINS'], 'double'), len(params['CT_BINS']) - 1, np.array(params['CT_BINS'], 'double'))
-            h2BDTeffFixEffDict['eff{}'.format(fix_eff)] = TH2D('BDTeff{}'.format(fix_eff),':#it{p}_{T} (GeV/#it{c});c#it{t} (cm);BDT efficiency', len(params['PT_BINS'])-1, np.array(params['PT_BINS'], 'double'), len(params['CT_BINS']) - 1, np.array(params['CT_BINS'], 'double'))
+
 
     fitDirectory = cent_dir.mkdir('Fits')
 
@@ -145,8 +144,7 @@ for cclass in params['CENTRALITY_CLASS']:
 
                 score_bdteff_dict[key]['sig_scan'] = [float(score_cut), float(bdt_efficiency)]
 
-                h2BDTeff.SetBinContent(ptbin_index, ctbin_index, score_bdteff_dict[key]['sig_scan'][0])
-        
+                h2BDTeff.SetBinContent(ptbin_index, ctbin_index, score_bdteff_dict[key]['sig_scan'][1])
             h2SelEff.SetBinContent(ptbin_index, ctbin_index, preselection_efficiency[key])
 
             # compute and store score cut for fixed efficiencies, if required
@@ -157,9 +155,8 @@ for cclass in params['CENTRALITY_CLASS']:
                     params['TRAINING_COLUMNS'],
                     ct_range=ctbin, pt_range=ptbin, cent_class=cclass)
 
-                for se,fix_eff in zip(score_eff,params['BDT_EFFICIENCY']):
+                for se in score_eff:
                     score_bdteff_dict[key]['eff{}'.format(se[1])] = [float(se[0]), float(se[1])]
-                    h2BDTeffFixEffDict['eff{}'.format(fix_eff)].SetBinContent(ptbin_index, ctbin_index, fix_eff)
 
             # prediction on the test set for systematics only if required
             # if params['SYST_UNCERTANTIES']:
@@ -176,6 +173,7 @@ for cclass in params['CENTRALITY_CLASS']:
 
             y_pred = model.predict(data, output_margin=True)
             dfDataF.eval('Score = @y_pred', inplace=True)
+
             # extract the signal for each bdtscore-eff configuration
             for k, se in score_bdteff_dict[key].items():
                 # systematics stuff
@@ -203,9 +201,10 @@ for cclass in params['CENTRALITY_CLASS']:
     h2BDTeff.Write()
     h2RawCounts.Write()
     h2SelEff.Write()
-    for th2,theff in zip(h2RawCountsFixEffDict.values(),h2BDTeffFixEffDict.values()):
-        th2.Write()
-        theff.Write()
+
+    if params['BDT_EFF_CUTS']:
+        for th2 in h2RawCountsFixEffDict.values():
+            th2.Write()
 
 results_file.Close()
 
