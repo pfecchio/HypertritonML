@@ -18,8 +18,7 @@ def evaluate_hyperparams(
               'max_depth': int(max_depth),
               'gamma': gamma,
               'subsample': subsample,
-              'colsample_bytree': colsample_bytree,
-              'scale_pos_weight':  len(data[1][data[1] < 0.5])/len(data[1][data[1] > 0.5])}
+              'colsample_bytree': colsample_bytree}
     params = {**reg_params, **params}
 
     dtrain = xgb.DMatrix(data=data[0], label=data[1], feature_names=training_columns)
@@ -233,20 +232,13 @@ def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, 
     else:
         errbkg = 0
 
-    peak = histo.Integral(int(len(counts) * (mu - nsigma * sigma - 2.96) / (3.05 - 2.96)),
-                          int(len(counts) * (mu + nsigma * sigma - 2.96) / (3.05 - 2.96)))
-
-    NHyTr = (peak-bkg)
-    print(peak, ' ', bkg)
-    if peak+bkg > 0 and signal+bkg > 0:
-        ErrNHyTr = math.sqrt(peak+bkg)
+    if  signal+bkg > 0:
         signif = signal/math.sqrt(signal+bkg)
         deriv_sig = 1/math.sqrt(signal+bkg)-signif/(2*(signal+bkg))
         deriv_bkg = -signal/(2*(math.pow(signal+bkg, 1.5)))
         errsignif = math.sqrt((errsignal*deriv_sig)**2+(errbkg*deriv_bkg)**2)
     else:
         print('sig+bkg<0')
-        ErrNHyTr = 0
         signif = 0
         errsignif = 0
 
@@ -274,7 +266,7 @@ def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, 
     tdirectory.cd()
     histo.Write()
     cv.Write()
-    return (NHyTr, ErrNHyTr)
+    return (signal, errsignal)
 
 
 def Argus(x, *p):

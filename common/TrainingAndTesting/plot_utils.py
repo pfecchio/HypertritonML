@@ -308,7 +308,7 @@ def plot_significance_scan(
     signal_counts_norm = norm.pdf(bin_cent, loc=2.992, scale=0.0025)
     signal_counts = raw_yield * signal_counts_norm / sum(signal_counts_norm)
 
-    bkg_counts, bins = np.histogram(selected_bkg['InvMass'], bins=25, range=[2.96, 3.05])
+    bkg_counts, bins = np.histogram(selected_bkg['InvMass'], bins=45, range=[2.96, 3.05])
 
     bin_centers = 0.5 * (bins[1:] + bins[:-1])
     side_map = (bin_centers < 2.98) + (bin_centers > 3.005 )

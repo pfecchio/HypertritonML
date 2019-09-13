@@ -376,7 +376,7 @@ class GeneralizedAnalysis:
         for index, tsd in enumerate(threshold_space):
             df_selected = df_bkg.query('Score>@tsd')
 
-            counts, bins = np.histogram(df_selected['InvMass'], bins=25, range=[2.96, 3.05])
+            counts, bins = np.histogram(df_selected['InvMass'], bins=45, range=[2.96, 3.05])
             bin_centers = 0.5 * (bins[1:] + bins[:-1])
 
             side_map = (bin_centers < 2.98) + (bin_centers > 3.005)
