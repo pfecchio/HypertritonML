@@ -8,10 +8,11 @@ import numpy as np
 import xgboost as xgb
 from ROOT import TF1, TH1D, TH2D, TCanvas, TFile, TPaveText, gDirectory, gStyle
 
+
 # target function for the bayesian hyperparameter optimization
 def evaluate_hyperparams(
-        data, training_columns, reg_params, eta, min_child_weight, max_depth, gamma, subsample, colsample_bytree, num_rounds=100,
-        es_rounds=2, nfold=3, round_score_list=[]):
+        data, training_columns, reg_params, eta, min_child_weight, max_depth, gamma, subsample, colsample_bytree,
+        num_rounds=100, es_rounds=2, nfold=3, round_score_list=[]):
     params = {'eval_metric': 'auc',
               'eta': eta,
               'min_child_weight': int(min_child_weight),
@@ -171,15 +172,53 @@ def expo(x, tau):
     return np.exp(-x / tau / 0.029979245800)
 
 
+def h2_bdteff(ptbin, ctbin, title='BDTeff'):
+    th2 = TH2D(title, ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);BDT efficiency', len(ptbin)-1,
+               np.array(ptbin, 'double'), len(ctbin) - 1, np.array(ctbin, 'double'))
+
+    return th2
+
+
+def h2_seleff(ptbin, ctbin, title='SelEff'):
+    th2 = TH2D(title, ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Preselection efficiency',
+               len(ptbin)-1, np.array(ptbin, 'double'), len(ctbin)-1, np.array(ctbin, 'double'))
+
+    return th2
+
+
+def h2_rawcounts(ptbin, ctbin, title='RawCounts'):
+    th2 = TH2D(title, ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Raw counts', len(ptbin)-1,
+               np.array(ptbin, 'double'), len(ctbin) - 1, np.array(ctbin, 'double'))
+
+    return th2
+
+
 def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, errsignif=0, name=''):
     tdirectory.cd()
 
-    histo = TH1D("histo_ct{}{}_pT{}{}_cen{}{}_{}".format(ct_range[0],ct_range[1],pt_range[0],pt_range[1],cent_class[0],cent_class[1], name), ";ct[cm];dN/dct [cm^{-1}]", 45, 2.96, 3.05)
+    histo = TH1D(
+        "histo_ct{}{}_pT{}{}_cen{}{}_{}".format(
+            ct_range[0],
+            ct_range[1],
+            pt_range[0],
+            pt_range[1],
+            cent_class[0],
+            cent_class[1],
+            name),
+        "", 45, 2.96, 3.05)
     for index in range(0, len(counts)):
         histo.SetBinContent(index+1, counts[index])
         histo.SetBinError(index+1, math.sqrt(counts[index]))
 
-    cv = TCanvas("cv_ct{}{}_pT{}{}_cen{}{}_{}".format(ct_range[0],ct_range[1],pt_range[0],pt_range[1],cent_class[0],cent_class[1], name))
+    cv = TCanvas(
+        "cv_ct{}{}_pT{}{}_cen{}{}_{}".format(
+            ct_range[0],
+            ct_range[1],
+            pt_range[0],
+            pt_range[1],
+            cent_class[0],
+            cent_class[1],
+            name))
     fitTpl = TF1("fitTpl", "pol2(0)+gausn(3)", 0, 5)
     fitTpl.SetParNames("B_{0}", "B_{1}", "B_{2}", "N_{sig}", "#mu", "#sigma")
     bkgTpl = TF1("fitTpl", "pol2(0)", 0, 5)
@@ -232,7 +271,7 @@ def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, 
     else:
         errbkg = 0
 
-    if  signal+bkg > 0:
+    if signal+bkg > 0:
         signif = signal/math.sqrt(signal+bkg)
         deriv_sig = 1/math.sqrt(signal+bkg)-signif/(2*(signal+bkg))
         deriv_bkg = -signal/(2*(math.pow(signal+bkg, 1.5)))
@@ -249,7 +288,15 @@ def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, 
     pinfo2.SetTextFont(42)
     string = 'ALICE Internal, Pb-Pb 2018 {}-{}%'.format(cent_class[0], cent_class[1])
     pinfo2.AddText(string)
-    string = '{}^{3}_{#Lambda}H#rightarrow ^{3}He#pi + c.c., %i #leq #it{ct} < %i cm %i #leq #it{pT} < %i GeV/c ' % (ct_range[0],ct_range[1],pt_range[0],pt_range[1])
+    string = '{}^{3}_{#Lambda}H#rightarrow ^{3}He#pi + c.c., %i #leq #it{ct} < %i cm %i #leq #it{pT} < %i GeV/c ' % (
+        ct_range
+        [0],
+        ct_range
+        [1],
+        pt_range
+        [0],
+        pt_range
+        [1])
     pinfo2.AddText(string)
     string = 'Significance ({:.0f}#sigma) {:.1f} #pm {:.1f} '.format(nsigma, signif, errsignif)
     pinfo2.AddText(string)
@@ -267,26 +314,3 @@ def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, 
     histo.Write()
     cv.Write()
     return (signal, errsignal)
-
-
-def Argus(x, *p):
-    return p[0]*x*math.pow(1-(x/p[1])**2, p[3])*math.exp(p[2]*(1-(x/p[1])**2))
-
-
-def write_array(name_file, array, mode):
-    file = open(name_file, mode)
-    for item in array:
-        file.write(str(item)+' ')
-        if item == array[len(array)-1]:
-            file.write(str(item)+'\n')
-    file.close()
-
-
-def read_array(name_file):
-    file = open(name_file, 'r')
-    array = []
-    string = file.readline()
-    for char in string:
-        if char is not ' ':
-            array.append(char)
-    return float(array)
