@@ -22,8 +22,21 @@ with open(os.path.expandvars(args.config), 'r') as stream:
     except yaml.YAMLError as exc:
         print(exc)
 
-
 resultsSysDir = os.environ['HYPERML_RESULTS_{}'.format(params['NBODY'])]
+
+score_bdteff_name = resultsSysDir + '/{}_score_bdteff.yaml'.format(params['FILE_PREFIX'])
+with open(os.path.expandvars(score_bdteff_name), 'r') as stream:
+    try:
+        eff_data = yaml.full_load(stream)
+    except yaml.YAMLError as exc:
+        print(exc)
+
+if args.pt:
+  var = 'p_{T}'
+  unit = 'GeV/c'
+else:
+  var = 'ct'
+  unit = 'cm'
 
 file_name = resultsSysDir +  '/' + params['FILE_PREFIX'] + '_dist.root'
 distribution = TFile(file_name,'recreate')
@@ -42,114 +55,104 @@ for cclass in params['CENTRALITY_CLASS']:
   histo_bdt = []
 
   if args.pt:
-    histo_sel_eff = gROOT.FindObject("SelEff").ProjectionX()
+    histo_presel_eff = gROOT.FindObject("SelEff").ProjectionX()
   else:
-    histo_sel_eff = gROOT.FindObject("SelEff").ProjectionY()
+    histo_presel_eff = gROOT.FindObject("SelEff").ProjectionY()
+
 
   for object_name in list_of_object:
     if object_name[:9]=='RawCounts':
       if args.pt:
         histo = gROOT.FindObject(object_name).ProjectionX()
-        histo_bdt_eff = gROOT.FindObject("BDTeff"+object_name[9:]).ProjectionX()
+        histo.SetTitle(';pt [ct];dN/dct [{GeV/c}^{-1}]')
+
       else:
         histo = gROOT.FindObject(object_name).ProjectionY()
-        histo_bdt_eff = gROOT.FindObject("BDTeff"+object_name[9:]).ProjectionY()
+        histo.SetTitle(';ct [cm];dN/dct [cm^{-1}]')
+
+      #histo.SetTitle(';{} [{}];dN/d{} [{}^{-1}]'.format(var,unit,var,unit))
       
+
+      if object_name=='RawCounts':
+        second_index = 'sig_scan'
+      else:
+        second_index = 'eff'+object_name[9:]
+
+      histo_eff = histo.Clone()
+      for bin in range(1,histo.GetNbinsX()+1):
+        if args.pt:
+          first_index = 'CENT[{}, {}]_PT({}, {})_CT({}, {})'.format(cclass[0],cclass[1],params['PT_BINS'][bin-1],params['PT_BINS'][bin],params['CT_BINS'][0],params['CT_BINS'][1])
+        else:  
+          first_index = 'CENT[{}, {}]_PT({}, {})_CT({}, {})'.format(cclass[0],cclass[1],params['PT_BINS'][0],params['PT_BINS'][1],params['CT_BINS'][bin-1],params['CT_BINS'][bin])
+        
+          
+        histo_eff.SetBinContent(bin,eff_data[first_index][second_index][1])
+        histo_eff.SetName('eff'+object_name[9:])
       histo.SetName('histo_'+object_name[9:])
       histo_counts.append(histo)
-      histo_bdt.append(histo_bdt_eff)
+      histo_bdt.append(histo_eff)
 
-  tau = []
-  err_tau = []
-  N0 = []
-  err_N0 = []
-  chi2_over_ndf = []
-  err_chi2_over_ndf = []
-  for histo in histo_counts:
+  # histograms for the BDT and total efficiency
+  eff_tot = histo_bdt[0].Clone()
+  eff_tot.SetName('eff_tot')
+
+  eff_bdt = histo_bdt[0].Clone()
+  eff_bdt.SetName('eff_bdt')
+  
+  eff_tot.SetTitle(';{} [{}]; total efficiency'.format(var,unit))
+  eff_bdt.SetTitle(';{} [{}]; BDT efficiency '.format(var,unit))
+  histo_presel_eff.SetTitle(';{} [{}]; preselection efficiency '.format(var,unit))
+
+  for bin in range(1,histo.GetNbinsX()+1):
+    eff_tot.SetBinContent(bin,eff_bdt.GetBinContent(bin)*histo_presel_eff.GetBinContent(bin))
+    eff_tot.SetBinError(bin,0)
+    eff_bdt.SetBinError(bin,0)
+    histo_presel_eff.SetBinError(bin,0)
+  
+  distribution.cd()
+  eff_bdt.Write()
+  eff_tot.Write()
+  histo_presel_eff.Write()
+
+  for histo,histo_eff in zip(histo_counts,histo_bdt):
     for bin in range(1,histo.GetNbinsX()+1):
-      eff = histo_sel_eff.GetBinContent(bin)*histo_bdt_eff.GetBinContent(bin)
-      
+      eff = histo_presel_eff.GetBinContent(bin)*histo_eff.GetBinContent(bin)
       bin_width = histo.GetBinWidth(bin)
       histo.SetBinContent(bin,histo.GetBinContent(bin)/eff/bin_width)
       histo.SetBinError(bin,histo.GetBinError(bin)/eff/bin_width)
-      histo.GetYaxis().SetTitle('dN/dct [cm^{-1}]')
-    distribution.cd()
 
     #this part can be skipped
+    if not args.pt:
+      cv = TCanvas("ct_"+histo.GetName()[5:])
+      cv.SetLogy()
+      gStyle.SetOptStat(0)
+      gStyle.SetOptFit(0)
 
-    cv = TCanvas("ct_"+histo.GetName()[5:])
-    cv.SetLogy()
-    gStyle.SetOptStat(0)
-    gStyle.SetOptFit(0)
+      histo.UseCurrentStyle()
+      histo.SetLineColor(1)
+      histo.SetMarkerStyle(20)
+      histo.SetMarkerColor(1)
 
-    histo.UseCurrentStyle()
-    histo.SetLineColor(1)
-    histo.SetMarkerStyle(20)
-    histo.SetMarkerColor(1)
+      expo = TF1("","[0]*exp(-x/[1]/0.029979245800)",0,28)
+      expo.SetParLimits(1,100,350)
+      histo.Fit(expo,"MIR")
 
-    expo = TF1("","[0]*exp(-x/[1]/0.029979245800)",0,28)
-    expo.SetParLimits(1,100,350)
-    histo.Fit(expo,"MIR")
-
-    pinfo2= TPaveText(0.5,0.5,0.91,0.9,"NDC")
-    pinfo2.SetBorderSize(0)
-    pinfo2.SetFillStyle(0)
-    pinfo2.SetTextAlign(30+3)
-    pinfo2.SetTextFont(42)
-    string ='ALICE Internal, Pb-Pb 2018 {}-{}%'.format(0,90)
-    pinfo2.AddText(string)
-    string='#tau = {:.0f} #pm {:.0f} ps '.format(expo.GetParameter(1),expo.GetParError(1))
-    pinfo2.AddText(string)  
-    if expo.GetNDF()is not 0:
-      string='#chi^{{2}} / NDF = {}'.format(expo.GetChisquare() / (expo.GetNDF()))
-    pinfo2.AddText(string)  
-    pinfo2.Draw()
-    
-    tau.append(expo.GetParameter(1))
-    err_tau.append(expo.GetParError(1))
-    N0.append(expo.GetParameter(0))
-    err_N0.append(expo.GetParError(0))
-    if expo.GetNDF()is not 0:
-      chi2_over_ndf.append(expo.GetChisquare() / (expo.GetNDF()))
-    else:
-      chi2_over_ndf.append(0)
-
+      pinfo2= TPaveText(0.5,0.5,0.91,0.9,"NDC")
+      pinfo2.SetBorderSize(0)
+      pinfo2.SetFillStyle(0)
+      pinfo2.SetTextAlign(30+3)
+      pinfo2.SetTextFont(42)
+      string ='ALICE Internal, Pb-Pb 2018 {}-{}%'.format(0,90)
+      pinfo2.AddText(string)
+      string='#tau = {:.0f} #pm {:.0f} ps '.format(expo.GetParameter(1),expo.GetParError(1))
+      pinfo2.AddText(string)  
+      if expo.GetNDF()is not 0:
+        string='#chi^{{2}} / NDF = {}'.format(expo.GetChisquare() / (expo.GetNDF()))
+      pinfo2.AddText(string)  
+      pinfo2.Draw()
+      cv.Write()
 
     histo.Write()
-    cv.Write()
-
-  tau.remove(tau[0])
-  err_tau.remove(err_tau[0])
-  N0.remove(N0[0])
-  err_N0.remove(err_N0[0])
-  chi2_over_ndf.remove(chi2_over_ndf[0])
-
-  params['BDT_EFFICIENCY'].append(params['BDT_EFFICIENCY'][len(params['BDT_EFFICIENCY'])-1])
-  params['BDT_EFFICIENCY'].reverse()
-  params['BDT_EFFICIENCY'].append(params['BDT_EFFICIENCY'][len(params['BDT_EFFICIENCY'])-1])
-
-  distribution.cd()
-  histo_tau = TH1D("histo_tau",";efficiency;#tau [ps]",len(histo_counts),array('d',params['BDT_EFFICIENCY']))
-  for index in range(1,len(histo_counts)-1):
-    histo_tau.SetBinContent(len(histo_counts)-index+1,tau[index])
-    histo_tau.SetBinError(len(histo_counts)-index+1,err_tau[index])
-  print('std tau :',np.std(tau))
-
-  histo_n0 = TH1D("histo_n0",";efficiency;counts",len(histo_counts),array('d',params['BDT_EFFICIENCY']))
-  for index in range(1,len(histo_counts)-1):
-    histo_n0.SetBinContent(len(histo_counts)-index+1,N0[index])
-    histo_n0.SetBinError(len(histo_counts)-index+1,err_N0[index])
-  print('std n0 :',np.std(N0))
-
-  histo_chi2 = TH1D("histo_chi2",";efficiency;chi^{2}/ndf",len(histo_counts),array('d',params['BDT_EFFICIENCY']))
-  for index in range(1,len(histo_counts)-1):
-    histo_chi2.SetBinContent(len(histo_counts)-index+1,chi2_over_ndf[index])
-    histo_chi2.SetBinError(len(histo_counts)-index+1,0)
-
-  histo_tau.Write()
-  histo_n0.Write()
-  histo_chi2.Write()
-
 resultFile.Close()
 
 
