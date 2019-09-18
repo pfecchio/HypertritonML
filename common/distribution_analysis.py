@@ -64,7 +64,7 @@ for cclass in params['CENTRALITY_CLASS']:
     if object_name[:9]=='RawCounts':
       if args.pt:
         histo = gROOT.FindObject(object_name).ProjectionX()
-        histo.SetTitle(';pt [ct];dN/dct [{GeV/c}^{-1}]')
+        histo.SetTitle(';p_{T} [ct];dN/dp_{T} [{GeV/c}^{-1}]')
 
       else:
         histo = gROOT.FindObject(object_name).ProjectionY()

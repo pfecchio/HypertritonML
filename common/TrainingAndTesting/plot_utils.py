@@ -98,7 +98,7 @@ def plot_output_train_test(
     plt.close()
 
 
-def plot_distr(df, column=None, figsize=None, bins=50, fig_name='features.pdf', mode=3, **kwds):
+def plot_distr(df, column=None, figsize=None, bins=50, fig_name='features.pdf', mode=3, log=True, **kwds):
     """Build a DataFrame and create two dataset for signal and bkg
 
     Draw histogram of the DataFrame's series comparing the distribution
@@ -129,11 +129,11 @@ def plot_distr(df, column=None, figsize=None, bins=50, fig_name='features.pdf', 
         figsize = [15, 10]
 
     axes = data1.hist(column=column, color='blue', alpha=0.5, bins=bins, figsize=figsize,
-                      label='Background', density=True, grid=False, log=True,  **kwds)
+                      label='Background', density=True, grid=False, log=log,  **kwds)
     axes = axes.flatten()
     axes = axes[:len(column)]
     data2.hist(ax=axes, column=column, color='red', alpha=0.5, bins=bins, label='Signal',
-               density=True, grid=False, log=True, **kwds)[0].legend()
+               density=True, grid=False, log=log, **kwds)[0].legend()
     for a in axes:
         a.set_ylabel('Counts (arb. units)')
 
@@ -141,7 +141,7 @@ def plot_distr(df, column=None, figsize=None, bins=50, fig_name='features.pdf', 
     if not os.path.exists(fig_features_path):
         os.makedirs(fig_features_path)
 
-    plt.savefig('{}/{}.pdf'.format(fig_features_path, fig_name), dpi=500, transparent=True)
+    plt.savefig('{}/{}'.format(fig_features_path, fig_name), dpi=500, transparent=True)
     plt.close()
 
 def plot_corr(df, columns, mode=3, **kwds):
@@ -211,7 +211,7 @@ def plot_corr(df, columns, mode=3, **kwds):
 
     fig_name = 'correlations.pdf'
 
-    plt.savefig('{}/{}.pdf'.format(fig_corr_path, fig_name), dpi=500, transparent=True)
+    plt.savefig('{}/{}'.format(fig_corr_path, fig_name), dpi=500, transparent=True)
     plt.close()
 
 
