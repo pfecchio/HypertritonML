@@ -6,7 +6,7 @@ from contextlib import redirect_stdout
 import numpy as np
 
 import xgboost as xgb
-from ROOT import TF1, TH1D, TH2D, TCanvas, TFile, TPaveText, gDirectory, gStyle
+from ROOT import TF1, TH1D, TH2D, TCanvas, TFile, TPaveStats, TPaveText, gDirectory, gStyle
 
 
 # target function for the bayesian hyperparameter optimization
@@ -312,10 +312,11 @@ def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, 
     pinfo2.Draw()
     gStyle.SetOptStat(0)
     st = histo.FindObject('stats')
-    st.SetX1NDC(0.12)
-    st.SetY1NDC(0.62)
-    st.SetX2NDC(0.40)
-    st.SetY2NDC(0.90)
+    if isinstance(st, TPaveStats):
+        st.SetX1NDC(0.12)
+        st.SetY1NDC(0.62)
+        st.SetX2NDC(0.40)
+        st.SetY2NDC(0.90)
     tdirectory.cd()
     histo.Write()
     cv.Write()
