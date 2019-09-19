@@ -1,6 +1,9 @@
 import io
+import math
 import os
+from array import array
 from contextlib import redirect_stdout
+from inspect import signature
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,24 +12,15 @@ from mpl_toolkits.axes_grid1 import ImageGrid
 import pandas as pd
 import xgboost as xgb
 from pandas.core.index import Index
+from ROOT import TH1D, TCanvas, TFile, gStyle
 from scipy import stats
 from scipy.stats import norm
-
-from sklearn import svm, datasets
-from sklearn.metrics import auc, roc_curve, confusion_matrix, precision_recall_curve, average_precision_score
+from sklearn import datasets, svm
+from sklearn.metrics import (auc, average_precision_score, confusion_matrix,
+                             precision_recall_curve, roc_curve)
 from sklearn.model_selection import train_test_split
 from sklearn.utils.multiclass import unique_labels
- 
-from inspect import signature
-
-import numpy as np
-import matplotlib.pyplot as plt
-
-
-from ROOT import TH1D,TCanvas,TFile,gStyle
-from array import array
-import math
-import numpy as np
+from xgboost import plot_importance
 
 
 # plot the BDT score distribution in the train and in the test set for both signal and background
@@ -293,7 +287,6 @@ def plot_eff_ct(analysis, file_name, pt_range = [2,10], cent_class = [0,90], ct_
   cv.SaveAs(os.environ['HYPERML_DATA_2']+'/presel_efficiency.pdf')
   results.Close()
 
-
 def plot_significance_scan(
         max_index, significance, significance_error, expected_signal, bkg_df, score_list, data_range_array, bin_cent,
         n_ev, mode, custom=True):
@@ -414,9 +407,6 @@ def plot_roc(y_truth, model_decision, mode, fig_name = '/roc_curve.pdf'):
 
     plt.savefig(fig_sig_path + '/' + fig_name)
     plt.close()
-
-from xgboost import plot_importance
-
 
 def plot_feature_imp(model, mode, fig_name = 'feature_imp.pdf'):
 

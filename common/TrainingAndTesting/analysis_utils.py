@@ -193,7 +193,7 @@ def h2_rawcounts(ptbin, ctbin, title='RawCounts'):
     return th2
 
 
-def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, errsignif=0, name=''):
+def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, errsignif=0, name='', bins=45):
     tdirectory.cd()
 
     histo = TH1D(
@@ -205,7 +205,7 @@ def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, 
             cent_class[0],
             cent_class[1],
             name),
-        "", 45, 2.96, 3.05)
+        "", bins, 2.96, 3.05)
     for index in range(0, len(counts)):
         histo.SetBinContent(index+1, counts[index])
         histo.SetBinError(index+1, math.sqrt(counts[index]))
@@ -233,11 +233,10 @@ def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, 
 
     fitTpl.SetParameter(3, 40)
     fitTpl.SetParameter(4, 2.991)
-    fitTpl.SetParLimits(4, 2.99, 3)
+    fitTpl.SetParLimits(4, 2.985, 3)
     fitTpl.SetParameter(5, 0.002)
     fitTpl.SetParLimits(5, 0.0001, 0.004)
 
-    # gStyle.SetOptStat(0)
     # gStyle.SetOptFit(0)
     ####################
 
@@ -245,7 +244,8 @@ def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, 
     histo.SetLineColor(1)
     histo.SetMarkerStyle(20)
     histo.SetMarkerColor(1)
-    histo.SetTitle(";m (^{3}He + #pi) (GeV/#it{c})^{2};Counts / 2 MeV")
+    ax_titles = ';m (^{3}He + #pi) (GeV/#it{c})^{2};Counts' + ' / {} MeV'.format(round(1000 * (3.05 - 2.96)/bins, 2))
+    histo.SetTitle(ax_titles)
     histo.SetMaximum(1.5 * histo.GetMaximum())
     histo.Fit(fitTpl, "QRM", "", 2.97, 3.03)
     histo.Fit(fitTpl, "QRM", "", 2.97, 3.03)
@@ -310,6 +310,12 @@ def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, 
         string = 'S/B ({:.0f}#sigma) {:.4f} '.format(nsigma, ratio)
     pinfo2.AddText(string)
     pinfo2.Draw()
+    gStyle.SetOptStat(0)
+    st = histo.FindObject('stats')
+    st.SetX1NDC(0.12)
+    st.SetY1NDC(0.62)
+    st.SetX2NDC(0.40)
+    st.SetY2NDC(0.90)
     tdirectory.cd()
     histo.Write()
     cv.Write()

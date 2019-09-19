@@ -66,16 +66,21 @@ class GeneralizedAnalysis:
     def prepare_dataframe(
             self, training_columns, cent_class, pt_range=[0, 10],
             ct_range=[0, 100],
-            test=False, bkg_reduct=False, bkg_factor=1, split_am=False):
-        data_range = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(
+            test=False, bkg_reduct=False, bkg_factor=1, sig_nocent=False, split_am=False):
+        data_range_bkg = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(
             ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1])
+        if sig_nocent:
+            data_range_sig = '{}<ct<{} and {}<HypCandPt<{}'.format(
+                ct_range[0], ct_range[1], pt_range[0], pt_range[1])
+        else:
+            data_range_sig = data_range_bkg
 
         if split_am:
-            bkg_a = self.df_data.query(data_range + 'and ArmenterosAlpha < 0')
-            bkg_m = self.df_data.query(data_range + 'and ArmenterosAlpha > 0')
+            bkg_a = self.df_data.query(data_range_bkg + 'and ArmenterosAlpha < 0')
+            bkg_m = self.df_data.query(data_range_bkg + 'and ArmenterosAlpha > 0')
 
-            sig_a = self.df_signal.query(data_range + 'and ArmenterosAlpha < 0')
-            sig_m = self.df_signal.query(data_range + 'and ArmenterosAlpha > 0')
+            sig_a = self.df_signal.query(data_range_sig + 'and ArmenterosAlpha < 0')
+            sig_m = self.df_signal.query(data_range_sig + 'and ArmenterosAlpha > 0')
 
             if test:
                 if len(sig_a) >= 1000:
@@ -109,8 +114,8 @@ class GeneralizedAnalysis:
             return [train_set_a, y_train_a, test_set_a, y_test_a], [train_set_m, y_train_m, test_set_m, y_test_m]
 
         else:
-            bkg = self.df_data.query(data_range)
-            sig = self.df_signal.query(data_range)
+            bkg = self.df_data.query(data_range_bkg)
+            sig = self.df_signal.query(data_range_sig)
 
             if test:
                 if len(sig) >= 1000:
@@ -250,14 +255,15 @@ class GeneralizedAnalysis:
                 print('Hyperparameters optimization: ...', end='\r')
                 max_parms, best_numrounds = self.optimize_params_gs(data_train, hyperparams)
                 print('Hyperparameters optimization: Done!\n')
-        else:   # manage the default params
-            max_params = {
-                'eta': 0.055,
-                'min_child_weight': 6,
-                'max_depth': 11,
-                'gamma': 0.33,
-                'subsample': 0.73,
-                'colsample_bytree': 0.41}
+        else:  # manage the default params
+            max_params = {}
+            # max_params = {
+            #     'eta': 0.055,
+            #     'min_child_weight': 6,
+            #     'max_depth': 11,
+            #     'gamma': 0.33,
+            #     'subsample': 0.73,
+            #     'colsample_bytree': 0.41}
             best_numrounds = num_rounds
 
         # join the dictionaries of the regressor params with the maximized hyperparams
@@ -442,13 +448,13 @@ class GeneralizedAnalysis:
 
             eff_presel = self.preselection_efficiency(ct_range, pt_range, cent_class, split_am=split_am)
 
-            exp_signal_ctint =  au.expected_signal_counts(
-                    bw, pt_range, eff_presel * bdt_efficiency[index],
-                    cent_class, self.hist_centrality)
+            exp_signal_ctint = au.expected_signal_counts(
+                bw, pt_range, eff_presel * bdt_efficiency[index],
+                cent_class, self.hist_centrality)
 
             if split_am is not '':
                 exp_signal_ctint = 0.5 * exp_signal_ctint
-            
+
             ctrange_correction = au.expo(ct_min, hyp_lifetime)-au.expo(ct_max, hyp_lifetime)
 
             exp_signal = exp_signal_ctint * ctrange_correction

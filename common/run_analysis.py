@@ -99,10 +99,9 @@ for cclass in params['CENTRALITY_CLASS']:
     fitDirectory = cent_dir.mkdir('Fits')
 
     for ptbin in zip(params['PT_BINS'][:-1], params['PT_BINS'][1:]):
-
         ptbin_index = h2BDTeff.GetXaxis().FindBin(0.5 * (ptbin[0] + ptbin[1]))
-        for ctbin in zip(params['CT_BINS'][:-1], params['CT_BINS'][1:]):
 
+        for ctbin in zip(params['CT_BINS'][:-1], params['CT_BINS'][1:]):
             ctbin_index = h2BDTeff.GetYaxis().FindBin(0.5 * (ctbin[0] + ctbin[1]))
 
             # key for accessing the correct value of the dict
@@ -119,7 +118,7 @@ for cclass in params['CENTRALITY_CLASS']:
             # data[0]=train_set, data[1]=y_train, data[2]=test_set, data[3]=y_test
             data = analysis.prepare_dataframe(
                 params['TRAINING_COLUMNS'],
-                cclass, ct_range=ctbin, pt_range=ptbin, test=args.test)
+                cclass, ct_range=ctbin, pt_range=ptbin, test=args.test, sig_nocent=True)
 
             # train the models if required or load trained models
             if args.train:
@@ -185,9 +184,10 @@ for cclass in params['CENTRALITY_CLASS']:
                 #         score_cut_vars.append(score_cut + shift)
 
                 # obtain the selected invariant mass dist
-                counts, bins = np.histogram(dfDataF.query('Score >@se[0]')['InvMass'], bins=45, range=[2.96, 3.05])
+                mass_bins = 45
+                counts, bins = np.histogram(dfDataF.query('Score >@se[0]')['InvMass'], bins=mass_bins, range=[2.96, 3.05])
 
-                hypYield, eYield = au.fit(counts, ctbin, ptbin, cclass, fitDirectory, name=k)
+                hypYield, eYield = au.fit(counts, ctbin, ptbin, cclass, fitDirectory, name=k, bins=mass_bins)
 
                 if k is 'sig_scan':
                     h2RawCounts.SetBinContent(ptbin_index, ctbin_index, hypYield)
