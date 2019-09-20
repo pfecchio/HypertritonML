@@ -28,7 +28,7 @@ class GeneralizedAnalysis:
             cent_class=[[0, 10],
                         [10, 30],
                         [30, 50],
-                        [50, 90]]):
+                        [50, 90]], split=0):
         self.mode = mode
 
         self.cent_class = cent_class.copy()
@@ -49,6 +49,11 @@ class GeneralizedAnalysis:
 
         # backup of the data without any selections for the significance scan
         self.df_data_all = self.df_data.copy()
+
+        if split == 'a':
+            self.df_data_all = self.df_data_all.query('ArmenterosAlpha < 0')
+        if split == 'm':
+            self.df_data_all = self.df_data_all.query('ArmenterosAlpha > 0')
 
         # dataframe for signal and background with preselection
         if isinstance(sig_selection, str):

@@ -1,12 +1,65 @@
 NBODY: 2
 FILE_PREFIX: "pt_analysis"
+
 CENTRALITY_CLASS:
   - [0, 10]
-  - [30, 50]
+  # - [30, 50]
 CT_BINS: [0, 100]
-PT_BINS: [2, 3, 4, 5, 6, 9]
+PT_BINS: [2, 3, 4, 5, 6, 7, 9]
 
-BDT_EFFICIENCY: [0.99, 0.95, 0.90, 0.80, 0.70]
+BDT_EFFICIENCY:
+  [
+    0.99,
+    0.98,
+    0.97,
+    0.96,
+    0.95,
+    0.94,
+    0.93,
+    0.92,
+    0.91,
+    0.90,
+    0.89,
+    0.88,
+    0.87,
+    0.86,
+    0.85,
+    0.84,
+    0.83,
+    0.82,
+    0.81,
+    0.80,
+    0.79,
+    0.78,
+    0.77,
+    0.76,
+    0.75,
+    0.74,
+    0.73,
+    0.72,
+    0.71,
+    0.70,
+    0.69,
+    0.68,
+    0.67,
+    0.66,
+    0.65,
+    0.64,
+    0.63,
+    0.62,
+    0.61,
+    0.60,
+    0.59,
+    0.58,
+    0.57,
+    0.56,
+    0.55,
+    0.54,
+    0.53,
+    0.52,
+    0.51,
+    0.50
+  ]
 
 LOAD_SCORE_EFF: False
 BDT_EFF_CUTS: True
@@ -19,8 +72,8 @@ DATA_PATH: $HYPERML_TABLES_2/DataTable.root
 
 XGBOOST_PARAMS:
   # general parameters
-  silent: 1  # print message (useful to understand whats happening)
-  nthread: 8  # number of available threads
+  silent: 1 # print message (useful to understand whats happening)
+  nthread: 8 # number of available threads
   # learning task parameters
   objective: binary:logistic
   random_state: 42
@@ -40,24 +93,24 @@ HYPERPARAMS:
 
 HYPERPARAMS_RANGE: #TODO: check if it works without tuples
   # booster parameters
-  eta: !!python/tuple [0.0001, 0.3]  # a kind of learning rate
+  eta: !!python/tuple [0.0001, 0.3] # a kind of learning rate
   # defines the min sum of weights of all observations required in a child (regularization)
   min_child_weight: !!python/tuple [1, 12]
-  max_depth: !!python/tuple [2, 20]  # defines the maximum depth of a single tree (regularization)
-  gamma: !!python/tuple [0, 1.1]  # specifies the minimum loss reduction required to make a split
-  subsample: !!python/tuple [0.3, 1.]  # denotes the fraction of observations to be randomly samples for each tree
-  colsample_bytree: !!python/tuple [0.3, 0.95]  # denotes the fraction of columns to be randomly samples for each tree
-  # lambda: (0,10]  # L2 regularization term on weights
-  # alpha: (0,10]  # L1 regularization term on weight
+  max_depth: !!python/tuple [2, 20] # defines the maximum depth of a single tree (regularization)
+  gamma: !!python/tuple [0, 1.1] # specifies the minimum loss reduction required to make a split
+  subsample: !!python/tuple [0.3, 1.] # denotes the fraction of observations to be randomly samples for each tree
+  colsample_bytree: !!python/tuple [0.3, 0.95] # denotes the fraction of columns to be randomly samples for each tree
+  # lambda: !!python/tuple [0,10]  # L2 regularization term on weights
+  # alpha: !!python/tuple [0,10]  # L1 regularization term on weight
   # should be used in case of high class imbalance as it helps in faster convergence
   # scale_pos_weight: !!python/tuple [1., 10.]
 
-TRAINING_COLUMNS: 
+TRAINING_COLUMNS:
   - V0CosPA
   - ProngsDCA
   - PiProngPvDCAXY
   - He3ProngPvDCAXY
-  - ct
+  # - ct
   - He3ProngPvDCA
   - PiProngPvDCA
   - NpidClustersHe3

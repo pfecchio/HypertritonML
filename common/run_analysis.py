@@ -24,6 +24,8 @@ parser.add_argument('-t', '--train', help='Do the training', action='store_true'
 parser.add_argument('--test', help='Just test the functionalities (training with reduced number of candidates)', action='store_true')
 parser.add_argument('-o', '--optimize', help='Run the optimization', action='store_true')
 parser.add_argument('-s', '--significance', help='Run the significance optimisation studies', action='store_true')
+parser.add_argument('-a', '--anti', help='Run with matter and anti-matter splitted', action='store_true')
+parser.add_argument('-m', '--matter', help='Run with matter and anti-matter splitted', action='store_true')
 parser.add_argument('config', help='Path to the YAML configuration file')
 args = parser.parse_args()
 
@@ -57,14 +59,32 @@ if params['LOAD_SCORE_EFF']:
             print(exc)
 
 # define data selection
-signal_selection = '{}<=HypCandPt<={}'.format(params['PT_BINS'][0], params['PT_BINS'][-1])
-backgound_selection = '(InvMass<2.98 or InvMass>3.005) and {}<=HypCandPt<={}'.format(
+if args.matter:
+    signal_selection = '{}<=HypCandPt<={} and ArmenterosAlpha > 0'.format(params['PT_BINS'][0], params['PT_BINS'][-1])
+    backgound_selection = '(InvMass<2.98 or InvMass>3.005) and {}<=HypCandPt<={} and ArmenterosAlpha > 0'.format(
     params['PT_BINS'][0], params['PT_BINS'][-1])
+
+if args.anti:
+    signal_selection = '{}<=HypCandPt<={} and ArmenterosAlpha < 0'.format(params['PT_BINS'][0], params['PT_BINS'][-1])
+    backgound_selection = '(InvMass<2.98 or InvMass>3.005) and {}<=HypCandPt<={} and ArmenterosAlpha < 0'.format(
+    params['PT_BINS'][0], params['PT_BINS'][-1])
+        
+if not args.matter and not args.anti:
+    signal_selection = '{}<=HypCandPt<={}'.format(params['PT_BINS'][0], params['PT_BINS'][-1])
+    backgound_selection = '(InvMass<2.98 or InvMass>3.005) and {}<=HypCandPt<={}'.format(
+        params['PT_BINS'][0], params['PT_BINS'][-1])
+
+split = 0
+
+if args.anti:
+    split = 'a'
+if args.matter:
+    split = 'm'
 
 # initilize the analysis object
 analysis = GeneralizedAnalysis(params['NBODY'], mc_path, data_path,
                                signal_selection, backgound_selection,
-                               cent_class=params['CENTRALITY_CLASS'])
+                               cent_class=params['CENTRALITY_CLASS'], split=split)
 
 # start timer for performance evaluation
 start_time = time.time()
