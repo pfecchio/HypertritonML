@@ -56,7 +56,6 @@ TRAINING_COLUMNS:
   - ProngsDCA
   - PiProngPvDCAXY
   - He3ProngPvDCAXY
-  - HypCandPt
   - He3ProngPvDCA
   - PiProngPvDCA
   - NpidClustersHe3
