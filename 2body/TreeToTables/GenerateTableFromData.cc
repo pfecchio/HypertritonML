@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 
+#include <TChain.h>
 #include <TFile.h>
 #include <TH1D.h>
 #include <TTree.h>
@@ -13,19 +14,21 @@ using namespace std;
 #include "../../common/GenerateTable/Common.h"
 #include "../../common/GenerateTable/Table2.h"
 
-void GenerateTableFromData() {
+void GenerateTableFromData(bool likeSign = false) {
 
   string dataDir  = getenv("HYPERML_DATA_2");
   string tableDir = getenv("HYPERML_TABLES_2");
 
-  string inFileNameQ = "HyperTritonTree_18q.root";
-  string inFileArgQ  = dataDir + "/" + inFileNameQ;
 
-  string inFileNameR = "HyperTritonTree_18r.root";
-  string inFileArgR  = dataDir + "/" + inFileNameR;
+  string lsString = likeSign ? "LS.root" : ".root" ;
+  string inFileNameQ = "HyperTritonTree_18q";
+  string inFileArgQ  = dataDir + "/" + inFileNameQ + lsString;
 
-  string outFileName = "DataTable.root";
-  string outFileArg  = tableDir + "/" + outFileName;
+  string inFileNameR = "HyperTritonTree_18r";
+  string inFileArgR  = dataDir + "/" + inFileNameR + lsString;
+
+  string outFileName = "DataTable";
+  string outFileArg  = tableDir + "/" + outFileName + lsString;
 
   TChain inputChain("_custom/fTreeV0");
   inputChain.AddFile(inFileArgQ.data());
