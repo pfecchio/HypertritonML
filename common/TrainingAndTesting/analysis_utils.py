@@ -220,7 +220,7 @@ def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, 
             cent_class[1],
             name))
     fitTpl = TF1("fitTpl", "expo(0)+gausn(2)", 0, 5)
-    fitTpl.SetParNames("B_{0}", "B_{1}", "B_{2}", "N_{sig}", "#mu", "#sigma")
+    fitTpl.SetParNames("B_{0}", "B_{1}", "N_{sig}", "#mu", "#sigma")
     bkgTpl = TF1("fitTpl", "expo(0)", 0, 5)
     sigTpl = TF1("fitTpl", "gausn(0)", 0, 5)
     fitTpl.SetNpx(300)
@@ -235,7 +235,7 @@ def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, 
     fitTpl.SetParameter(3, 2.991)
     fitTpl.SetParLimits(3, 2.985, 3)
     fitTpl.SetParameter(4, 0.002)
-    fitTpl.SetParLimits(4, 0.0001, 0.004)
+    fitTpl.SetParLimits(4, 0.0001, 0.003)
 
     # gStyle.SetOptFit(0)
     ####################
@@ -288,7 +288,7 @@ def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, 
     pinfo2.SetTextFont(42)
     string = 'ALICE Internal, Pb-Pb 2018 {}-{}%'.format(cent_class[0], cent_class[1])
     pinfo2.AddText(string)
-    string = '{}^{3}_{#Lambda}H#rightarrow ^{3}He#pi + c.c., %i #leq #it{ct} < %i cm %i #leq #it{pT} < %i GeV/c ' % (
+    string = '{}^{3}_{#Lambda}H#rightarrow ^{3}He#pi + c.c., %i #leq #it{ct} < %i cm %i #leq #it{p}_{T} < %i GeV/#it{c} ' % (
         ct_range
         [0],
         ct_range
