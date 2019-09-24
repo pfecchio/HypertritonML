@@ -98,7 +98,7 @@ class GeneralizedAnalysis:
                     bkg_m = bkg_m.sample(n=1000)
 
             if bkg_reduct:
-                n_bkg = len(sig_a) * bkg_factor
+                n_bkg = int(len(sig_a) * bkg_factor)
                 if n_bkg < len(bkg_a):
                     bkg_a = bkg_a.sample(n=n_bkg)
                     bkg_m = bkg_m.sample(n=n_bkg)
@@ -129,7 +129,7 @@ class GeneralizedAnalysis:
                     bkg = bkg.sample(n=1000)
 
             if bkg_reduct:
-                n_bkg = len(sig) * bkg_factor
+                n_bkg = int(len(bkg) * bkg_factor)
                 if n_bkg < len(bkg):
                     bkg = bkg.sample(n=n_bkg)
 
