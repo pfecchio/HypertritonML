@@ -4,7 +4,7 @@ import argparse
 import yaml
 import numpy as np
 from array import array
-from ROOT import TF1, TH1D, TH2D, TCanvas, TFile, TPaveText, gDirectory, gStyle ,gROOT , TIter, TKey, TClass
+from ROOT import TF1, TH1D, TH2D, TCanvas, TFile, TPaveText, gDirectory, gStyle ,gROOT , TIter, TKey, TAxis
 
 gROOT.SetBatch()
 
@@ -54,6 +54,10 @@ for cclass in params['CENTRALITY_CLASS']:
   histo_counts = []
   histo_bdt = []
 
+  tau = []
+  err_tau = []
+  bin_label = []
+
   if args.pt:
     histo_presel_eff = gROOT.FindObject("SelEff").ProjectionX()
   else:
@@ -77,6 +81,9 @@ for cclass in params['CENTRALITY_CLASS']:
         second_index = 'sig_scan'
       else:
         second_index = 'eff'+object_name[9:]
+      
+      bin_label.append(second_index)
+
 
       histo_eff = histo.Clone()
       for bin in range(1,histo.GetNbinsX()+1):
@@ -137,6 +144,9 @@ for cclass in params['CENTRALITY_CLASS']:
       expo.SetParLimits(1,100,350)
       histo.Fit(expo,"MIR")
 
+      tau.append(expo.GetParameter(1))
+      err_tau.append(expo.GetParError(1))
+
       pinfo2= TPaveText(0.5,0.5,0.91,0.9,"NDC")
       pinfo2.SetBorderSize(0)
       pinfo2.SetFillStyle(0)
@@ -153,6 +163,16 @@ for cclass in params['CENTRALITY_CLASS']:
       cv.Write()
 
     histo.Write()
+  
+  if not args.pt:
+
+    histo_tau = TH1D("histo_tau",";eff;tau [ps]",len(tau),0,len(tau))
+    for bin in range(1,len(tau)):
+      histo_tau.SetBinContent(bin,tau[bin-1])
+      histo_tau.SetBinError(bin,err_tau[bin-1])
+      histo_tau.GetXaxis().SetBinLabel(bin,bin_label[bin-1])
+    histo_tau.Write()
+
 resultFile.Close()
 
 
