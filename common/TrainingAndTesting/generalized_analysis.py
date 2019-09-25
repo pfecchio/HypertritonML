@@ -47,8 +47,10 @@ class GeneralizedAnalysis:
         self.df_signal['y'] = 1
         self.df_data['y'] = 0
 
+        self.df_data_bkg = self.df_data.sample(n=round(len(self.df_data)*0.05))
+
         # backup of the data without any selections for the significance scan
-        self.df_data_all = self.df_data.copy()
+        self.df_data_all = self.df_data.drop(self.df_data_bkg.index)
 
         if split == 'a':
             self.df_data_all = self.df_data_all.query('ArmenterosAlpha < 0')
@@ -119,7 +121,7 @@ class GeneralizedAnalysis:
             return [train_set_a, y_train_a, test_set_a, y_test_a], [train_set_m, y_train_m, test_set_m, y_test_m]
 
         else:
-            bkg = self.df_data.query(data_range_bkg)
+            bkg = self.df_data_bkg.query(data_range_bkg)
             sig = self.df_signal.query(data_range_sig)
 
             if test:
