@@ -81,10 +81,13 @@ if args.anti:
 if args.matter:
     split = 'm'
 
+bkgReservedFraction = params['DEDICATED_BACKGROUND'] if 'DEDICATED_BACKGROUND' in params else 0
+
 # initilize the analysis object
 analysis = GeneralizedAnalysis(params['NBODY'], mc_path, data_path,
                                signal_selection, backgound_selection,
-                               cent_class=params['CENTRALITY_CLASS'], split=split)
+                               cent_class=params['CENTRALITY_CLASS'], split=split, 
+                               dedicated_background=bkgReservedFraction)
 
 # start timer for performance evaluation
 start_time = time.time()
@@ -138,7 +141,7 @@ for cclass in params['CENTRALITY_CLASS']:
             # data[0]=train_set, data[1]=y_train, data[2]=test_set, data[3]=y_test
             data = analysis.prepare_dataframe(
                 params['TRAINING_COLUMNS'],
-                cclass, ct_range=ctbin, pt_range=ptbin, test=args.test, sig_nocent=True, bkg_reduct=True, bkg_factor=0.1)
+                cclass, ct_range=ctbin, pt_range=ptbin, test=args.test, sig_nocent=True)
 
             # train the models if required or load trained models
             if args.train:

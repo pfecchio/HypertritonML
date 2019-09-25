@@ -28,7 +28,7 @@ class GeneralizedAnalysis:
             cent_class=[[0, 10],
                         [10, 30],
                         [30, 50],
-                        [50, 90]], split=0):
+                        [50, 90]], split=0, dedicated_background=0):
         self.mode = mode
 
         self.cent_class = cent_class.copy()
@@ -47,10 +47,10 @@ class GeneralizedAnalysis:
         self.df_signal['y'] = 1
         self.df_data['y'] = 0
 
-        self.df_data_bkg = self.df_data.sample(n=round(len(self.df_data)*0.05))
+        self.df_data_bkg = self.df_data.sample(n=round(len(self.df_data)*dedicated_background)) if dedicated_background != 0 else self.df_data
 
         # backup of the data without any selections for the significance scan
-        self.df_data_all = self.df_data.drop(self.df_data_bkg.index)
+        self.df_data_all = self.df_data.drop(self.df_data_bkg.index) if dedicated_background != 0 else self.df_data
 
         if split == 'a':
             self.df_data_all = self.df_data_all.query('ArmenterosAlpha < 0')
