@@ -193,35 +193,50 @@ def h2_rawcounts(ptbin, ctbin, title='RawCounts'):
     return th2
 
 
-def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, errsignif=0, name='', bins=45):
+def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, errsignif=0, name='', bins=45, model = "expo"):
     tdirectory.cd()
 
     histo = TH1D(
-        "histo_ct{}{}_pT{}{}_cen{}{}_{}".format(
+        "histo_ct{}{}_pT{}{}_cen{}{}_{}_{}".format(
             ct_range[0],
             ct_range[1],
             pt_range[0],
             pt_range[1],
             cent_class[0],
             cent_class[1],
-            name),
+            name,
+            model),
         "", bins, 2.96, 3.05)
     for index in range(0, len(counts)):
         histo.SetBinContent(index+1, counts[index])
         histo.SetBinError(index+1, math.sqrt(counts[index]))
 
     cv = TCanvas(
-        "cv_ct{}{}_pT{}{}_cen{}{}_{}".format(
+        "cv_ct{}{}_pT{}{}_cen{}{}_{}_{}".format(
             ct_range[0],
             ct_range[1],
             pt_range[0],
             pt_range[1],
             cent_class[0],
             cent_class[1],
-            name))
-    fitTpl = TF1("fitTpl", "expo(0)+gausn(2)", 0, 5)
-    fitTpl.SetParNames("B_{0}", "B_{1}", "N_{sig}", "#mu", "#sigma")
-    bkgTpl = TF1("fitTpl", "expo(0)", 0, 5)
+            name,
+            model))
+
+    if 'pol' in str(model):
+        nBkgPars = int(model[3]) + 1
+    elif 'expo' in str(model): 
+        nBkgPars = 2
+    else:
+        print("Unsupported model {}".format(model))
+
+    fitTpl = TF1("fitTpl", "{}(0)+gausn({})".format(model,nBkgPars), 0, 5)
+    for i in range(0, nBkgPars):
+        fitTpl.SetParName(i, 'B_{}'.format(i))
+    
+    fitTpl.SetParName(nBkgPars, "N_{sig}")
+    fitTpl.SetParName(nBkgPars + 1, "#mu")
+    fitTpl.SetParName(nBkgPars + 2, "#sigma")
+    bkgTpl = TF1("fitTpl", "{}(0)".format(model), 0, 5)
     sigTpl = TF1("fitTpl", "gausn(0)", 0, 5)
     fitTpl.SetNpx(300)
     fitTpl.SetLineWidth(2)
@@ -231,11 +246,12 @@ def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, 
     bkgTpl.SetLineStyle(2)
     bkgTpl.SetLineColor(2)
 
-    fitTpl.SetParameter(2, 40)
-    fitTpl.SetParameter(3, 2.991)
-    fitTpl.SetParLimits(3, 2.985, 3)
-    fitTpl.SetParameter(4, 0.002)
-    fitTpl.SetParLimits(4, 0.0001, 0.003)
+    fitTpl.SetParameter(nBkgPars, 40)
+    fitTpl.SetParLimits(nBkgPars, 0, 10000)
+    fitTpl.SetParameter(nBkgPars + 1 , 2.991)
+    fitTpl.SetParLimits(nBkgPars + 1, 2.985, 3)
+    fitTpl.SetParameter(nBkgPars + 2, 0.002)
+    fitTpl.SetParLimits(nBkgPars + 2, 0.001, 0.004)
 
     # gStyle.SetOptFit(0)
     ####################
@@ -255,15 +271,15 @@ def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, 
     bkgTpl.SetLineColor(600)
     bkgTpl.SetLineStyle(2)
     bkgTpl.Draw("same")
-    sigTpl.SetParameter(0, fitTpl.GetParameter(2))
-    sigTpl.SetParameter(1, fitTpl.GetParameter(3))
-    sigTpl.SetParameter(2, fitTpl.GetParameter(4))
+    sigTpl.SetParameter(0, fitTpl.GetParameter(nBkgPars))
+    sigTpl.SetParameter(1, fitTpl.GetParameter(nBkgPars+1))
+    sigTpl.SetParameter(2, fitTpl.GetParameter(nBkgPars+2))
     sigTpl.SetLineColor(600)
     # sigTpl.Draw("same")
-    mu = fitTpl.GetParameter(3)
-    sigma = fitTpl.GetParameter(4)
-    signal = fitTpl.GetParameter(2) / histo.GetBinWidth(1)
-    errsignal = fitTpl.GetParError(2) / histo.GetBinWidth(1)
+    mu = fitTpl.GetParameter(nBkgPars+1)
+    sigma = fitTpl.GetParameter(nBkgPars+2)
+    signal = fitTpl.GetParameter(nBkgPars) / histo.GetBinWidth(1)
+    errsignal = fitTpl.GetParError(nBkgPars) / histo.GetBinWidth(1)
     bkg = bkgTpl.Integral(mu - nsigma * sigma, mu + nsigma * sigma) / histo.GetBinWidth(1)
 
     if bkg > 0:

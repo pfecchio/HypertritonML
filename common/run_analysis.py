@@ -109,17 +109,26 @@ for cclass in params['CENTRALITY_CLASS']:
         params['PT_BINS'], 'double'), len(params['CT_BINS'])-1, np.array(params['CT_BINS'], 'double'))
     h2SelEff = TH2D('SelEff', ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Preselection efficiency', len(params['PT_BINS'])-1, np.array(
         params['PT_BINS'], 'double'), len(params['CT_BINS'])-1, np.array(params['CT_BINS'], 'double'))
-    h2RawCounts = TH2D('RawCounts', ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Raw counts', len(params['PT_BINS'])-1, np.array(
-        params['PT_BINS'], 'double'), len(params['CT_BINS']) - 1, np.array(params['CT_BINS'], 'double'))
-
-    if params['BDT_EFF_CUTS']:
-        h2RawCountsFixEffDict = {}
-
-        for fix_eff in  params['BDT_EFFICIENCY']:
-            h2RawCountsFixEffDict['eff{}'.format(fix_eff)] = TH2D('RawCounts{}'.format(fix_eff), ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Raw counts', len(params['PT_BINS'])-1, np.array(params['PT_BINS'], 'double'), len(params['CT_BINS']) - 1, np.array(params['CT_BINS'], 'double'))
 
 
-    fitDirectory = cent_dir.mkdir('Fits')
+    bkgModels = params['BKG_MODELS'] if 'BKG_MODELS' in params else ['expo']
+    fitDirectories = []
+    h2RawCounts = []
+    h2RawCountsFixEffDict = []
+    for model in bkgModels:
+        fitDirectories.append(cent_dir.mkdir(model))
+        if params['BDT_EFF_CUTS']:
+            myDict={}
+
+            for fix_eff in params['BDT_EFFICIENCY']:
+                myDict['eff{}'.format(fix_eff)] = TH2D('RawCounts{}_{}'.format(fix_eff,model), ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Raw counts',
+                    len(params['PT_BINS'])-1, np.array(params['PT_BINS'], 'double'), len(params['CT_BINS']) - 1, np.array(params['CT_BINS'], 'double'))
+
+            h2RawCountsFixEffDict.append(myDict)
+        
+        h2RawCounts.append(TH2D('RawCounts_{}'.format(model), ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Raw counts', 
+            len(params['PT_BINS'])-1, np.array(params['PT_BINS'], 'double'), len(params['CT_BINS']) - 1,
+            np.array(params['CT_BINS'], 'double')))
 
     for ptbin in zip(params['PT_BINS'][:-1], params['PT_BINS'][1:]):
         ptbin_index = h2BDTeff.GetXaxis().FindBin(0.5 * (ptbin[0] + ptbin[1]))
@@ -207,27 +216,31 @@ for cclass in params['CENTRALITY_CLASS']:
                 #         score_cut_vars.append(score_cut + shift)
 
                 # obtain the selected invariant mass dist
-                mass_bins = 45
-                counts, bins = np.histogram(dfDataF.query('Score >@se[0]')['InvMass'], bins=mass_bins, range=[2.96, 3.05])
+                mass_bins = 40 if ctbin[1] < 16 else 36
 
-                hypYield, eYield = au.fit(counts, ctbin, ptbin, cclass, fitDirectory, name=k, bins=mass_bins)
+                for model, fitDir, h2Raw, h2RawDict in zip(bkgModels, fitDirectories, h2RawCounts, h2RawCountsFixEffDict):  
+                    counts, bins = np.histogram(dfDataF.query('Score >@se[0]')['InvMass'], bins=mass_bins, range=[2.96, 3.05])
 
-                if k is 'sig_scan':
-                    h2RawCounts.SetBinContent(ptbin_index, ctbin_index, hypYield)
-                    h2RawCounts.SetBinError(ptbin_index, ctbin_index, eYield)
-                else:
-                    h2RawCountsFixEffDict[k].SetBinContent(ptbin_index, ctbin_index, hypYield)
-                    h2RawCountsFixEffDict[k].SetBinError(ptbin_index, ctbin_index, eYield)
+                    hypYield, eYield = au.fit(counts, ctbin, ptbin, cclass, fitDir, name=k, bins=mass_bins, model=model)
+
+                    if k is 'sig_scan':
+                        h2Raw.SetBinContent(ptbin_index, ctbin_index, hypYield)
+                        h2Raw.SetBinError(ptbin_index, ctbin_index, eYield)
+                    else:
+                        h2RawDict[k].SetBinContent(ptbin_index, ctbin_index, hypYield)
+                        h2RawDict[k].SetBinError(ptbin_index, ctbin_index, eYield)
 
     # write on file
     cent_dir.cd()
     h2BDTeff.Write()
-    h2RawCounts.Write()
     h2SelEff.Write()
 
+    for h2Raw in h2RawCounts:
+        h2Raw.Write()
     if params['BDT_EFF_CUTS']:
-        for th2 in h2RawCountsFixEffDict.values():
-            th2.Write()
+        for dictionary in h2RawCountsFixEffDict:
+            for th2 in dictionary.values():
+                th2.Write()
 
 results_file.Close()
 
