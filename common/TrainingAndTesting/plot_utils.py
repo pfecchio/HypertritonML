@@ -92,7 +92,7 @@ def plot_output_train_test(
     plt.close()
 
 
-def plot_distr(df, column=None, figsize=None, bins=50, fig_name='features.pdf', mode=3, log=True, **kwds):
+def plot_distr(df, column=None, figsize=None, bins=50, fig_name='features.pdf', mode=2, log=True, **kwds):
     """Build a DataFrame and create two dataset for signal and bkg
 
     Draw histogram of the DataFrame's series comparing the distribution

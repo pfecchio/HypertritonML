@@ -28,7 +28,7 @@ class GeneralizedAnalysis:
             cent_class=[[0, 10],
                         [10, 30],
                         [30, 50],
-                        [50, 90]], split=0, dedicated_background=0):
+                        [50, 90]], split=0, dedicated_background=0, training_columns=[]):
         self.mode = mode
 
         self.cent_class = cent_class.copy()
@@ -62,6 +62,14 @@ class GeneralizedAnalysis:
             self.df_signal = self.df_signal.query(sig_selection)
         if isinstance(bkg_selection, str):
             self.df_data = self.df_data.query(bkg_selection)
+
+        df = pd.concat([self.df_signal, self.df_data_bkg])
+
+        columns = training_columns.copy()
+        columns.append('InvMass')
+
+        pu.plot_distr(df, column=training_columns, mode=self.mode)
+        pu.plot_corr(df, columns, mode=self.mode)
 
         if mode == 2:
             self.hist_centrality = uproot.open(data_file_name)['EventCounter']
@@ -286,11 +294,11 @@ class GeneralizedAnalysis:
 
         # BDT output distributions plot
         fig_path = os.environ['HYPERML_FIGURES_{}'.format(self.mode)] + '/TrainTest'
-        # pu.plot_output_train_test(
-        #     model, data[0][training_columns],
-        #     data[1], data[2][training_columns],
-        #     data[3], features=training_columns, raw=True, log=True, ct_range=ct_range, pt_range=pt_range,
-        #     cent_class=cent_class, path=fig_path, mode=self.mode)
+        pu.plot_output_train_test(
+            model, data[0][training_columns],
+            data[1], data[2][training_columns],
+            data[3], features=training_columns, raw=True, log=True, ct_range=ct_range, pt_range=pt_range,
+            cent_class=cent_class, path=fig_path, mode=self.mode)
 
         # test the model performances
         print('Testing the model: ...', end='\r')

@@ -15,13 +15,14 @@ import yaml
 from array import array
 import numpy as np
 
-from ROOT import TFile,TF1,TH2D,TH1D,TCanvas,TPaveText,gStyle,gROOT
+from ROOT import TFile, TF1, TH2D, TH1D, TCanvas, TPaveText, gStyle, gROOT
 
 gROOT.SetBatch()
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-t', '--train', help='Do the training', action='store_true')
-parser.add_argument('--test', help='Just test the functionalities (training with reduced number of candidates)', action='store_true')
+parser.add_argument(
+    '--test', help='Just test the functionalities (training with reduced number of candidates)', action='store_true')
 parser.add_argument('-o', '--optimize', help='Run the optimization', action='store_true')
 parser.add_argument('-s', '--significance', help='Run the significance optimisation studies', action='store_true')
 parser.add_argument('-a', '--anti', help='Run with matter and anti-matter splitted', action='store_true')
@@ -62,13 +63,13 @@ if params['LOAD_SCORE_EFF']:
 if args.matter:
     signal_selection = '{}<=HypCandPt<={} and ArmenterosAlpha > 0'.format(params['PT_BINS'][0], params['PT_BINS'][-1])
     backgound_selection = '(InvMass<2.98 or InvMass>3.005) and {}<=HypCandPt<={} and ArmenterosAlpha > 0'.format(
-    params['PT_BINS'][0], params['PT_BINS'][-1])
+        params['PT_BINS'][0], params['PT_BINS'][-1])
 
 if args.anti:
     signal_selection = '{}<=HypCandPt<={} and ArmenterosAlpha < 0'.format(params['PT_BINS'][0], params['PT_BINS'][-1])
     backgound_selection = '(InvMass<2.98 or InvMass>3.005) and {}<=HypCandPt<={} and ArmenterosAlpha < 0'.format(
-    params['PT_BINS'][0], params['PT_BINS'][-1])
-        
+        params['PT_BINS'][0], params['PT_BINS'][-1])
+
 if not args.matter and not args.anti:
     signal_selection = '{}<=HypCandPt<={}'.format(params['PT_BINS'][0], params['PT_BINS'][-1])
     backgound_selection = '(InvMass<2.98 or InvMass>3.005) and {}<=HypCandPt<={}'.format(
@@ -86,8 +87,8 @@ bkgReservedFraction = params['DEDICATED_BACKGROUND'] if 'DEDICATED_BACKGROUND' i
 # initilize the analysis object
 analysis = GeneralizedAnalysis(params['NBODY'], mc_path, data_path,
                                signal_selection, backgound_selection,
-                               cent_class=params['CENTRALITY_CLASS'], split=split, 
-                               dedicated_background=bkgReservedFraction)
+                               cent_class=params['CENTRALITY_CLASS'], split=split,
+                               dedicated_background=bkgReservedFraction, training_columns=params['TRAINING_COLUMNS'])
 
 # start timer for performance evaluation
 start_time = time.time()
@@ -110,7 +111,6 @@ for cclass in params['CENTRALITY_CLASS']:
     h2SelEff = TH2D('SelEff', ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Preselection efficiency', len(params['PT_BINS'])-1, np.array(
         params['PT_BINS'], 'double'), len(params['CT_BINS'])-1, np.array(params['CT_BINS'], 'double'))
 
-
     bkgModels = params['BKG_MODELS'] if 'BKG_MODELS' in params else ['expo']
     fitDirectories = []
     h2RawCounts = []
@@ -118,17 +118,17 @@ for cclass in params['CENTRALITY_CLASS']:
     for model in bkgModels:
         fitDirectories.append(cent_dir.mkdir(model))
         if params['BDT_EFF_CUTS']:
-            myDict={}
+            myDict = {}
 
             for fix_eff in params['BDT_EFFICIENCY']:
-                myDict['eff{}'.format(fix_eff)] = TH2D('RawCounts{}_{}'.format(fix_eff,model), ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Raw counts',
-                    len(params['PT_BINS'])-1, np.array(params['PT_BINS'], 'double'), len(params['CT_BINS']) - 1, np.array(params['CT_BINS'], 'double'))
+                myDict['eff{}'.format(fix_eff)] = TH2D('RawCounts{}_{}'.format(fix_eff, model), ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Raw counts', len(
+                    params['PT_BINS'])-1, np.array(params['PT_BINS'], 'double'), len(params['CT_BINS']) - 1, np.array(params['CT_BINS'], 'double'))
 
             h2RawCountsFixEffDict.append(myDict)
-        
-        h2RawCounts.append(TH2D('RawCounts_{}'.format(model), ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Raw counts', 
-            len(params['PT_BINS'])-1, np.array(params['PT_BINS'], 'double'), len(params['CT_BINS']) - 1,
-            np.array(params['CT_BINS'], 'double')))
+
+        h2RawCounts.append(TH2D('RawCounts_{}'.format(model), ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Raw counts',
+                                len(params['PT_BINS'])-1, np.array(params['PT_BINS'], 'double'), len(params['CT_BINS']) - 1,
+                                np.array(params['CT_BINS'], 'double')))
 
     for ptbin in zip(params['PT_BINS'][:-1], params['PT_BINS'][1:]):
         ptbin_index = h2BDTeff.GetXaxis().FindBin(0.5 * (ptbin[0] + ptbin[1]))
@@ -197,7 +197,8 @@ for cclass in params['CENTRALITY_CLASS']:
             #     data[2].eval('Score = @y_pred', inplace=True)
             #     data[2].eval('y = @data[3]', inplace=True)
 
-            total_cut = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(ctbin[0], ctbin[1], ptbin[0], ptbin[1], cclass[0], cclass[1])
+            total_cut = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(
+                ctbin[0], ctbin[1], ptbin[0], ptbin[1], cclass[0], cclass[1])
 
             dfDataF = analysis.df_data_all.query(total_cut)
             data = xgb.DMatrix(data=(analysis.df_data_all.query(total_cut)[params['TRAINING_COLUMNS']]))
@@ -218,8 +219,11 @@ for cclass in params['CENTRALITY_CLASS']:
                 # obtain the selected invariant mass dist
                 mass_bins = 40 if ctbin[1] < 16 else 36
 
-                for model, fitDir, h2Raw, h2RawDict in zip(bkgModels, fitDirectories, h2RawCounts, h2RawCountsFixEffDict):  
-                    counts, bins = np.histogram(dfDataF.query('Score >@se[0]')['InvMass'], bins=mass_bins, range=[2.96, 3.05])
+                for model, fitDir, h2Raw, h2RawDict in zip(
+                        bkgModels, fitDirectories, h2RawCounts, h2RawCountsFixEffDict):
+                    counts, bins = np.histogram(
+                        dfDataF.query('Score >@se[0]')['InvMass'],
+                        bins=mass_bins, range=[2.96, 3.05])
 
                     hypYield, eYield = au.fit(counts, ctbin, ptbin, cclass, fitDir, name=k, bins=mass_bins, model=model)
 
