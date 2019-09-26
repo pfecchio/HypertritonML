@@ -57,7 +57,7 @@ for cclass in params['CENTRALITY_CLASS']:
   hRawCounts = []
   for model in bkgModels:
     for fix_eff in  params['BDT_EFFICIENCY']:
-      if (float(fix_eff) > 0.78 or float(fix_eff) < 0.58):
+      if (float(fix_eff) > 0.8 or float(fix_eff) < 0.6):
         continue
       h2RawCounts = resultFile.Get('{}/RawCounts{}_{}'.format(inDirName,fix_eff,model))
       h1RawCounts = h2RawCounts.ProjectionY()
