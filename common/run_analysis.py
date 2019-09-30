@@ -217,7 +217,7 @@ for cclass in params['CENTRALITY_CLASS']:
                 #         score_cut_vars.append(score_cut + shift)
 
                 # obtain the selected invariant mass dist
-                mass_bins = 40 if ctbin[1] < 16 else 30
+                mass_bins = 40 if ctbin[1] < 16 else 36
 
                 for model, fitDir, h2Raw, h2RawDict in zip(
                         bkgModels, fitDirectories, h2RawCounts, h2RawCountsFixEffDict):

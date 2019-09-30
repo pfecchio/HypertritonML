@@ -249,9 +249,9 @@ def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, 
     fitTpl.SetParameter(nBkgPars, 40)
     fitTpl.SetParLimits(nBkgPars, 0, 10000)
     fitTpl.SetParameter(nBkgPars + 1 , 2.991)
-    fitTpl.SetParLimits(nBkgPars + 1, 2.985, 3)
+    fitTpl.SetParLimits(nBkgPars + 1, 2.986, 3)
     fitTpl.SetParameter(nBkgPars + 2, 0.002)
-    fitTpl.SetParLimits(nBkgPars + 2, 0.001, 0.0035)
+    fitTpl.SetParLimits(nBkgPars + 2, 0.001, 0.0025)
 
     # gStyle.SetOptFit(0)
     ####################
