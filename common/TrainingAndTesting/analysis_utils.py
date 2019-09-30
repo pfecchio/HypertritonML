@@ -169,7 +169,7 @@ def significance_error(signal, background):
 
 
 def expo(x, tau):
-    return np.exp(-x / (tau * 0.029979245800)) / (tau * 0.029979245800)
+    return np.exp(-x / (tau * 0.029979245800))
 
 
 def h2_bdteff(ptbin, ctbin, title='BDTeff'):
