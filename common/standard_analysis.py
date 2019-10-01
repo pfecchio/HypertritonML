@@ -25,8 +25,9 @@ with open(os.path.expandvars(args.config), 'r') as stream:
 # define paths for loading data and storing results
 mc_path = os.path.expandvars(params['MC_PATH'])
 data_path = os.path.expandvars(params['DATA_PATH'])
-results_dir = os.environ['HYPERML_RESULTS_{}'.format(params['NBODY'])]
-df = RDF('DataTable', data_path)
+dataDF = RDF('DataTable', data_path)
+mcDF = RDF('SignalTable', mc_path)
+genDF = RDF('GenTable', mc_path)
 
 results_dir = os.environ['HYPERML_RESULTS_{}'.format(params['NBODY'])]
 file_name = results_dir + '/' + params['FILE_PREFIX'] + '_std.root'
@@ -35,10 +36,9 @@ results_file = TFile(file_name, 'recreate')
 
 for cclass in params['CENTRALITY_CLASS']:
     cent_dir = results_file.mkdir('{}-{}'.format(cclass[0], cclass[1]))
-    centDF = df.Filter('centrality >= {} && centrality < {}'.format(cclass[0], cclass[1]))
-
-    h2seleff = TH2D('SelEff', ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Preselection efficiency', len(params['PT_BINS'])-1, np.array(
-        params['PT_BINS'], 'double'), len(params['CT_BINS'])-1, np.array(params['CT_BINS'], 'double'))
+    dataCentDF = dataDF.Filter('centrality >= {} && centrality < {}'.format(cclass[0], cclass[1]))
+    mcCentDF = mcDF.Filter('centrality >= {} && centrality < {}'.format(cclass[0], cclass[1]))
+    genCentDF = genDF.Filter('centrality >= {} && centrality < {}'.format(cclass[0], cclass[1]))
 
     bkg_models = params['BKG_MODELS'] if 'BKG_MODELS' in params else ['expo']
     fit_directories = []
@@ -51,11 +51,22 @@ for cclass in params['CENTRALITY_CLASS']:
     nPtBins = len(ptBins) - 1
     nMBins = 36
     mBins = np.linspace(2.96, 3.05, nMBins + 1,dtype=np.float64)
-    selected = centDF.Filter('V0CosPA > 0.9999 && NpidClustersHe3 > 80 && He3ProngPt > 1.8 && HypCandPt > 2 && HypCandPt < 10 && PiProngPt > 0.15 && He3ProngPvDCA > 0.05 && PiProngPvDCA > 0.2 && std::abs(TPCnSigmaHe3) < 3.5 && ProngsDCA < 1')
-    rdfModel = ROOT.RDF.TH3DModel("InvMass",";Invariant Mass;#it{ct} (cm);#it{p}_{T} (GeV/#it{c})",nMBins, mBins, nCtBins, ctBins, nPtBins, ptBins)
-    h3MassPtCt = selected.Histo3D(rdfModel,"InvMass","ct","HypCandPt")
+    recSelString = 'V0CosPA > 0.9999 && NpidClustersHe3 > 80 && He3ProngPt > 1.8 && HypCandPt > 2 && HypCandPt < 10 && PiProngPt > 0.15 && He3ProngPvDCA > 0.05 && PiProngPvDCA > 0.2 && std::abs(TPCnSigmaHe3) < 3.5 && ProngsDCA < 1'
+    dataSelected = dataCentDF.Filter(recSelString)
+    mcSelected = mcCentDF.Filter(recSelString)
+    genSelected = genCentDF.Filter('std::abs(rapidity) < 0.5')
+    rdfModel = ROOT.RDF.TH3DModel("data",";Invariant Mass;#it{p}_{T} (GeV/#it{c});#it{ct} (cm)",nMBins, mBins, nPtBins, ptBins, nCtBins, ctBins)
+    rdfMCModel = ROOT.RDF.TH3DModel("mc",";Invariant Mass;#it{p}_{T} (GeV/#it{c});#it{ct} (cm)",nMBins, mBins, nPtBins, ptBins, nCtBins, ctBins)
+    rdfGenModel = ROOT.RDF.TH2DModel("gen",";#it{p}_{T} (GeV/#it{c});#it{ct} (cm)", nPtBins, ptBins, nCtBins, ctBins)
+    h3DataMassPtCt = dataSelected.Histo3D(rdfModel,"InvMass","HypCandPt","ct")
+    h3McMassPtCt = mcSelected.Histo3D(rdfMCModel,"InvMass","HypCandPt","ct")
+    h2GenPtCt = genSelected.Histo2D(rdfGenModel,"pT","ct")
 
-    h3MassPtCt.Write()
+    cent_dir.cd()
+    h3DataMassPtCt.Write()
+    h3McMassPtCt.Write()
+    h2GenPtCt.Write()
+
     for model in bkg_models:
         fit_directories.append(cent_dir.mkdir(model))
         h2raw_counts.append(TH2D('RawCounts_{}'.format(model), ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Raw counts',
@@ -67,10 +78,15 @@ for cclass in params['CENTRALITY_CLASS']:
 
         for ctbin in zip(params['CT_BINS'][:-1], params['CT_BINS'][1:]):
             ctbin_index = h2raw_counts[0].GetYaxis().FindBin(0.5 * (ctbin[0] + ctbin[1]))
+            # binSelection = 'HypCandPt >= {} && HypCandPt < {} && ct >= {} && ct < {}'.format(
+            #   ptbin[0],ptbin[1], ctbin[0], ctbin[1])
+            # binDS = dataSelected.Filter(binSelection)
+            # massVec = binDS.AsNumpy("InvMass")
+            # unBinDataSet = ROOT.ROOT.UnBinData(massVec.size(), massVec.data())
 
             binName = "ct{}{}_pT{}{}_cen{}{}".format(
               ctbin[0],ctbin[1], ptbin[0], ptbin[1], cclass[0], cclass[1])
-            baseHisto = h3MassPtCt.ProjectionX(binName, ctbin_index, ctbin_index, ptbin_index, ptbin_index)
+            baseHisto = h3DataMassPtCt.ProjectionX(binName, ptbin_index, ptbin_index, ctbin_index, ctbin_index)
             
             for model, fitdir, h2raw in zip(bkg_models, fit_directories, h2raw_counts):
                 histo = baseHisto.Clone(binName + "_{}".format(model))
@@ -81,9 +97,25 @@ for cclass in params['CENTRALITY_CLASS']:
 
     # write on file
     cent_dir.cd()
-    h2seleff.Write()
 
     for h2raw in h2raw_counts:
         h2raw.Write()
+
+    ## Temporary for the ct spectra
+    expo = TF1("myexpo", "[0]*exp(-x/[1]/0.029979245800)", 0, 28)
+    expo.SetParLimits(1, 100, 350)
+    h1GenCt = h2GenPtCt.ProjectionY("gen_ct")
+    h1EffCt = h3McMassPtCt.ProjectionZ("eff_ct")
+    h1EffCt.Divide(h1GenCt)
+    for iBin in range(1, h1EffCt.GetNbinsX() + 1):
+      h1EffCt.SetBinError(iBin, 0)
+    h1EffCt.Write()
+    for model, h2raw in zip(bkg_models, h2raw_counts):
+      h1RawCt = h2raw.ProjectionY("ct_{}".format(model))
+      h1RawCt.Divide(h1EffCt)
+      h1RawCt.Scale(1,"width")
+      h1RawCt.Fit(expo)
+      h1RawCt.Write()
+
 
 results_file.Close()
