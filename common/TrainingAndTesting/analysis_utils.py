@@ -152,7 +152,7 @@ def h2_rawcounts(ptbin, ctbin, title='RawCounts'):
     return th2
 
 
-def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, errsignif=0, name='', bins=45, model = "expo"):
+def fit(counts, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, signif=0, errsignif=0, name='', bins=45, model = "expo"):
     histo = TH1D(
         "ct{}{}_pT{}{}_cen{}{}_{}_{}".format(
             ct_range[0],
@@ -169,8 +169,9 @@ def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, 
         histo.SetBinError(index+1, math.sqrt(counts[index]))
     return fitHist(histo, ct_range, pt_range, cent_class, tdirectory, nsigma, signif, errsignif, model)
 
-def fitHist(histo, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, errsignif=0, model = "expo"):
-    tdirectory.cd()
+def fitHist(histo, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, signif=0, errsignif=0, model = "expo"):
+    if tdirectory:
+        tdirectory.cd()
 
     cv = TCanvas("cv_{}".format(histo.GetName()))
 
@@ -199,7 +200,7 @@ def fitHist(histo, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=
     bkgTpl.SetLineColor(2)
 
     fitTpl.SetParameter(nBkgPars, 40)
-    fitTpl.SetParLimits(nBkgPars, 0, 10000)
+    fitTpl.SetParLimits(nBkgPars, 0.001, 10000)
     fitTpl.SetParameter(nBkgPars + 1 , 2.991)
     fitTpl.SetParLimits(nBkgPars + 1, 2.986, 3)
     fitTpl.SetParameter(nBkgPars + 2, 0.002)
@@ -278,7 +279,8 @@ def fitHist(histo, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=
         st.SetY1NDC(0.62)
         st.SetX2NDC(0.40)
         st.SetY2NDC(0.90)
-    tdirectory.cd()
-    histo.Write()
-    cv.Write()
+    if tdirectory:
+        tdirectory.cd()
+        histo.Write()
+        cv.Write()
     return (signal, errsignal)
