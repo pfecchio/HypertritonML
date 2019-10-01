@@ -96,41 +96,6 @@ def gs_2par(gs_dict, par_dict, train_data, num_rounds, seed, folds, metrics, n_e
     return (best_params)
 
 
-def expected_signal_raw(pt_range, cent_bin):
-    bw_file = TFile(os.environ['HYPERML_UTILS'] + '/BlastWaveFits.root')
-
-    scale_factor = [3.37e-5, 1.28e-5, 0.77e-5, 0.183e-5]
-    cent_ref = [[0, 10], [10, 30], [30, 50], [50, 90]]
-    cent_class = cent_ref.index(cent_bin)
-    if cent_class == 2:
-        bw1 = bw_file.Get("BlastWave/BlastWave1")
-        bw2 = bw_file.Get("BlastWave/BlastWave2")
-
-        bw1_integral_tot = bw1.Integral(0, 10, 1e-8)
-        bw2_integral_tot = bw2.Integral(0, 10, 1e-8)
-
-        bw_integral_tot = bw1_integral_tot + bw2_integral_tot
-
-        bw1_integral_range = bw1.Integral(pt_range[0], pt_range[1], 1e-8)
-        bw2_integral_range = bw2.Integral(pt_range[0], pt_range[1], 1e-8)
-
-        bw_integral_range = bw1_integral_range + bw2_integral_range
-
-    else:
-        if cent_class == 3:
-            cent_class = 2
-
-        bw = bw_file.Get('BlastWave/BlastWave{}'.format(cent_class))
-
-        bw_integral_tot = bw.Integral(0, 10, 1e-8)
-        bw_integral_range = bw.Integral(pt_range[0], pt_range[1], 1e-8)
-
-    pt_width = pt_range[1] - pt_range[0]
-
-    exp_yield = 2 * scale_factor[cent_class] * bw_integral_range / pt_width / bw_integral_tot
-
-    return exp_yield
-
 
 # nevents assumed to be the number of events in 1% bins
 def expected_signal_counts(bw, pt_range, eff, cent_range, nevents):
@@ -144,13 +109,7 @@ def expected_signal_counts(bw, pt_range, eff, cent_range, nevents):
                 signal = signal + nevents[cent] * bw[index].Integral(pt_range[0], pt_range[1], 1e-8)
                 break
 
-    return int(round(signal * eff * hyp2he3))
-
-
-def expected_signal(n_ev, eff_presel, eff_bdt, pt_range, cent_class):
-    signal_raw = expected_signal_raw(pt_range, cent_class)
-
-    return int(round(n_ev * signal_raw * (pt_range[1] - pt_range[0]) * eff_presel * eff_bdt))
+    return int(round(2*signal * eff * hyp2he3))
 
 
 def significance_error(signal, background):

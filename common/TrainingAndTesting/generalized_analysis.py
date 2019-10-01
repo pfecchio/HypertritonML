@@ -386,7 +386,7 @@ class GeneralizedAnalysis:
     def significance_scan(
             self, test_data, model, training_columns, ct_range=[0, 100],
             pt_range=[0, 10],
-            cent_class=[0, 100], custom=True, n_points=100, split_am='a'):
+            cent_class=[0, 100], custom=True, n_points=100, split_am=''):
         print('Significance scan: ...', end='\r')
 
         ct_min = ct_range[0]
@@ -480,23 +480,23 @@ class GeneralizedAnalysis:
 
         # pu.plot_efficiency_significance(self.mode, threshold_space, significance, bdt_efficiency, data_range_array)
 
-        # nevents = sum(self.hist_centrality[cent_class[0]+1:cent_class[1]])
+        nevents = sum(self.hist_centrality[cent_class[0]+1:cent_class[1]])
 
         if custom:
             max_index = np.argmax(significance_custom)
             max_score = threshold_space[max_index]
 
-            # pu.plot_significance_scan(
-            #     max_index, significance_custom, significance_custom_error, expected_signal, df_bkg,
-            #     threshold_space, data_range_array, bin_centers, nevents, self.mode, custom=True)
+            pu.plot_significance_scan(
+                max_index, significance_custom, significance_custom_error, expected_signal, df_bkg,
+                threshold_space, data_range_array, bin_centers, nevents, self.mode, custom=True)
 
         else:
             max_index = np.argmax(significance)
             max_score = threshold_space[max_index]
 
-            # pu.plot_significance_scan(
-            #     max_index, significance, significance_error, expected_signal, df_bkg, threshold_space,
-            #     data_range_array, bin_centers, nevents, self.mode, custom=False)
+            pu.plot_significance_scan(
+                max_index, significance, significance_error, expected_signal, df_bkg, threshold_space,
+                data_range_array, bin_centers, nevents, self.mode, custom=False)
 
         bdt_eff_max_score = bdt_efficiency[max_index]
 

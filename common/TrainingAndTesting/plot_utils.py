@@ -339,7 +339,7 @@ def plot_significance_scan(
 
     bins_mass = bin_centers[mass_map]
 
-    axs[1].errorbar(bins_side, bkg_side_counts, yerr=5,
+    axs[1].errorbar(bins_side, bkg_side_counts, yerr=bkg_side_error,
                     fmt='.', ecolor='k', color='b', elinewidth=1., label='Data')
     axs[1].errorbar(bins_mass, tot_counts, yerr=tot_counts_error,
                     fmt='.', ecolor='k', color='r', elinewidth=1., label='Pseudodata')
