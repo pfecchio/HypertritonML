@@ -153,10 +153,8 @@ def h2_rawcounts(ptbin, ctbin, title='RawCounts'):
 
 
 def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, errsignif=0, name='', bins=45, model = "expo"):
-    tdirectory.cd()
-
     histo = TH1D(
-        "histo_ct{}{}_pT{}{}_cen{}{}_{}_{}".format(
+        "ct{}{}_pT{}{}_cen{}{}_{}_{}".format(
             ct_range[0],
             ct_range[1],
             pt_range[0],
@@ -169,17 +167,12 @@ def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, 
     for index in range(0, len(counts)):
         histo.SetBinContent(index+1, counts[index])
         histo.SetBinError(index+1, math.sqrt(counts[index]))
+    return fitHist(histo, ct_range, pt_range, cent_class, tdirectory, nsigma, signif, errsignif, model)
 
-    cv = TCanvas(
-        "cv_ct{}{}_pT{}{}_cen{}{}_{}_{}".format(
-            ct_range[0],
-            ct_range[1],
-            pt_range[0],
-            pt_range[1],
-            cent_class[0],
-            cent_class[1],
-            name,
-            model))
+def fitHist(histo, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, errsignif=0, model = "expo"):
+    tdirectory.cd()
+
+    cv = TCanvas("cv_{}".format(histo.GetName()))
 
     if 'pol' in str(model):
         nBkgPars = int(model[3]) + 1
@@ -210,7 +203,7 @@ def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, 
     fitTpl.SetParameter(nBkgPars + 1 , 2.991)
     fitTpl.SetParLimits(nBkgPars + 1, 2.986, 3)
     fitTpl.SetParameter(nBkgPars + 2, 0.002)
-    fitTpl.SetParLimits(nBkgPars + 2, 0.001, 0.0025)
+    fitTpl.SetParLimits(nBkgPars + 2, 0.001, 0.0022)
 
     # gStyle.SetOptFit(0)
     ####################
@@ -219,7 +212,7 @@ def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, 
     histo.SetLineColor(1)
     histo.SetMarkerStyle(20)
     histo.SetMarkerColor(1)
-    ax_titles = ';m (^{3}He + #pi) (GeV/#it{c})^{2};Counts' + ' / {} MeV'.format(round(1000 * (3.05 - 2.96)/bins, 2))
+    ax_titles = ';m (^{3}He + #pi) (GeV/#it{c})^{2};Counts' + ' / {} MeV'.format(round(1000 * histo.GetBinWidth(1), 2))
     histo.SetTitle(ax_titles)
     histo.SetMaximum(1.5 * histo.GetMaximum())
     histo.Fit(fitTpl, "QRL", "", 2.96, 3.04)
@@ -264,14 +257,7 @@ def fit(counts, ct_range, pt_range, cent_class, tdirectory, nsigma=3, signif=0, 
     string = 'ALICE Internal, Pb-Pb 2018 {}-{}%'.format(cent_class[0], cent_class[1])
     pinfo2.AddText(string)
     string = '{}^{3}_{#Lambda}H#rightarrow ^{3}He#pi + c.c., %i #leq #it{ct} < %i cm %i #leq #it{p}_{T} < %i GeV/#it{c} ' % (
-        ct_range
-        [0],
-        ct_range
-        [1],
-        pt_range
-        [0],
-        pt_range
-        [1])
+        ct_range[0], ct_range[1], pt_range[0], pt_range[1])
     pinfo2.AddText(string)
     string = 'Significance ({:.0f}#sigma) {:.1f} #pm {:.1f} '.format(nsigma, signif, errsignif)
     pinfo2.AddText(string)
