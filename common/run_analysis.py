@@ -94,7 +94,7 @@ analysis = GeneralizedAnalysis(params['NBODY'], mc_path, data_path,
 start_time = time.time()
 
 # params for config the analysis
-optimisation_params = params['HYPERPARAMS'] if params['OPTIMIZATION_STRATEGY'] == 'gs' else params['HYPERPARAMS_RANGE']
+hyperparams = params['HYPERPARAMS_RANGE'] if args.optimize else params['HYPERPARAMS']
 optimisation_strategy = 'gs' if params['OPTIMIZATION_STRATEGY'] == 'gs' else 'bayes'
 
 
@@ -108,15 +108,15 @@ for cclass in params['CENTRALITY_CLASS']:
     # create the histos for storing analysis stuff
     h2BDTeff = TH2D('BDTeff', ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);BDT efficiency', len(params['PT_BINS'])-1, np.array(
         params['PT_BINS'], 'double'), len(params['CT_BINS'])-1, np.array(params['CT_BINS'], 'double'))
-    h2SelEff = TH2D('SelEff', ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Preselection efficiency', len(params['PT_BINS'])-1, np.array(
+    h2seleff = TH2D('SelEff', ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Preselection efficiency', len(params['PT_BINS'])-1, np.array(
         params['PT_BINS'], 'double'), len(params['CT_BINS'])-1, np.array(params['CT_BINS'], 'double'))
 
-    bkgModels = params['BKG_MODELS'] if 'BKG_MODELS' in params else ['expo']
-    fitDirectories = []
-    h2RawCounts = []
-    h2RawCountsFixEffDict = []
-    for model in bkgModels:
-        fitDirectories.append(cent_dir.mkdir(model))
+    bkg_models = params['BKG_MODELS'] if 'BKG_MODELS' in params else ['expo']
+    fit_directories = []
+    h2raw_counts = []
+    h2raw_counts_fixeff_dict = []
+    for model in bkg_models:
+        fit_directories.append(cent_dir.mkdir(model))
         if params['BDT_EFF_CUTS']:
             myDict = {}
 
@@ -124,9 +124,9 @@ for cclass in params['CENTRALITY_CLASS']:
                 myDict['eff{}'.format(fix_eff)] = TH2D('RawCounts{}_{}'.format(fix_eff, model), ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Raw counts', len(
                     params['PT_BINS'])-1, np.array(params['PT_BINS'], 'double'), len(params['CT_BINS']) - 1, np.array(params['CT_BINS'], 'double'))
 
-            h2RawCountsFixEffDict.append(myDict)
+            h2raw_counts_fixeff_dict.append(myDict)
 
-        h2RawCounts.append(TH2D('RawCounts_{}'.format(model), ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Raw counts',
+        h2raw_counts.append(TH2D('RawCounts_{}'.format(model), ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Raw counts',
                                 len(params['PT_BINS'])-1, np.array(params['PT_BINS'], 'double'), len(params['CT_BINS']) - 1,
                                 np.array(params['CT_BINS'], 'double')))
 
@@ -157,9 +157,9 @@ for cclass in params['CENTRALITY_CLASS']:
                 # train and test the model with some performance plots
                 model = analysis.train_test_model(
                     data, params['TRAINING_COLUMNS'], params['XGBOOST_PARAMS'],
-                    hyperparams=optimisation_params, ct_range=ctbin,
+                    hyperparams=hyperparams, ct_range=ctbin,
                     cent_class=cclass, pt_range=ptbin, optimize=args.optimize,
-                    optimize_mode=optimisation_strategy, num_rounds=500, es_rounds=20)
+                    optimize_mode=optimisation_strategy)
                 print('--- model trained in {:.4f} minutes ---\n'.format((time.time() - part_time) / 60))
                 analysis.save_model(model, ct_range=ctbin, cent_class=cclass, pt_range=ptbin)
             else:
@@ -176,7 +176,7 @@ for cclass in params['CENTRALITY_CLASS']:
                 score_bdteff_dict[key]['sig_scan'] = [float(score_cut), float(bdt_efficiency)]
 
                 h2BDTeff.SetBinContent(ptbin_index, ctbin_index, score_bdteff_dict[key]['sig_scan'][1])
-            h2SelEff.SetBinContent(ptbin_index, ctbin_index, preselection_efficiency[key])
+            h2seleff.SetBinContent(ptbin_index, ctbin_index, preselection_efficiency[key])
 
             # compute and store score cut for fixed efficiencies, if required
             if params['BDT_EFF_CUTS'] and not params['LOAD_SCORE_EFF']:
@@ -200,11 +200,10 @@ for cclass in params['CENTRALITY_CLASS']:
             total_cut = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(
                 ctbin[0], ctbin[1], ptbin[0], ptbin[1], cclass[0], cclass[1])
 
-            dfDataF = analysis.df_data_all.query(total_cut)
-            data = xgb.DMatrix(data=(analysis.df_data_all.query(total_cut)[params['TRAINING_COLUMNS']]))
+            df_data = analysis.df_data_all.query(total_cut)
 
-            y_pred = model.predict(data, output_margin=True)
-            dfDataF.eval('Score = @y_pred', inplace=True)
+            y_pred = model.predict(df_data[params['TRAINING_COLUMNS']], output_margin=True)
+            df_data.eval('Score = @y_pred', inplace=True)
 
             # extract the signal for each bdtscore-eff configuration
             for k, se in score_bdteff_dict[key].items():
@@ -219,30 +218,30 @@ for cclass in params['CENTRALITY_CLASS']:
                 # obtain the selected invariant mass dist
                 mass_bins = 40 if ctbin[1] < 16 else 36
 
-                for model, fitDir, h2Raw, h2RawDict in zip(
-                        bkgModels, fitDirectories, h2RawCounts, h2RawCountsFixEffDict):
+                for model, fitdir, h2raw, h2raw_dict in zip(
+                        bkg_models, fit_directories, h2raw_counts, h2raw_counts_fixeff_dict):
                     counts, bins = np.histogram(
-                        dfDataF.query('Score >@se[0]')['InvMass'],
+                        df_data.query('Score >@se[0]')['InvMass'],
                         bins=mass_bins, range=[2.96, 3.05])
 
-                    hypYield, eYield = au.fit(counts, ctbin, ptbin, cclass, fitDir, name=k, bins=mass_bins, model=model)
+                    hyp_yield, err_yield = au.fit(counts, ctbin, ptbin, cclass, fitdir, name=k, bins=mass_bins, model=model)
 
                     if k is 'sig_scan':
-                        h2Raw.SetBinContent(ptbin_index, ctbin_index, hypYield)
-                        h2Raw.SetBinError(ptbin_index, ctbin_index, eYield)
+                        h2raw.SetBinContent(ptbin_index, ctbin_index, hyp_yield)
+                        h2raw.SetBinError(ptbin_index, ctbin_index, err_yield)
                     else:
-                        h2RawDict[k].SetBinContent(ptbin_index, ctbin_index, hypYield)
-                        h2RawDict[k].SetBinError(ptbin_index, ctbin_index, eYield)
+                        h2raw_dict[k].SetBinContent(ptbin_index, ctbin_index, hyp_yield)
+                        h2raw_dict[k].SetBinError(ptbin_index, ctbin_index, err_yield)
 
     # write on file
     cent_dir.cd()
     h2BDTeff.Write()
-    h2SelEff.Write()
+    h2seleff.Write()
 
-    for h2Raw in h2RawCounts:
-        h2Raw.Write()
+    for h2raw in h2raw_counts:
+        h2raw.Write()
     if params['BDT_EFF_CUTS']:
-        for dictionary in h2RawCountsFixEffDict:
+        for dictionary in h2raw_counts_fixeff_dict:
             for th2 in dictionary.values():
                 th2.Write()
 

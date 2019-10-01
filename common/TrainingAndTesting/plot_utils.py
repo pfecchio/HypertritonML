@@ -37,8 +37,8 @@ def plot_output_train_test(
     prediction = []
     for x, y in ((x_train, y_train), (x_test, y_test)):
         if model == 'xgb':
-            d1 = clf.predict(xgb.DMatrix(x[y > 0.5], feature_names=features), output_margin=raw)
-            d2 = clf.predict(xgb.DMatrix(x[y < 0.5], feature_names=features), output_margin=raw)
+            d1 = clf.predict(x[y > 0.5][features], output_margin=raw)
+            d2 = clf.predict(x[y < 0.5][features], output_margin=raw)
         elif model == 'sklearn':
             d1 = clf.decision_function(x[y > 0.5]).ravel()
             d2 = clf.decision_function(x[y < 0.5]).ravel()

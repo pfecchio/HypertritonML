@@ -16,7 +16,7 @@ from bayes_opt import BayesianOptimization
 from ROOT import TF1, TFile, gDirectory
 from scipy import stats
 from scipy.stats import norm
-from sklearn.metrics import auc, roc_auc_score
+from sklearn.metrics import auc, roc_auc_score, accuracy_score
 from sklearn.model_selection import (GridSearchCV, RandomizedSearchCV,
                                      StratifiedKFold, train_test_split)
 
@@ -47,7 +47,8 @@ class GeneralizedAnalysis:
         self.df_signal['y'] = 1
         self.df_data['y'] = 0
 
-        self.df_data_bkg = self.df_data.sample(n=round(len(self.df_data)*dedicated_background)) if dedicated_background != 0 else self.df_data
+        self.df_data_bkg = self.df_data.sample(
+            n=round(len(self.df_data) * dedicated_background)) if dedicated_background != 0 else self.df_data
 
         # backup of the data without any selections for the significance scan
         self.df_data_all = self.df_data.drop(self.df_data_bkg.index) if dedicated_background != 0 else self.df_data
@@ -252,44 +253,34 @@ class GeneralizedAnalysis:
     def train_test_model(
             self, data, training_columns, reg_params, ct_range=[0, 100],
             pt_range=[0, 10],
-            cent_class=[0, 10], hyperparams=0, num_rounds=100, es_rounds=20,
-            ROC=True, optimize=False, optimize_mode='gs'):
-        max_params = {}
-
+            cent_class=[0, 10],
+            hyperparams=0, optimize=False, optimize_mode='bayes'):
         data_train = [data[0], data[1]]
 
         # manage the optimization process
         if optimize:
             if optimize_mode == 'bayes':
                 print('Hyperparameters optimization: ...', end='\r')
-                max_params, best_numrounds = self.optimize_params_bayes(
-                    data_train, training_columns, reg_params, hyperparams, num_rounds=num_rounds, es_rounds=es_rounds,
-                    init_points=5, n_iter=5)
+                # max_params, best_numrounds = self.optimize_params_bayes(
+                #     data_train, training_columns, reg_params, hyperparams, num_rounds=num_rounds, es_rounds=es_rounds,
+                #     init_points=5, n_iter=5)
                 print('Hyperparameters optimization: Done!\n')
             if optimize_mode == 'gs':
                 print('Hyperparameters optimization: ...', end='\r')
-                max_parms, best_numrounds = self.optimize_params_gs(data_train, hyperparams)
+                max_params, best_numrounds = self.optimize_params_gs(data_train, hyperparams)
                 print('Hyperparameters optimization: Done!\n')
         else:  # manage the default params
-            max_params = {}
-            # max_params = {
-            #     'eta': 0.055,
-            #     'min_child_weight': 6,
-            #     'max_depth': 11,
-            #     'gamma': 0.33,
-            #     'subsample': 0.73,
-            #     'colsample_bytree': 0.41}
-            best_numrounds = num_rounds
+            max_params = hyperparams
 
         # join the dictionaries of the regressor params with the maximized hyperparams
-        max_params = {**max_params, **reg_params}
+        best_params = {**max_params, **reg_params}
 
-        dtrain = xgb.DMatrix(data=data[0], label=data[1], feature_names=training_columns)
-        dtest = xgb.DMatrix(data=data[2], label=data[3], feature_names=training_columns)
+        eval_set = [(data[0][training_columns], data[1]), (data[2][training_columns], data[3])]
 
         # final training with the optimized hyperparams
         print('Training the final model: ...', end='\r')
-        model = xgb.train(max_params, dtrain, num_boost_round=best_numrounds)
+        model = xgb.XGBClassifier(**best_params)
+        model.fit(data[0][training_columns], data[1], eval_metric=['error', 'logloss', 'auc'], eval_set=eval_set, verbose=True)
         print('Training the final model: Done!\n')
 
         # BDT output distributions plot
@@ -302,7 +293,7 @@ class GeneralizedAnalysis:
 
         # test the model performances
         print('Testing the model: ...', end='\r')
-        y_pred = model.predict(dtest)
+        y_pred = model.predict(data[2][training_columns])
         roc_score = roc_auc_score(data[3], y_pred)
         print('Testing the model: Done!\n')
 
@@ -364,9 +355,7 @@ class GeneralizedAnalysis:
         return sig_selected / n_sig
 
     def score_from_efficiency(self, model, test_data, efficiency_cut, training_columns, ct_range, pt_range, cent_class):
-        dtest = xgb.DMatrix(data=(test_data[0][training_columns]))
-
-        y_pred = model.predict(dtest, output_margin=True)
+        y_pred = model.predict(test_data[0][training_columns], output_margin=True)
 
         test_data[0].eval('Score = @y_pred', inplace=True)
         test_data[0].eval('y = @test_data[1]', inplace=True)
@@ -423,11 +412,8 @@ class GeneralizedAnalysis:
         else:
             df_bkg = self.df_data.query(data_range)[columns]
 
-        dtest = xgb.DMatrix(data=(test_data[0][training_columns]))
-        dbkg = xgb.DMatrix(data=(df_bkg[training_columns]))
-
-        y_pred = model.predict(dtest, output_margin=True)
-        y_pred_bkg = model.predict(dbkg, output_margin=True)
+        y_pred = model.predict(test_data[0][training_columns], output_margin=True)
+        y_pred_bkg = model.predict(df_bkg[training_columns], output_margin=True)
 
         test_data[0].eval('Score = @y_pred', inplace=True)
         test_data[0].eval('y = @test_data[1]', inplace=True)
