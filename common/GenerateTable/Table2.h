@@ -7,6 +7,8 @@
 
 #include <TLorentzVector.h>
 #include <TTree.h>
+#include <TF1.h>
+#include <TFile.h>
 #include <TVector3.h>
 
 #include "AliAnalysisTaskHyperTriton2He3piML.h"
@@ -19,6 +21,7 @@ class Table2 {
 
   private:
   TTree* tree;
+  TF1 *fHe3TPCcalib;
   float HypCandPt;
   float TPCnSigmaHe3;
   float ct;
@@ -46,6 +49,13 @@ class Table2 {
 
 Table2::Table2(std::string name, std::string title) {
   tree = new TTree(name.data(), title.data());
+
+  string hypUtilsDir = getenv("HYPERML_UTILS");
+  string calibFileArg = hypUtilsDir + "/He3TPCCalibration.root";
+
+  TFile calibFile(calibFileArg.data(), "READ");
+  fHe3TPCcalib = dynamic_cast<TF1 *>(calibFile.Get("He3TPCCalib")->Clone());
+  calibFile.Close();
 
   tree->Branch("HypCandPt", &HypCandPt);
   tree->Branch("TPCnSigmaHe3", &TPCnSigmaHe3);
@@ -119,7 +129,7 @@ void Table2::Fill(const RHyperTritonHe3pi& RHyper, const RCollision& RColl) {
   NpidClustersHe3 = RHyper.fNpidClustersHe3;
   NpidClustersPion = RHyper.fNpidClustersPi;
   TPCnSigmaPi = RHyper.fTPCnSigmaPi;
-  TPCnSigmaHe3 = RHyper.fTPCnSigmaHe3;
+  TPCnSigmaHe3 = RHyper.fTPCnSigmaHe3 - fHe3TPCcalib->Eval(He3ProngPt);
   HypCandPt = hyperVector.Pt();
   Rapidity=hyperVector.Rapidity();
   PseudoRapidityHe3=he3Vector.PseudoRapidity();

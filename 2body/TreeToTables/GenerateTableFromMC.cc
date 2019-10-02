@@ -3,6 +3,7 @@
 
 #include <TFile.h>
 #include <TH1D.h>
+#include <TH2D.h>
 #include <TRandom3.h>
 #include <TTree.h>
 #include <TTreeReader.h>
@@ -52,6 +53,9 @@ void GenerateTableFromMC(bool reject = true) {
   TTreeReaderArray<SHyperTritonHe3pi> SHyperVec = {fReader, "SHyperTriton"};
   TTreeReaderValue<RCollision> RColl            = {fReader, "RCollision"};
 
+  TH2D *hNSigmaTPCVsPtHe3 =
+      new TH2D("nSigmaTPCvsPTHe3", ";#it{p}_{T} (GeV/#it{c});n#sigma_{TPC}", 32, 2, 10, 128, -8, 8);
+
   // new flat tree with the features
   TFile outFile(outFileArg.data(), "RECREATE");
   Table2 table("SignalTable", "Signal Table");
@@ -87,13 +91,17 @@ void GenerateTableFromMC(bool reject = true) {
       if (ind >= 0) {
         auto &RHyper = RHyperVec[ind];
         table.Fill(RHyper, *RColl);
+        double recpt = std::hypot(RHyper.fPxHe3 + RHyper.fPxPi, RHyper.fPyHe3 + RHyper.fPyPi);
+        hNSigmaTPCVsPtHe3->Fill(recpt, RHyper.fTPCnSigmaHe3);
       }
     }
   }
 
   outFile.cd();
+
   table.Write();
   genTable.Write();
+  hNSigmaTPCVsPtHe3->Write();
 
   outFile.Close();
 
