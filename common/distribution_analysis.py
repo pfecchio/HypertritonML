@@ -54,10 +54,10 @@ for cclass in params['CENTRALITY_CLASS']:
   h2PreselEff = resultFile.Get("{}/SelEff".format(inDirName))
   h1PreselEff = h2PreselEff.ProjectionY()
 
-  for i in range(1,h1PreselEff.GetNbinsX()+1):
-    h1PreselEff.SetBinError(i,0)
+  for i in range(1, h1PreselEff.GetNbinsX()+1):
+    h1PreselEff.SetBinError(i, 0)
 
-  h1PreselEff.SetTitle(";{} ({}); Preselection efficiency".format(var,unit))
+  h1PreselEff.SetTitle(";{} ({}); Preselection efficiency".format(var, unit))
   h1PreselEff.UseCurrentStyle()
   h1PreselEff.SetMinimum(0)
   outDir.cd()
@@ -69,13 +69,13 @@ for cclass in params['CENTRALITY_CLASS']:
     
     h1RawCounts = h1PreselEff.Clone("best_{}".format(model))
     h1RawCounts.Reset()
-    for iBin in range(0,h1RawCounts.GetNbinsX()):
+    for iBin in range(0, h1RawCounts.GetNbinsX()):
       h2RawCounts = resultFile.Get('{}/RawCounts{}_{}'.format(inDirName,ranges['BEST'][iBin],model))
       h1RawCounts.SetBinContent(iBin + 1, h2RawCounts.GetBinContent(1, iBin + 1) / ranges['BEST'][iBin] / h1RawCounts.GetBinWidth(iBin + 1))
       h1RawCounts.SetBinError(iBin + 1, h2RawCounts.GetBinError(1, iBin + 1) / ranges['BEST'][iBin] / h1RawCounts.GetBinWidth(iBin + 1))
       raws.append([])
       errs.append([])
-      for eff in np.arange(ranges['SCAN'][iBin][0],ranges['SCAN'][iBin][1],ranges['SCAN'][iBin][2]):
+      for eff in np.arange(ranges['SCAN'][iBin][0], ranges['SCAN'][iBin][1], ranges['SCAN'][iBin][2]):
         h2RawCounts = resultFile.Get('{}/RawCounts{}_{}'.format(inDirName,eff,model))
         raws[iBin].append(h2RawCounts.GetBinContent(1, iBin + 1) / eff / h1RawCounts.GetBinWidth(iBin + 1))
         errs[iBin].append(h2RawCounts.GetBinError(1, iBin + 1) / eff / h1RawCounts.GetBinWidth(iBin + 1))
@@ -118,9 +118,9 @@ for cclass in params['CENTRALITY_CLASS']:
   size = 100000
   for _ in range(size):
     tmpCt.Reset()
-    comboList=[]
-    for iBin in range(1, tmpCt.GetNbinsX() + 1):
-      index = random.randint(0,len(raws[iBin])-1)
+    comboList = []
+    for iBin in range(1, tmpCt.GetNbinsX()):
+      index = random.randint(0, len(raws[iBin])-1)
       comboList.append(index)
       tmpCt.SetBinContent(iBin, raws[iBin][index])
       tmpCt.SetBinError(iBin, raws[iBin][index])
@@ -131,7 +131,7 @@ for cclass in params['CENTRALITY_CLASS']:
     tmpCt.Fit(expo,"MI")
     prob.Fill(expo.GetProb())
     if expo.GetChisquare() < 3 * expo.GetNDF():
-      syst.Fill(expo.GetParameter(1))∂
+      syst.Fill(expo.GetParameter(1))
 
   syst.SetFillColor(600)
   syst.SetFillStyle(3345)
