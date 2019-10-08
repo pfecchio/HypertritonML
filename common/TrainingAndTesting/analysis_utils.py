@@ -6,33 +6,25 @@ from contextlib import redirect_stdout
 import numpy as np
 
 import xgboost as xgb
-from ROOT import TF1, TH1D, TH2D, TCanvas, TFile, TPaveStats, TPaveText, gDirectory, gStyle
+from ROOT import (TF1, TH1D, TH2D, TCanvas, TFile, TPaveStats, TPaveText,
+                  gDirectory, gStyle)
+from sklearn.model_selection import cross_val_score
 
 
 # target function for the bayesian hyperparameter optimization
-def evaluate_hyperparams(
-        data, training_columns, reg_params, eta, min_child_weight, max_depth, gamma, subsample, colsample_bytree,
-        num_rounds=100, es_rounds=2, nfold=3, round_score_list=[]):
-    params = {'eval_metric': 'auc',
-              'eta': eta,
-              'min_child_weight': int(min_child_weight),
-              'max_depth': int(max_depth),
+def evaluate_hyperparams(data, training_columns, reg_params, max_depth, learning_rate, n_estimators, gamma,
+                         min_child_weight, subsample, colsample_bytree, nfold=5):
+    params = {'max_depth': int(max_depth),
+              'learning_rate': learning_rate,
+              'n_estimators': int(n_estimators),
               'gamma': gamma,
+              'min_child_weight': int(min_child_weight),
               'subsample': subsample,
               'colsample_bytree': colsample_bytree}
     params = {**reg_params, **params}
 
-    dtrain = xgb.DMatrix(data=data[0], label=data[1], feature_names=training_columns)
-
-    # Use around 1000 boosting rounds in the full model
-    cv_result = xgb.cv(params, dtrain, num_boost_round=num_rounds, early_stopping_rounds=es_rounds, nfold=nfold)
-
-    best_boost_rounds = cv_result['test-auc-mean'].idxmax()
-    best_score = cv_result['test-auc-mean'].max()
-
-    round_score_list.append(tuple([best_score, best_boost_rounds]))
-
-    return best_score
+    model = xgb.XGBClassifier(**params)
+    return np.mean(cross_val_score(model, data[0][training_columns], data[1], cv=nfold, scoring='roc_auc'))
 
 
 def gs_1par(gs_dict, par_dict, train_data, num_rounds, seed, folds, metrics, n_early_stop):
@@ -96,7 +88,6 @@ def gs_2par(gs_dict, par_dict, train_data, num_rounds, seed, folds, metrics, n_e
     return (best_params)
 
 
-
 # nevents assumed to be the number of events in 1% bins
 def expected_signal_counts(bw, pt_range, eff, cent_range, nevents):
     hyp2he3 = 0.4 * 0.25  # Very optimistic, considering it constant with centrality
@@ -152,7 +143,7 @@ def h2_rawcounts(ptbin, ctbin, title='RawCounts'):
     return th2
 
 
-def fit(counts, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, signif=0, errsignif=0, name='', bins=45, model = "expo"):
+def fit(counts, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, signif=0, errsignif=0, name='', bins=45, model="expo"):
     histo = TH1D(
         "ct{}{}_pT{}{}_cen{}{}_{}_{}".format(
             ct_range[0],
@@ -169,7 +160,8 @@ def fit(counts, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, signi
         histo.SetBinError(index+1, math.sqrt(counts[index]))
     return fitHist(histo, ct_range, pt_range, cent_class, tdirectory, nsigma, signif, errsignif, model)
 
-def fitHist(histo, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, signif=0, errsignif=0, model = "expo"):
+
+def fitHist(histo, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, signif=0, errsignif=0, model="expo"):
     if tdirectory:
         tdirectory.cd()
 
@@ -177,15 +169,15 @@ def fitHist(histo, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, si
 
     if 'pol' in str(model):
         nBkgPars = int(model[3]) + 1
-    elif 'expo' in str(model): 
+    elif 'expo' in str(model):
         nBkgPars = 2
     else:
         print("Unsupported model {}".format(model))
 
-    fitTpl = TF1("fitTpl", "{}(0)+gausn({})".format(model,nBkgPars), 0, 5)
+    fitTpl = TF1("fitTpl", "{}(0)+gausn({})".format(model, nBkgPars), 0, 5)
     for i in range(0, nBkgPars):
         fitTpl.SetParName(i, 'B_{}'.format(i))
-    
+
     fitTpl.SetParName(nBkgPars, "N_{sig}")
     fitTpl.SetParName(nBkgPars + 1, "#mu")
     fitTpl.SetParName(nBkgPars + 2, "#sigma")
@@ -201,7 +193,7 @@ def fitHist(histo, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, si
 
     fitTpl.SetParameter(nBkgPars, 40)
     fitTpl.SetParLimits(nBkgPars, 0.001, 10000)
-    fitTpl.SetParameter(nBkgPars + 1 , 2.991)
+    fitTpl.SetParameter(nBkgPars + 1, 2.991)
     fitTpl.SetParLimits(nBkgPars + 1, 2.986, 3)
     fitTpl.SetParameter(nBkgPars + 2, 0.002)
     fitTpl.SetParLimits(nBkgPars + 2, 0.001, 0.0022)
@@ -283,4 +275,4 @@ def fitHist(histo, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, si
         tdirectory.cd()
         histo.Write()
         cv.Write()
-    return (signal, errsignal)
+    return (signal, errsignal, signif, errsignif)

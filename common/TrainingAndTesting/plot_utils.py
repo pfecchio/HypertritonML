@@ -2,7 +2,6 @@ import io
 import math
 import os
 from array import array
-from contextlib import redirect_stdout
 from inspect import signature
 
 import matplotlib.pyplot as plt
@@ -15,11 +14,9 @@ from pandas.core.index import Index
 from ROOT import TH1D, TCanvas, TFile, gStyle
 from scipy import stats
 from scipy.stats import norm
-from sklearn import datasets, svm
 from sklearn.metrics import (auc, average_precision_score, confusion_matrix,
                              precision_recall_curve, roc_curve)
-from sklearn.model_selection import train_test_split
-from sklearn.utils.multiclass import unique_labels
+from sklearn.model_selection import learning_curve
 from xgboost import plot_importance
 
 
@@ -138,6 +135,7 @@ def plot_distr(df, column=None, figsize=None, bins=50, fig_name='features.pdf', 
     plt.savefig('{}/{}'.format(fig_features_path, fig_name), dpi=500, transparent=True)
     plt.close()
 
+
 def plot_corr(df, columns, mode=3, **kwds):
     """Calculate pairwise correlation between features.
     Extra arguments are passed on to DataFrame.corr()
@@ -251,41 +249,59 @@ def plot_efficiency_significance(mode, tsd, significance, efficiency, data_range
         os.makedirs(fig_eff_path)
 
     fig_name = '/sign_eff_ct{}{}_pT{}{}_cen{}{}.pdf'.format(
-        data_range_array[0], data_range_array[1], data_range_array[2], data_range_array[3], data_range_array[4], data_range_array[5])
+        data_range_array[0],
+        data_range_array[1],
+        data_range_array[2],
+        data_range_array[3],
+        data_range_array[4],
+        data_range_array[5])
     plt.savefig(fig_eff_path + fig_name)
     plt.close()
 
-def plot_eff_ct(analysis, file_name, pt_range = [2,10], cent_class = [0,90], ct_bins = [[0,2],[2,4],[4,6],[6,8],[8,10],[10,14],[14,18],[18,23],[23,28]]):
-  
 
-  results = TFile(os.environ['HYPERML_DATA_2']+"/"+file_name,"recreate")
-  results.cd()
-  ct_binning = [ct_bins[0][0]]
-  for ct in ct_bins:
-    ct_binning.append(ct[1])
-  ct_binning = array("d",ct_binning)
-  cv = TCanvas("presel_efficiency")
-  histo_eff = TH1D("histo_eff_ct",";ct (cm);preselection efficiency",len(ct_binning)-1,ct_binning)
-  gStyle.SetOptStat(0)
-  gStyle.SetOptFit(0)
-  analysis.df_generated['y']=1
-  for ct in ct_bins:
-    Effp = (analysis.preselection_efficiency(ct_range=ct,pt_range=pt_range,cent_class=cent_class))
+def plot_eff_ct(
+        analysis, file_name, pt_range=[2, 10],
+        cent_class=[0, 90],
+        ct_bins=[[0, 2],
+                 [2, 4],
+                 [4, 6],
+                 [6, 8],
+                 [8, 10],
+                 [10, 14],
+                 [14, 18],
+                 [18, 23],
+                 [23, 28]]):
 
-    selection = '{}<ct<{} and {}<centrality<{} and {}<pT<{}'.format(ct[0],ct[1],pt_range[0],pt_range[1],cent_class[0],cent_class[1])
-    n_gen = sum(analysis.df_generated.query(selection)['y'])
+    results = TFile(os.environ['HYPERML_DATA_2']+"/"+file_name, "recreate")
+    results.cd()
+    ct_binning = [ct_bins[0][0]]
+    for ct in ct_bins:
+        ct_binning.append(ct[1])
+    ct_binning = array("d", ct_binning)
+    cv = TCanvas("presel_efficiency")
+    histo_eff = TH1D("histo_eff_ct", ";ct (cm);preselection efficiency", len(ct_binning)-1, ct_binning)
+    gStyle.SetOptStat(0)
+    gStyle.SetOptFit(0)
+    analysis.df_generated['y'] = 1
+    for ct in ct_bins:
+        Effp = (analysis.preselection_efficiency(ct_range=ct, pt_range=pt_range, cent_class=cent_class))
 
-    errEff = math.sqrt((1-Effp)*Effp/n_gen)
+        selection = '{}<ct<{} and {}<centrality<{} and {}<pT<{}'.format(
+            ct[0], ct[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1])
+        n_gen = sum(analysis.df_generated.query(selection)['y'])
 
-    ct_index=ct_bins.index(ct)
-    histo_eff.SetBinContent(ct_index+1,Effp)
-    histo_eff.SetBinError(ct_index+1,errEff)
-  del analysis.df_generated['y']
-  histo_eff.Draw()
-  histo_eff.Write()
-  cv.Write()
-  cv.SaveAs(os.environ['HYPERML_DATA_2']+'/presel_efficiency.pdf')
-  results.Close()
+        errEff = math.sqrt((1-Effp)*Effp/n_gen)
+
+        ct_index = ct_bins.index(ct)
+        histo_eff.SetBinContent(ct_index+1, Effp)
+        histo_eff.SetBinError(ct_index+1, errEff)
+    del analysis.df_generated['y']
+    histo_eff.Draw()
+    histo_eff.Write()
+    cv.Write()
+    cv.SaveAs(os.environ['HYPERML_DATA_2']+'/presel_efficiency.pdf')
+    results.Close()
+
 
 def plot_significance_scan(
         max_index, significance, significance_error, expected_signal, bkg_df, score_list, data_range_array, bin_cent,
@@ -305,7 +321,7 @@ def plot_significance_scan(
     bkg_counts, bins = np.histogram(selected_bkg['InvMass'], bins=45, range=[2.96, 3.05])
 
     bin_centers = 0.5 * (bins[1:] + bins[:-1])
-    side_map = (bin_centers < 2.98) + (bin_centers > 3.005 )
+    side_map = (bin_centers < 2.98) + (bin_centers > 3.005)
     bins_side = bin_centers[side_map]
     mass_map = np.logical_not(side_map)
 
@@ -388,7 +404,8 @@ def plot_significance_scan(
     plt.savefig(fig_sig_path + '/' + fig_name)
     plt.close()
 
-def plot_roc(y_truth, model_decision, mode, fig_name = '/roc_curve.pdf'):
+
+def plot_roc(y_truth, model_decision, mode, fig_name='/roc_curve.pdf'):
     # Compute ROC curve and area under the curve
     fpr, tpr, _ = roc_curve(y_truth, model_decision)
     roc_auc = auc(fpr, tpr)
@@ -408,16 +425,17 @@ def plot_roc(y_truth, model_decision, mode, fig_name = '/roc_curve.pdf'):
     plt.savefig(fig_sig_path + '/' + fig_name)
     plt.close()
 
-def plot_feature_imp(model, mode, fig_name = 'feature_imp.pdf'):
+
+def plot_feature_imp(model, mode, fig_name='feature_imp.pdf'):
 
     importance = model.get_fscore()
     importance_df = pd.DataFrame({
-        'Splits':list(importance.values()),
-        'Feature':list(importance.keys())
-        })
+        'Splits': list(importance.values()),
+        'Feature': list(importance.keys())
+    })
     importance_df.sort_values(by='Splits', inplace=True)
-    importance_df.plot(kind='barh', x='Feature', figsize=(10,6), color='blue' ,legend=False)
-    
+    importance_df.plot(kind='barh', x='Feature', figsize=(10, 6), color='blue', legend=False)
+
     fig_sig_path = os.environ['HYPERML_FIGURES_{}'.format(mode)]+'/Feature_Imp'
     if not os.path.exists(fig_sig_path):
         os.makedirs(fig_sig_path)
@@ -425,10 +443,11 @@ def plot_feature_imp(model, mode, fig_name = 'feature_imp.pdf'):
 
     plt.close()
 
+
 def plot_confusion_matrix(y_true, df, mode, score,
-                          normalize=False, 
+                          normalize=False,
                           title=None,
-                          cmap=plt.cm.Blues, fig_name = 'confusion.pdf'):
+                          cmap=plt.cm.Blues, fig_name='confusion.pdf'):
     """
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
@@ -439,13 +458,13 @@ def plot_confusion_matrix(y_true, df, mode, score,
         else:
             title = 'Confusion matrix, without normalization'
 
-    #if the score is closer to max then to min it's recognised as signal
-    y_pred = [1 if i>score else 0 for i in df['Score']]
+    # if the score is closer to max then to min it's recognised as signal
+    y_pred = [1 if i > score else 0 for i in df['Score']]
 
     # Compute confusion matrix
     cm = confusion_matrix(y_true, y_pred)
     # Only use the labels that appear in the data
-    classes = ['Background','Signal']
+    classes = ['Background', 'Signal']
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
         print("Normalized confusion matrix")
@@ -489,15 +508,16 @@ def plot_confusion_matrix(y_true, df, mode, score,
 
     return ax
 
-def plot_precision_recall(y_test, y_score, mode, fig_name = 'precision_recall.pdf'):
+
+def plot_precision_recall(y_test, y_score, mode, fig_name='precision_recall.pdf'):
     precision, recall, _ = precision_recall_curve(y_test, y_score)
 
     # In matplotlib < 1.5, plt.fill_between does not have a 'step' argument
     step_kwargs = ({'step': 'post'}
-                if 'step' in signature(plt.fill_between).parameters
-                else {})
+                   if 'step' in signature(plt.fill_between).parameters
+                   else {})
     plt.step(recall, precision, color='b', alpha=0.2,
-            where='post')
+             where='post')
     plt.fill_between(recall, precision, alpha=0.2, color='b', **step_kwargs)
 
     plt.xlabel('Recall')
@@ -506,7 +526,7 @@ def plot_precision_recall(y_test, y_score, mode, fig_name = 'precision_recall.pd
     plt.xlim([0.0, 1.0])
     average_precision = average_precision_score(y_test, y_score)
     plt.title('2-class Precision-Recall curve: AP={0:0.2f}'.format(
-            average_precision))
+        average_precision))
 
     fig_sig_path = os.environ['HYPERML_FIGURES_{}'.format(mode)]+'/precision_recall'
     if not os.path.exists(fig_sig_path):

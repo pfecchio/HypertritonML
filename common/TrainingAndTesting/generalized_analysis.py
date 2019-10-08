@@ -16,9 +16,8 @@ from bayes_opt import BayesianOptimization
 from ROOT import TF1, TFile, gDirectory
 from scipy import stats
 from scipy.stats import norm
-from sklearn.metrics import auc, roc_auc_score, accuracy_score
-from sklearn.model_selection import (GridSearchCV, RandomizedSearchCV,
-                                     StratifiedKFold, train_test_split)
+from sklearn.metrics import accuracy_score, auc, roc_auc_score
+from sklearn.model_selection import StratifiedKFold, train_test_split
 
 
 class GeneralizedAnalysis:
@@ -64,13 +63,15 @@ class GeneralizedAnalysis:
         if isinstance(bkg_selection, str):
             self.df_data = self.df_data.query(bkg_selection)
 
-        df = pd.concat([self.df_signal, self.df_data_bkg])
+        # df = pd.concat([self.df_signal, self.df_data_bkg])
 
-        columns = training_columns.copy()
-        columns.append('InvMass')
+        # columns = training_columns.copy()
+        # columns.append('InvMass')
 
-        pu.plot_distr(df, column=training_columns, mode=self.mode)
-        pu.plot_corr(df, columns, mode=self.mode)
+        # pu.plot_distr(df, column=training_columns, mode=self.mode)
+        # pu.plot_corr(df, columns, mode=self.mode)
+
+        # del df
 
         if mode == 2:
             self.hist_centrality = uproot.open(data_file_name)['EventCounter']
@@ -148,7 +149,7 @@ class GeneralizedAnalysis:
             print('number of signal candidates: {}\n'.format(len(sig)))
 
             df = pd.concat([sig, bkg])
-            train_set, test_set, y_train, y_test = train_test_split(df[training_columns], df['y'], test_size=0.4)
+            train_set, test_set, y_train, y_test = train_test_split(df[training_columns], df['y'], test_size=0.5)
 
             return train_set, y_train, test_set, y_test
 
@@ -182,16 +183,15 @@ class GeneralizedAnalysis:
 
     # function that manage the bayesian optimization
     def optimize_params_bayes(
-            self, data, training_columns, reg_params, hyperparams, num_rounds=100, es_rounds=2, nfold=5, init_points=5,
+            self, data, training_columns, reg_params, hyperparams, nfold=3, init_points=5,
             n_iter=5):
-        round_score_list = []
 
         # just an helper function
         def hyperparams_crossvalidation(
-                eta, min_child_weight, max_depth, gamma, subsample, colsample_bytree):
+                max_depth, learning_rate, n_estimators, gamma, min_child_weight, subsample, colsample_bytree):
             return au.evaluate_hyperparams(
-                data, training_columns, reg_params, eta, min_child_weight, max_depth, gamma, subsample,
-                colsample_bytree, num_rounds, es_rounds, nfold, round_score_list)
+                data, training_columns, reg_params, max_depth, learning_rate, n_estimators, gamma, min_child_weight,
+                subsample, colsample_bytree, nfold)
 
         print('')
 
@@ -200,14 +200,13 @@ class GeneralizedAnalysis:
         optimizer.maximize(init_points=init_points, n_iter=n_iter, acq='poi')
         print('')
 
-        best_numrounds = max(round_score_list, key=lambda x: x[0])[1]
-
         # extract and show the results of the optimization
         max_params = {
-            'eta': optimizer.max['params']['eta'],
-            'min_child_weight': int(optimizer.max['params']['min_child_weight']),
             'max_depth': int(optimizer.max['params']['max_depth']),
+            'learning_rate': optimizer.max['params']['learning_rate'],
+            'n_estimators': int(optimizer.max['params']['n_estimators']),
             'gamma': optimizer.max['params']['gamma'],
+            'min_child_weight': int(optimizer.max['params']['min_child_weight']),
             'subsample': optimizer.max['params']['subsample'],
             'colsample_bytree': optimizer.max['params']['colsample_bytree'],
             # 'lambda': optimizer.max['params']['lambda'],
@@ -215,9 +214,8 @@ class GeneralizedAnalysis:
         }
         print('Best target: {0:.6f}'.format(optimizer.max['target']))
         print('Best parameters: {}'.format(max_params))
-        print('Best num_rounds: {}\n'.format(best_numrounds))
 
-        return max_params, best_numrounds
+        return max_params
 
     # function that manage the grid search
     def optimize_params_gs(self, dtrain, params):
@@ -261,9 +259,8 @@ class GeneralizedAnalysis:
         if optimize:
             if optimize_mode == 'bayes':
                 print('Hyperparameters optimization: ...', end='\r')
-                # max_params, best_numrounds = self.optimize_params_bayes(
-                #     data_train, training_columns, reg_params, hyperparams, num_rounds=num_rounds, es_rounds=es_rounds,
-                #     init_points=5, n_iter=5)
+                max_params = self.optimize_params_bayes(
+                    data_train, training_columns, reg_params, hyperparams, init_points=10, n_iter=10)
                 print('Hyperparameters optimization: Done!\n')
             if optimize_mode == 'gs':
                 print('Hyperparameters optimization: ...', end='\r')
@@ -275,12 +272,12 @@ class GeneralizedAnalysis:
         # join the dictionaries of the regressor params with the maximized hyperparams
         best_params = {**max_params, **reg_params}
 
-        eval_set = [(data[0][training_columns], data[1]), (data[2][training_columns], data[3])]
 
         # final training with the optimized hyperparams
         print('Training the final model: ...', end='\r')
         model = xgb.XGBClassifier(**best_params)
-        model.fit(data[0][training_columns], data[1], eval_metric=['error', 'logloss', 'auc'], eval_set=eval_set, verbose=True)
+        model.fit(data[0][training_columns], data[1])
+        print('{}'.format(model.get_params()))
         print('Training the final model: Done!\n')
 
         # BDT output distributions plot
@@ -485,6 +482,7 @@ class GeneralizedAnalysis:
         if custom:
             max_index = np.argmax(significance_custom)
             max_score = threshold_space[max_index]
+            max_significance = significance_custom[max_index]
 
             pu.plot_significance_scan(
                 max_index, significance_custom, significance_custom_error, expected_signal, df_bkg,
@@ -493,6 +491,7 @@ class GeneralizedAnalysis:
         else:
             max_index = np.argmax(significance)
             max_score = threshold_space[max_index]
+            max_significance = significance[max_index]
 
             pu.plot_significance_scan(
                 max_index, significance, significance_error, expected_signal, df_bkg, threshold_space,
@@ -502,46 +501,5 @@ class GeneralizedAnalysis:
 
         print('Significance scan: Done!\n')
 
+        # return max_score, bdt_eff_max_score, max_significance
         return max_score, bdt_eff_max_score
-
-    def save_score_eff(self, score_eff_array, cent_class=[0, 90], pt_range=[0, 10], ct_range=[0, 100]):
-
-        models_path = os.environ['HYPERML_MODELS_{}'.format(self.mode)]
-        filename = '/score_eff_{}{}_{}{}_{}{}.csv'.format(cent_class[0],
-                                                          cent_class[1],
-                                                          pt_range[0],
-                                                          pt_range[1],
-                                                          ct_range[0],
-                                                          ct_range[1])
-        with open(models_path + filename, 'w') as csv_file:
-            writer = csv.writer(csv_file)
-            writer.writerows(score_eff_array)
-
-            csv_file.close()
-
-        print('Score_BDTefficiency array saved.\n')
-
-    def load_score_eff(self, cent_class=[0, 90], pt_range=[0, 10], ct_range=[0, 100]):
-
-        models_path = os.environ['HYPERML_MODELS_{}'.format(self.mode)]
-        filename = '/score_eff_{}{}_{}{}_{}{}.csv'.format(cent_class[0],
-                                                          cent_class[1],
-                                                          pt_range[0],
-                                                          pt_range[1],
-                                                          ct_range[0],
-                                                          ct_range[1])
-        score_eff_array = []
-
-        with open(models_path + filename) as csv_file:
-            reader = csv.reader(csv_file, delimiter=',')
-
-            for row in reader:
-                try:
-                    score_eff_array.append([float(row[0]), float(row[1])])
-                except ValueError:
-                    continue
-
-            csv_file.close()
-
-        return score_eff_array
-        print('Score_BDTefficiency array loaded.\n')

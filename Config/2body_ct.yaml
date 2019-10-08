@@ -1,24 +1,24 @@
 NBODY: 2
-FILE_PREFIX: "ct_analysis"
+FILE_PREFIX: 'ct_analysis'
 CENTRALITY_CLASS:
   - [0, 90]
-CT_BINS: [0, 2, 4, 6, 8, 10, 14, 18, 23]
+CT_BINS: [0, 2, 4, 6, 8, 10, 14, 18, 23, 35]
 PT_BINS: [2, 10]
 
 BKG_MODELS: ['expo', 'pol1', 'pol2']
 
-BDT_EFFICIENCY: [0.4 , 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.5 ,
-       0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.6 , 0.61,
-       0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.7 , 0.71, 0.72,
-       0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.8 , 0.81, 0.82, 0.83,
-       0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.9 , 0.91, 0.92, 0.93, 0.94,
-       0.95, 0.96, 0.97, 0.98]
+BDT_EFFICIENCY: [0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50,
+       0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61,
+       0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70 , 0.71, 0.72,
+       0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83,
+       0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90 , 0.91, 0.92, 0.93, 0.94,
+       0.95, 0.96, 0.97, 0.98, 0.99]
 
-DEDICATED_BACKGROUND: 0.05
+DEDICATED_BACKGROUND: 0
 
 LOAD_SCORE_EFF: False
 BDT_EFF_CUTS: True
-MAX_SIGXEFF: False
+MAX_SIGXEFF: True
 SYST_UNCERTANTIES: False
 CUT_SHIFT: [0]
 
@@ -27,41 +27,41 @@ DATA_PATH: $HYPERML_TABLES_2/DataTable.root
 
 XGBOOST_PARAMS:
   # general parameters
-  silent: 1  # print message (useful to understand whats happening)
-  nthread: 8  # number of available threads
+  silent: 1 # print message (useful to understand whats happening)
+  n_jobs: 8 # number of available threads
   # learning task parameters
   objective: binary:logistic
   random_state: 42
-  eval_metric:
-    - auc
+  eval_metric: auc
   tree_method: hist
 
 OPTIMIZATION_STRATEGY: bayes
 
 HYPERPARAMS:
-  eta: 0.05
-  min_child_weight: 8
-  max_depth: 10
-  gamma: 0.7
-  subsample: 0.8
-  colsample_bytree: 0.9
+  max_depth: 13
+  learning_rate: 0.0982
+  n_estimators: 181
+  gamma: 0.4467
+  min_child_weight: 5.75
+  subsample: 0.74
+  colsample_bytree: 0.57
+  seed: 42
 
 HYPERPARAMS_RANGE: #TODO: check if it works without tuples
   # booster parameters
-  eta: !!python/tuple [0.0001, 0.3]  # a kind of learning rate
-  # defines the min sum of weights of all observations required in a child (regularization)
+  max_depth: !!python/tuple [5, 20] # defines the maximum depth of a single tree (regularization)
+  learning_rate: !!python/tuple [0.01, 0.3] # learning rate
+  n_estimators: !!python/tuple [50, 500] # number of boosting trees
+  gamma: !!python/tuple [0.3, 1.1] # specifies the minimum loss reduction required to make a split
   min_child_weight: !!python/tuple [1, 12]
-  max_depth: !!python/tuple [2, 20]  # defines the maximum depth of a single tree (regularization)
-  gamma: !!python/tuple [0, 1.1]  # specifies the minimum loss reduction required to make a split
-  subsample: !!python/tuple [0.3, 1.]  # denotes the fraction of observations to be randomly samples for each tree
-  colsample_bytree: !!python/tuple [0.3, 0.95]  # denotes the fraction of columns to be randomly samples for each tree
-  # lambda: (0,10]  # L2 regularization term on weights
-  # alpha: (0,10]  # L1 regularization term on weight
-  # should be used in case of high class imbalance as it helps in faster convergence
-  # scale_pos_weight: !!python/tuple [1., 10.]
+  subsample: !!python/tuple [0.5, 0.9] # denotes the fraction of observations to be randomly samples for each tree
+  colsample_bytree: !!python/tuple [0.5, 0.9] # denotes the fraction of columns to be randomly samples for each tree
+  # # lambda: (0,10]  # L2 regularization term on weights
+  # # alpha: (0,10]  # L1 regularization term on weight
 
 TRAINING_COLUMNS: 
   - V0CosPA
+  - HypCandPt
   - ProngsDCA
   - PiProngPvDCAXY
   - He3ProngPvDCAXY
