@@ -76,7 +76,7 @@ for cclass in params['CENTRALITY_CLASS']:
       raws.append([])
       errs.append([])
       for eff in np.arange(ranges['SCAN'][iBin][0], ranges['SCAN'][iBin][1], ranges['SCAN'][iBin][2]):
-        h2RawCounts = resultFile.Get('{}/RawCounts{}_{}'.format(inDirName,eff,model))
+        h2RawCounts = resultFile.Get('{}/RawCounts{:g}_{}'.format(inDirName,eff,model))
         raws[iBin].append(h2RawCounts.GetBinContent(1, iBin + 1) / eff / h1RawCounts.GetBinWidth(iBin + 1))
         errs[iBin].append(h2RawCounts.GetBinError(1, iBin + 1) / eff / h1RawCounts.GetBinWidth(iBin + 1))
 
