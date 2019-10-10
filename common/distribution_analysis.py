@@ -66,19 +66,20 @@ for cclass in params['CENTRALITY_CLASS']:
   raws = []
   errs = []
   for model in bkgModels:
-    
     h1RawCounts = h1PreselEff.Clone(f"best_{model}")
     h1RawCounts.Reset()
-    for iBin in range(0, h1RawCounts.GetNbinsX()):
-      h2RawCounts = resultFile.Get('{}/RawCounts{}_{}'.format(inDirName,ranges['BEST'][iBin],model))
-      h1RawCounts.SetBinContent(iBin + 1, h2RawCounts.GetBinContent(1, iBin + 1) / ranges['BEST'][iBin] / h1RawCounts.GetBinWidth(iBin + 1))
-      h1RawCounts.SetBinError(iBin + 1, h2RawCounts.GetBinError(1, iBin + 1) / ranges['BEST'][iBin] / h1RawCounts.GetBinWidth(iBin + 1))
+
+    for iBin in range(1, h1RawCounts.GetNbinsX()):
+      h2RawCounts = resultFile.Get('{}/RawCounts{}_{}'.format(inDirName,ranges['BEST'][iBin-1],model))
+      h1RawCounts.SetBinContent(iBin, h2RawCounts.GetBinContent(1, iBin) / h1PreselEff.GetBinContent(iBin) /ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin))
+      h1RawCounts.SetBinError(iBin, h2RawCounts.GetBinError(1, iBin) / h1PreselEff.GetBinContent(iBin) /ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin))
       raws.append([])
       errs.append([])
-      for eff in np.arange(ranges['SCAN'][iBin][0], ranges['SCAN'][iBin][1], ranges['SCAN'][iBin][2]):
+      
+      for eff in np.arange(ranges['SCAN'][iBin-1][0], ranges['SCAN'][iBin-1][1], ranges['SCAN'][iBin-1][2]):
         h2RawCounts = resultFile.Get(f'{inDirName}/RawCounts{eff:g}_{model}')
-        raws[iBin].append(h2RawCounts.GetBinContent(1, iBin + 1) / eff / h1RawCounts.GetBinWidth(iBin + 1))
-        errs[iBin].append(h2RawCounts.GetBinError(1, iBin + 1) / eff / h1RawCounts.GetBinWidth(iBin + 1))
+        raws[iBin-1].append(h2RawCounts.GetBinContent(1, iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin))
+        errs[iBin-1].append(h2RawCounts.GetBinError(1, iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin))
 
 
     h1RawCounts.SetTitle(";#it{ct} (cm);dN/d#it{ct} (cm)^{-1}")
@@ -115,15 +116,16 @@ for cclass in params['CENTRALITY_CLASS']:
   tmpCt = hRawCounts[0].Clone("tmpCt")
   
   combinations = set()
-  size = 10
+  size = 100000
+
   for _ in range(size):
     tmpCt.Reset()
     comboList = []
     for iBin in range(1, tmpCt.GetNbinsX()):
-      index = random.randint(0, len(raws[iBin])-1)
+      index = random.randint(0, len(raws[iBin-1])-1)
       comboList.append(index)
-      tmpCt.SetBinContent(iBin, raws[iBin][index])
-      tmpCt.SetBinError(iBin, errs[iBin][index])
+      tmpCt.SetBinContent(iBin, raws[iBin-1][index])
+      tmpCt.SetBinError(iBin, errs[iBin-1][index])
     combo = (x for x in comboList)
     if combo in combinations:
       continue
