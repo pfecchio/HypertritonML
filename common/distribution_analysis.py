@@ -46,18 +46,18 @@ resultFile = TFile(file_name)
 bkgModels = params['BKG_MODELS'] if 'BKG_MODELS' in params else ['expo']
 
 for cclass in params['CENTRALITY_CLASS']:
-  inDirName =  "{}-{}".format(cclass[0],cclass[1])
+  inDirName =  f"{cclass[0]}-{cclass[1]}"
   resultFile.cd(inDirName)
   outDir = distribution.mkdir(inDirName)
   cvDir = outDir.mkdir("canvas")
 
-  h2PreselEff = resultFile.Get("{}/SelEff".format(inDirName))
+  h2PreselEff = resultFile.Get(f'{inDirName}/SelEff')
   h1PreselEff = h2PreselEff.ProjectionY()
 
   for i in range(1, h1PreselEff.GetNbinsX()+1):
     h1PreselEff.SetBinError(i, 0)
 
-  h1PreselEff.SetTitle(";{} ({}); Preselection efficiency".format(var, unit))
+  h1PreselEff.SetTitle(f';{var} ({unit}); Preselection efficiency')
   h1PreselEff.UseCurrentStyle()
   h1PreselEff.SetMinimum(0)
   outDir.cd()
@@ -67,7 +67,7 @@ for cclass in params['CENTRALITY_CLASS']:
   errs = []
   for model in bkgModels:
     
-    h1RawCounts = h1PreselEff.Clone("best_{}".format(model))
+    h1RawCounts = h1PreselEff.Clone(f"best_{model}")
     h1RawCounts.Reset()
     for iBin in range(0, h1RawCounts.GetNbinsX()):
       h2RawCounts = resultFile.Get('{}/RawCounts{}_{}'.format(inDirName,ranges['BEST'][iBin],model))
@@ -76,7 +76,7 @@ for cclass in params['CENTRALITY_CLASS']:
       raws.append([])
       errs.append([])
       for eff in np.arange(ranges['SCAN'][iBin][0], ranges['SCAN'][iBin][1], ranges['SCAN'][iBin][2]):
-        h2RawCounts = resultFile.Get('{}/RawCounts{:g}_{}'.format(inDirName,eff,model))
+        h2RawCounts = resultFile.Get(f'{inDirName}/RawCounts{eff:g}_{model}')
         raws[iBin].append(h2RawCounts.GetBinContent(1, iBin + 1) / eff / h1RawCounts.GetBinWidth(iBin + 1))
         errs[iBin].append(h2RawCounts.GetBinError(1, iBin + 1) / eff / h1RawCounts.GetBinWidth(iBin + 1))
 
@@ -90,7 +90,7 @@ for cclass in params['CENTRALITY_CLASS']:
     hRawCounts.append(h1RawCounts)
 
     cvDir.cd()
-    myCv = TCanvas("ctSpectraCv_{}".format(model))
+    myCv = TCanvas(f"ctSpectraCv_{model}")
     pinfo2= TPaveText(0.5,0.5,0.91,0.9,"NDC")
     pinfo2.SetBorderSize(0)
     pinfo2.SetFillStyle(0)
@@ -110,12 +110,12 @@ for cclass in params['CENTRALITY_CLASS']:
 
   outDir.cd()
 
-  syst = TH1D("syst",";#tau (ps);Entries",200,200,400)
+  syst = TH1D("syst",";#tau (ps);Entries",300,100,400)
   prob = TH1D("prob",";Lifetime fit probability;Entries",100,0,1)
   tmpCt = hRawCounts[0].Clone("tmpCt")
   
   combinations = set()
-  size = 100000
+  size = 10
   for _ in range(size):
     tmpCt.Reset()
     comboList = []
@@ -123,7 +123,7 @@ for cclass in params['CENTRALITY_CLASS']:
       index = random.randint(0, len(raws[iBin])-1)
       comboList.append(index)
       tmpCt.SetBinContent(iBin, raws[iBin][index])
-      tmpCt.SetBinError(iBin, raws[iBin][index])
+      tmpCt.SetBinError(iBin, errs[iBin][index])
     combo = (x for x in comboList)
     if combo in combinations:
       continue
