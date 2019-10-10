@@ -16,7 +16,7 @@ args = parser.parse_args()
 
 gROOT.SetBatch()
 
-expo = TF1("myexpo", "[0]*exp(-x/[1]/0.029979245800)", 0, 28)
+expo = TF1("myexpo", "[0]*exp(-x/[1]/0.029979245800)", 0, 35)
 expo.SetParLimits(1, 100, 350)
 
 with open(os.path.expandvars(args.config), 'r') as stream:
@@ -62,17 +62,19 @@ for cclass in params['CENTRALITY_CLASS']:
   h1PreselEff.SetMinimum(0)
   outDir.cd()
   h1PreselEff.Write("h1PreselEff")
+
   hRawCounts = []
   raws = []
   errs = []
+
   for model in bkgModels:
     h1RawCounts = h1PreselEff.Clone(f"best_{model}")
     h1RawCounts.Reset()
 
-    for iBin in range(1, h1RawCounts.GetNbinsX()):
-      h2RawCounts = resultFile.Get('{}/RawCounts{}_{}'.format(inDirName,ranges['BEST'][iBin-1],model))
-      h1RawCounts.SetBinContent(iBin, h2RawCounts.GetBinContent(1, iBin) / h1PreselEff.GetBinContent(iBin) /ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin))
-      h1RawCounts.SetBinError(iBin, h2RawCounts.GetBinError(1, iBin) / h1PreselEff.GetBinContent(iBin) /ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin))
+    for iBin in range(1, h1RawCounts.GetNbinsX()+1):
+      h2RawCounts = resultFile.Get('{}/RawCounts{}_{}'.format(inDirName, ranges['BEST'][iBin-1], model))
+      h1RawCounts.SetBinContent(iBin, h2RawCounts.GetBinContent(1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin))
+      h1RawCounts.SetBinError(iBin, h2RawCounts.GetBinError(1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin))
       raws.append([])
       errs.append([])
       
@@ -81,9 +83,7 @@ for cclass in params['CENTRALITY_CLASS']:
         raws[iBin-1].append(h2RawCounts.GetBinContent(1, iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin))
         errs[iBin-1].append(h2RawCounts.GetBinError(1, iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin))
 
-
     h1RawCounts.SetTitle(";#it{ct} (cm);dN/d#it{ct} (cm)^{-1}")
-    h1RawCounts.Divide(h1PreselEff)
     outDir.cd()
     h1RawCounts.UseCurrentStyle()
     h1RawCounts.Fit(expo,"MI")
@@ -116,19 +116,22 @@ for cclass in params['CENTRALITY_CLASS']:
   tmpCt = hRawCounts[0].Clone("tmpCt")
   
   combinations = set()
-  size = 100000
+  size = 1000
 
   for _ in range(size):
     tmpCt.Reset()
     comboList = []
-    for iBin in range(1, tmpCt.GetNbinsX()):
+    
+    for iBin in range(1, tmpCt.GetNbinsX()+1):
       index = random.randint(0, len(raws[iBin-1])-1)
       comboList.append(index)
       tmpCt.SetBinContent(iBin, raws[iBin-1][index])
       tmpCt.SetBinError(iBin, errs[iBin-1][index])
+      
     combo = (x for x in comboList)
     if combo in combinations:
       continue
+
     combinations.add(combo)
     tmpCt.Fit(expo,"MI")
     prob.Fill(expo.GetProb())
