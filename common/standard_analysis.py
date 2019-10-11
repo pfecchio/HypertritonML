@@ -96,7 +96,7 @@ for cclass in params['CENTRALITY_CLASS']:
                         recSelString.append('V0CosPA > {} && NpidClustersHe3 > {} && He3ProngPt > {} && HypCandPt > 2 && HypCandPt < 10 && PiProngPt > {} && He3ProngPvDCA > 0.05 && PiProngPvDCA > 0.2 && std::abs(TPCnSigmaHe3) < 3.5 && ProngsDCA < {}'.format(
                             cosPA, pidHe3, he3Pt, piPt, pDCA))
 
-    stringSample = random.sample(recSelString,100)
+    stringSample = random.sample(recSelString,50)
     stringSample.insert(0, 'V0CosPA > 0.9999 && NpidClustersHe3 > 80 && He3ProngPt > 1.8 && HypCandPt > 2 && HypCandPt < 10 && PiProngPt > 0.15 && He3ProngPvDCA > 0.05 && PiProngPvDCA > 0.2 && std::abs(TPCnSigmaHe3) < 3.5 && ProngsDCA < 1')
     savePlots = True
     for selString in stringSample:
@@ -148,8 +148,8 @@ for cclass in params['CENTRALITY_CLASS']:
                 for model, fitdir, h2raw, h2sigma in zip(bkg_models, fit_directories, h2raw_counts, h2sigma_data):
                     histo = baseHisto.Clone(binName + "_{}".format(model))
                     fitdir = fitdir if savePlots else None
+                    _, _, _, _, sigma, sigmaErr = au.fitHist(histo, ctbin, ptbin, cclass, tdirectory=fitdir, model=model)
                     hyp_yield, err_yield, _, _, _, _ = au.fitHist(histo, ctbin, ptbin, cclass, tdirectory=fitdir, model=model, fixsigma=gaus.GetParameter(2))
-                    _, _, _, _, sigma, sigmaErr = au.fitHist(histo, ctbin, ptbin, cclass, tdirectory=fitdir, model=model, sigmaLimits=[0.9 * gaus.GetParameter(2), 1.1 * gaus.GetParameter(2)])
 
                     h2raw.SetBinContent(ptbin_index, ctbin_index, hyp_yield)
                     h2raw.SetBinError(ptbin_index, ctbin_index, err_yield)
@@ -168,7 +168,7 @@ for cclass in params['CENTRALITY_CLASS']:
 
 
         # Temporary for the ct spectra
-        expo = TF1("myexpo", "[0]*exp(-x/[1]/0.029979245800)", 0, 28)
+        expo = TF1("myexpo", "[0]*exp(-x/[1]/0.029979245800)", 0, 23)
         expo.SetParLimits(1, 100, 350)
         h1GenCt = h2GenPtCt.ProjectionY("gen_ct")
         h1EffCt = h3McMassPtCt.ProjectionZ("eff_ct")
@@ -180,7 +180,7 @@ for cclass in params['CENTRALITY_CLASS']:
             h1RawCt = h2raw.ProjectionY("ct_{}".format(model))
             h1RawCt.Divide(h1EffCt)
             h1RawCt.Scale(1, "width")
-            h1RawCt.Fit(expo,"MI","")
+            h1RawCt.Fit(expo,"IR","")
             h1Tau.Fill(expo.GetParameter(1))
             if savePlots:
                 h1RawCt.Write()

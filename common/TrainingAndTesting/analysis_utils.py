@@ -143,7 +143,7 @@ def h2_rawcounts(ptbin, ctbin, title='RawCounts'):
     return th2
 
 
-def fit(counts, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, signif=0, errsignif=0, name='', bins=45, model="expo"):
+def fit(counts, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, signif=0, errsignif=0, name='', bins=45, model="expo", fixsigma = -1, sigmaLimits=None):
     histo = TH1D(
         "ct{}{}_pT{}{}_cen{}{}_{}_{}".format(
             ct_range[0],
@@ -158,7 +158,7 @@ def fit(counts, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, signi
     for index in range(0, len(counts)):
         histo.SetBinContent(index+1, counts[index])
         histo.SetBinError(index+1, math.sqrt(counts[index]))
-    return fitHist(histo, ct_range, pt_range, cent_class, tdirectory, nsigma, signif, errsignif, model)
+    return fitHist(histo, ct_range, pt_range, cent_class, tdirectory, nsigma, signif, errsignif, model, fixsigma, sigmaLimits)
 
 
 def fitHist(histo, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, signif=0, errsignif=0, model="expo", fixsigma = -1, sigmaLimits=None):

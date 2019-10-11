@@ -50,6 +50,10 @@ score_bdteff_dict = {}
 preselection_efficiency = {}
 n_hytr = {}
 
+sigmaParam = TF1("sigmaParam","pol2",0,35)
+sigmaParam.SetParameters(1.544e-3,7.015e-5,-1.965e-6)
+
+
 # load saved score-BDTeff dict or open a file for saving the new ones
 score_bdteff_name = results_dir + '/{}_score_bdteff.yaml'.format(params['FILE_PREFIX'])
 if params['LOAD_SCORE_EFF']:
@@ -206,8 +210,8 @@ for cclass in params['CENTRALITY_CLASS']:
                         df_data.query('Score >@se[0]')['InvMass'],
                         bins=mass_bins, range=[2.96, 3.05])
 
-                    hyp_yield, err_yield, signif, errsignif = au.fit(
-                        counts, ctbin, ptbin, cclass, fitdir, name=k, bins=mass_bins, model=model)
+                    hyp_yield, err_yield, signif, errsignif, sigma, sigmaErr = au.fit(
+                        counts, ctbin, ptbin, cclass, fitdir, name=k, bins=mass_bins, model=model, fixsigma=sigmaParam(0.5*(ctbin[0]+ctbin[1])))
 
                     if k is 'sig_scan':
                         h2raw.SetBinContent(ptbin_index, ctbin_index, hyp_yield)
