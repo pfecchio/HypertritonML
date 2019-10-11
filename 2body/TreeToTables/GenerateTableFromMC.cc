@@ -29,6 +29,12 @@ void GenerateTableFromMC(bool reject = true) {
   string outFileName = "SignalTable.root";
   string outFileArg  = hypTableDir + "/" + outFileName;
 
+  string absFileName = "absorption.root";
+  string absFileArg  = hypUtilsDir + "/" + absFileName;
+  TFile absFile(absFileArg.data());
+  TH1* hCorrM = (TH1*)absFile.Get("hCorrectionHyp");
+  TH1* hCorrA = (TH1*)absFile.Get("hCorrectionAntiHyp");
+
   string bwFileName = "BlastWaveFits.root";
   string bwFileArg  = hypUtilsDir + "/" + bwFileName;
 
@@ -61,6 +67,11 @@ void GenerateTableFromMC(bool reject = true) {
   Table2 table("SignalTable", "Signal Table");
   GenTable2 genTable("GenTable", "Generated particle table");
 
+  TH1D genHA("genA", ";ct (cm)",50,0,40);
+  TH1D absHA("absA", ";ct (cm)",50,0,40);
+
+  TH1D genHM("genM", ";ct (cm)",50,0,40);
+  TH1D absHM("absM", ";ct (cm)",50,0,40);
   while (fReader.Next()) {
     auto cent = RColl->fCent;
 
@@ -87,6 +98,13 @@ void GenerateTableFromMC(bool reject = true) {
       }
       genTable.Fill(SHyper, *RColl);
       int ind = SHyper.fRecoIndex;
+      
+      (genTable.IsMatter() ? genHM : genHA).Fill(genTable.GetCt());
+      float protonPt = pt / 3.;
+      float corrBin = hCorrA->FindBin(protonPt);
+      float threshold = (genTable.IsMatter() ? hCorrM : hCorrA)->GetBinContent(corrBin);
+      if (gRandom->Rndm() < threshold)
+        (genTable.IsMatter() ? absHM : absHA).Fill(genTable.GetCt());
 
       if (ind >= 0) {
         auto &RHyper = RHyperVec[ind];
@@ -102,7 +120,14 @@ void GenerateTableFromMC(bool reject = true) {
   table.Write();
   genTable.Write();
   hNSigmaTPCVsPtHe3->Write();
-
+  absHM.Sumw2();
+  genHM.Sumw2();
+  absHM.Divide(&genHM);
+  absHM.Write();
+  absHA.Sumw2();
+  genHA.Sumw2();
+  absHA.Divide(&genHA);
+  absHA.Write();
   outFile.Close();
 
   std::cout << "\nDerived tables from MC generated!\n" << std::endl;

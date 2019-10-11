@@ -18,6 +18,9 @@ class GenTable2 {
   GenTable2(std::string name, std::string title);
   void Fill(const SHyperTritonHe3pi& SHyperVec, const RCollision& RColl);
   void Write() { tree->Write(); }
+  float GetCt() { return Ct; }
+  bool IsMatter() { return Matter; }
+  float GetPt() { return Pt; }
 
   private:
   TTree* tree;
