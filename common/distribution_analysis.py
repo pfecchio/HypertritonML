@@ -16,7 +16,7 @@ args = parser.parse_args()
 
 gROOT.SetBatch()
 
-expo = TF1("myexpo", "[0]*exp(-x/[1]/0.029979245800)", 0, 35)
+expo = TF1("myexpo", "[0]*exp(-x/([1]*0.029979245800))/([1]*0.029979245800)", 0, 35)
 expo.SetParLimits(1, 100, 350)
 
 with open(os.path.expandvars(args.config), 'r') as stream:
@@ -113,6 +113,7 @@ for cclass in params['CENTRALITY_CLASS']:
 
   syst = TH1D("syst",";#tau (ps);Entries",300,100,400)
   prob = TH1D("prob",";Lifetime fit probability;Entries",100,0,1)
+  pars = TH2D("pars",";#tau (ps);Normalisation;Entries",300,100,400,1000,4500,6500)
   tmpCt = hRawCounts[0].Clone("tmpCt")
   
   combinations = set()
@@ -137,11 +138,13 @@ for cclass in params['CENTRALITY_CLASS']:
     prob.Fill(expo.GetProb())
     if expo.GetChisquare() < 3 * expo.GetNDF():
       syst.Fill(expo.GetParameter(1))
+      pars.Fill(expo.GetParameter(1),expo.GetParameter(0))
 
   syst.SetFillColor(600)
   syst.SetFillStyle(3345)
   syst.Write()
   prob.Write()
+  pars.Write()
 
 resultFile.Close()
 
