@@ -161,7 +161,7 @@ def fit(counts, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, signi
     return fitHist(histo, ct_range, pt_range, cent_class, tdirectory, nsigma, signif, errsignif, model)
 
 
-def fitHist(histo, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, signif=0, errsignif=0, model="expo"):
+def fitHist(histo, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, signif=0, errsignif=0, model="expo", fixsigma = -1, sigmaLimits=None):
     if tdirectory:
         tdirectory.cd()
 
@@ -195,9 +195,14 @@ def fitHist(histo, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, si
     fitTpl.SetParLimits(nBkgPars, 0.001, 10000)
     fitTpl.SetParameter(nBkgPars + 1, 2.991)
     fitTpl.SetParLimits(nBkgPars + 1, 2.986, 3)
-    fitTpl.SetParameter(nBkgPars + 2, 0.002)
-    fitTpl.SetParLimits(nBkgPars + 2, 0.001, 0.0022)
-
+    if sigmaLimits != None:
+        fitTpl.SetParameter(nBkgPars + 2, 0.5 * (sigmaLimits[0] + sigmaLimits[1]))
+        fitTpl.SetParLimits(nBkgPars + 2, sigmaLimits[0], sigmaLimits[1])
+    elif fixsigma > 0:
+        fitTpl.FixParameter(nBkgPars + 2, fixsigma)
+    else:
+        fitTpl.SetParameter(nBkgPars + 2, 0.002)
+        fitTpl.SetParLimits(nBkgPars + 2, 0.001, 0.003)
     # gStyle.SetOptFit(0)
     ####################
 
@@ -223,6 +228,7 @@ def fitHist(histo, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, si
     # sigTpl.Draw("same")
     mu = fitTpl.GetParameter(nBkgPars+1)
     sigma = fitTpl.GetParameter(nBkgPars+2)
+    sigmaErr = fitTpl.GetParError(nBkgPars+2)
     signal = fitTpl.GetParameter(nBkgPars) / histo.GetBinWidth(1)
     errsignal = fitTpl.GetParError(nBkgPars) / histo.GetBinWidth(1)
     bkg = bkgTpl.Integral(mu - nsigma * sigma, mu + nsigma * sigma) / histo.GetBinWidth(1)
@@ -275,4 +281,4 @@ def fitHist(histo, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, si
         tdirectory.cd()
         histo.Write()
         cv.Write()
-    return (signal, errsignal, signif, errsignif)
+    return (signal, errsignal, signif, errsignif, sigma, sigmaErr)
