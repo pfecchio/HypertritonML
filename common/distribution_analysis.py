@@ -117,7 +117,7 @@ for cclass in params['CENTRALITY_CLASS']:
   tmpCt = hRawCounts[0].Clone("tmpCt")
   
   combinations = set()
-  size = 1000
+  size = 100000
 
   for _ in range(size):
     tmpCt.Reset()
