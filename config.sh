@@ -49,6 +49,7 @@ if [ $BODY_2 -eq 1 ]; then
       [ ! -f "$HYPERML_DATA_2/HyperTritonTree_18qLS.root" ] && alien_cp alien:/alice/cern.ch/user/a/alitrain/PWGLF/LF_PbPb/1108_20190920-2344/merge/HyperTritonTree.root $HYPERML_DATA_2/HyperTritonTree_18qLS.root
       [ ! -f "$HYPERML_DATA_2/HyperTritonTree_18rLS.root" ] && alien_cp alien:/alice/cern.ch/user/a/alitrain/PWGLF/LF_PbPb/1109_20190920-2345/merge/HyperTritonTree.root $HYPERML_DATA_2/HyperTritonTree_18rLS.root
       [ ! -f "$HYPERML_UTILS/He3TPCCalibration.root" ] && alien_cp alien:/alice/cern.ch/user/m/mpuccio/hyper_data/He3TPCCalibration.root $HYPERML_UTILS/He3TPCCalibration.root
+      [ ! -f "$HYPERML_UTILS/absorption.root" ] && alien_cp alien:/alice/cern.ch/user/m/mpuccio/hyper_data/absorption.root $HYPERML_UTILS/absorption.root
 fi
 
 if [ $BODY_3 -eq 1 ]; then    
