@@ -18,6 +18,7 @@
 #include "../../common/GenerateTable/Table2.h"
 
 void GenerateTableFromMC(bool reject = true) {
+  gRandom->SetSeed(1989);
 
   string hypDataDir  = getenv("HYPERML_DATA_2");
   string hypTableDir = getenv("HYPERML_TABLES_2");
