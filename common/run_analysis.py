@@ -116,6 +116,7 @@ for cclass in params['CENTRALITY_CLASS']:
     bkg_models = params['BKG_MODELS'] if 'BKG_MODELS' in params else ['expo']
     fit_directories = []
     h2raw_counts = []
+    h2significance = []
     h2raw_counts_fixeff_dict = []
     for model in bkg_models:
         fit_directories.append(cent_dir.mkdir(model))
@@ -129,6 +130,7 @@ for cclass in params['CENTRALITY_CLASS']:
             h2raw_counts_fixeff_dict.append(mydict)
 
         h2raw_counts.append(au.h2_rawcounts(params['PT_BINS'], params['CT_BINS'], 'RawCounts_{}'.format(model)))
+        h2significance.append(au.h2_rawcounts(params['PT_BINS'], params['CT_BINS'], f'significance_{model}'))
 
     for ptbin in zip(params['PT_BINS'][:-1], params['PT_BINS'][1:]):
         ptbin_index = h2BDTeff.GetXaxis().FindBin(0.5 * (ptbin[0] + ptbin[1]))
@@ -204,8 +206,8 @@ for cclass in params['CENTRALITY_CLASS']:
                 # obtain the selected invariant mass dist
                 mass_bins = 40 if ctbin[1] < 16 else 36
 
-                for model, fitdir, h2raw, h2raw_dict in zip(
-                        bkg_models, fit_directories, h2raw_counts, h2raw_counts_fixeff_dict):
+                for model, fitdir, h2raw, h2sig, h2raw_dict in zip(
+                        bkg_models, fit_directories, h2raw_counts, h2significance, h2raw_counts_fixeff_dict):
                     counts, bins = np.histogram(
                         df_data.query('Score >@se[0]')['InvMass'],
                         bins=mass_bins, range=[2.96, 3.05])
@@ -216,6 +218,8 @@ for cclass in params['CENTRALITY_CLASS']:
                     if k is 'sig_scan':
                         h2raw.SetBinContent(ptbin_index, ctbin_index, hyp_yield)
                         h2raw.SetBinError(ptbin_index, ctbin_index, err_yield)
+                        h2sig.SetBinContent(ptbin_index, ctbin_index, signif)
+                        h2sig.SetBinError(ptbin_index, ctbin_index, errsignif)
                     else:
                         h2raw_dict[k].SetBinContent(ptbin_index, ctbin_index, hyp_yield)
                         h2raw_dict[k].SetBinError(ptbin_index, ctbin_index, err_yield)
@@ -225,8 +229,9 @@ for cclass in params['CENTRALITY_CLASS']:
     h2BDTeff.Write()
     h2seleff.Write()
 
-    for h2raw in h2raw_counts:
+    for h2raw,h2sig in zip(h2raw_counts,h2significance):
         h2raw.Write()
+        h2sig.Write()
     if params['BDT_EFF_CUTS']:
         for dictionary in h2raw_counts_fixeff_dict:
             for th2 in dictionary.values():

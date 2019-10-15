@@ -71,8 +71,12 @@ for cclass in params['CENTRALITY_CLASS']:
     h1RawCounts = h1PreselEff.Clone(f"best_{model}")
     h1RawCounts.Reset()
 
+    h2Significance = resultFile.Get(f'{inDirName}/significance_{model}')
+    outDir.cd()
+    h2Significance.ProjectionY().Write(f'significance_ct_{model}')
+
     for iBin in range(1, h1RawCounts.GetNbinsX()+1):
-      h2RawCounts = resultFile.Get('{}/RawCounts{}_{}'.format(inDirName, ranges['BEST'][iBin-1], model))
+      h2RawCounts = resultFile.Get(f'{inDirName}/RawCounts{ranges["BEST"][iBin-1]}_{model}')
       h1RawCounts.SetBinContent(iBin, h2RawCounts.GetBinContent(1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin))
       h1RawCounts.SetBinError(iBin, h2RawCounts.GetBinError(1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin))
       raws.append([])
@@ -132,7 +136,7 @@ for cclass in params['CENTRALITY_CLASS']:
 
   syst = TH1D("syst",";#tau (ps);Entries",300,100,400)
   prob = TH1D("prob",";Lifetime fit probability;Entries",100,0,1)
-  pars = TH2D("pars",";#tau (ps);Normalisation;Entries",300,100,400,1000,4500,6500)
+  pars = TH2D("pars",";#tau (ps);Normalisation;Entries",300,100,400,4000,2500,6500)
   tmpCt = hRawCounts[0].Clone("tmpCt")
   
   combinations = set()
@@ -161,6 +165,7 @@ for cclass in params['CENTRALITY_CLASS']:
 
   syst.SetFillColor(600)
   syst.SetFillStyle(3345)
+  syst.Scale(1./syst.Integral())
   syst.Write()
   prob.Write()
   pars.Write()

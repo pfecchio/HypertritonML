@@ -55,6 +55,7 @@ for cclass in params['CENTRALITY_CLASS']:
                                          params['PT_BINS'], 'double'), len(params['CT_BINS']) - 1,
                                          np.array(params['CT_BINS'], 'double'))
     h2sigma_data = []
+    h2signif_data = []
     for model in bkg_models:
         fit_directories.append(cent_dir.mkdir(model))
         h2raw_counts.append(TH2D('RawCounts_{}'.format(model), ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Raw counts',
@@ -62,6 +63,10 @@ for cclass in params['CENTRALITY_CLASS']:
                                      params['PT_BINS'], 'double'), len(params['CT_BINS']) - 1,
                                  np.array(params['CT_BINS'], 'double')))
         h2sigma_data.append(TH2D('DATAsigmas_{}'.format(model), ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);#sigma',
+                                 len(params['PT_BINS'])-1, np.array(
+                                     params['PT_BINS'], 'double'), len(params['CT_BINS']) - 1,
+                                 np.array(params['CT_BINS'], 'double')))
+        h2signif_data.append(TH2D('DATAsignificance_{}'.format(model), ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);#sigma',
                                  len(params['PT_BINS'])-1, np.array(
                                      params['PT_BINS'], 'double'), len(params['CT_BINS']) - 1,
                                  np.array(params['CT_BINS'], 'double')))
@@ -86,7 +91,7 @@ for cclass in params['CENTRALITY_CLASS']:
     rdfGenModel = ROOT.RDF.TH2DModel(
         "gen", ";#it{p}_{T} (GeV/#it{c});#it{ct} (cm)", nPtBins, ptBins, nCtBins, ctBins)
     h2GenPtCt = genSelected.Histo2D(rdfGenModel, "pT", "ct")
-    h1Tau = TH1D("systematics",";#tau (ps);Trials",150,150,300)
+    h1Tau = TH1D("systematics",";#tau (ps);Trials",160,140,300)
     recSelString = []
     for cosPA in cosPAcuts:
         for pidHe3 in pidHe3cuts:
@@ -110,10 +115,10 @@ for cclass in params['CENTRALITY_CLASS']:
             ("cosPA", ";#it{p}_{T} (GeV/#it{c}); cos#theta_{P};", 200, 0, 10, 2000, 0.98, 1), "HypCandPt", "V0CosPA")
         
         h2sigma_mc.Reset()
-        for h2raw, h2sigma in zip(h2raw_counts, h2sigma_data):
+        for h2raw, h2sigma,h2sign in zip(h2raw_counts, h2sigma_data, h2signif_data):
             h2raw.Reset()
             h2sigma.Reset()
-
+            h2sign.Reset()
         if savePlots:
             cent_dir.cd()
             h3DataMassPtCt.Write()
@@ -145,16 +150,19 @@ for cclass in params['CENTRALITY_CLASS']:
                 h2sigma_mc.SetBinContent(ptbin_index, ctbin_index, gaus.GetParameter(2))
                 h2sigma_mc.SetBinError(ptbin_index, ctbin_index, gaus.GetParError(2))
 
-                for model, fitdir, h2raw, h2sigma in zip(bkg_models, fit_directories, h2raw_counts, h2sigma_data):
+                for model, fitdir, h2raw, h2sigma,h2sign in zip(bkg_models, fit_directories, h2raw_counts, h2sigma_data, h2signif_data):
                     histo = baseHisto.Clone(binName + "_{}".format(model))
                     fitdir = fitdir if savePlots else None
                     _, _, _, _, sigma, sigmaErr = au.fitHist(histo, ctbin, ptbin, cclass, tdirectory=fitdir, model=model)
-                    hyp_yield, err_yield, _, _, _, _ = au.fitHist(histo, ctbin, ptbin, cclass, tdirectory=fitdir, model=model, fixsigma=gaus.GetParameter(2))
+                    hyp_yield, err_yield, signif, signifErr, _, _ = au.fitHist(histo, ctbin, ptbin, cclass, tdirectory=fitdir, model=model, fixsigma=gaus.GetParameter(2))
 
                     h2raw.SetBinContent(ptbin_index, ctbin_index, hyp_yield)
                     h2raw.SetBinError(ptbin_index, ctbin_index, err_yield)
                     h2sigma.SetBinContent(ptbin_index, ctbin_index, sigma)
                     h2sigma.SetBinError(ptbin_index, ctbin_index, sigmaErr)
+                    h2sign.SetBinContent(ptbin_index, ctbin_index, signif)
+                    h2sign.SetBinError(ptbin_index, ctbin_index, signifErr)
+
 
 
         # write on file
@@ -162,9 +170,10 @@ for cclass in params['CENTRALITY_CLASS']:
 
         if savePlots:
             h2sigma_mc.ProjectionY().Write()
-            for h2raw,h2sigma in zip(h2raw_counts,h2sigma_data):
+            for h2raw,h2sigma,h2sign in zip(h2raw_counts,h2sigma_data,h2signif_data):
                 h2raw.Write()
                 h2sigma.ProjectionY().Write()
+                h2sign.ProjectionY().Write()
 
 
         # Temporary for the ct spectra
@@ -188,6 +197,10 @@ for cclass in params['CENTRALITY_CLASS']:
             h1EffCt.Write()
             savePlots = False
     cent_dir.cd()
+    h1Tau.SetFillColor(632)
+    h1Tau.SetLineColor(632)
+    h1Tau.SetFillStyle(3354)
+    h1Tau.Scale(1./h1Tau.Integral())
     h1Tau.Write()
 
 results_file.Close()
