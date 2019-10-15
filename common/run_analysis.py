@@ -208,10 +208,10 @@ for cclass in params['CENTRALITY_CLASS']:
 
                 for model, fitdir, h2raw, h2sig, h2raw_dict in zip(
                         bkg_models, fit_directories, h2raw_counts, h2significance, h2raw_counts_fixeff_dict):
-                    counts, bins = np.histogram(
-                        df_data.query('Score >@se[0]')['InvMass'],
-                        bins=mass_bins, range=[2.96, 3.05])
+                    massArray = np.array(df_data.query('Score >@se[0]')['InvMass'].values,dtype=np.float64)
+                    counts, bins = np.histogram(massArray, bins=mass_bins, range=[2.96, 3.05])
 
+                    # au.fitUnbinned(massArray, ctbin, ptbin, cclass, fitdir)
                     hyp_yield, err_yield, signif, errsignif, sigma, sigmaErr = au.fit(
                         counts, ctbin, ptbin, cclass, fitdir, name=k, bins=mass_bins, model=model, fixsigma=sigmaParam(0.5*(ctbin[0]+ctbin[1])))
 

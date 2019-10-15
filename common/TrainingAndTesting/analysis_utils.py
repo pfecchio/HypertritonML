@@ -8,6 +8,7 @@ import numpy as np
 import xgboost as xgb
 from ROOT import (TF1, TH1D, TH2D, TCanvas, TFile, TPaveStats, TPaveText,
                   gDirectory, gStyle)
+from ROOT import ROOT as RR
 from sklearn.model_selection import cross_val_score
 
 
@@ -282,3 +283,137 @@ def fitHist(histo, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, si
         histo.Write()
         cv.Write()
     return (signal, errsignal, signif, errsignif, sigma, sigmaErr)
+
+
+def fitUnbinned(data, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, signif=0, errsignif=0, model="expo", fixsigma = -1, sigmaLimits=None):
+    if tdirectory:
+        tdirectory.cd()
+
+    # cv = TCanvas("cv_{}".format(histo.GetName()))
+
+    dataRange = RR.Fit.DataRange(2.96, 3.05)
+    unBinDataSet = RR.Fit.UnBinData(len(data), data, dataRange)
+
+    if 'pol' in str(model):
+        nBkgPars = int(model[3]) + 1
+    elif 'expo' in str(model):
+        nBkgPars = 2
+    else:
+        print("Unsupported model {}".format(model))
+
+    fitTpl = TF1("fitTpl", "{}(0)+gausn({})".format(model, nBkgPars), 0, 5)
+    for i in range(0, nBkgPars):
+        fitTpl.SetParName(i, 'B_{}'.format(i))
+
+    fitTpl.SetParName(nBkgPars, "N_{sig}")
+    fitTpl.SetParName(nBkgPars + 1, "#mu")
+    fitTpl.SetParName(nBkgPars + 2, "#sigma")
+    bkgTpl = TF1("fitTpl", "{}(0)".format(model), 0, 5)
+    sigTpl = TF1("fitTpl", "gausn(0)", 0, 5)
+    fitTpl.SetNpx(300)
+    fitTpl.SetLineWidth(2)
+    fitTpl.SetLineColor(2)
+    bkgTpl.SetNpx(300)
+    bkgTpl.SetLineWidth(2)
+    bkgTpl.SetLineStyle(2)
+    bkgTpl.SetLineColor(2)
+
+    fitFunction = RR.Math.WrappedMultiTF1(fitTpl, 1)
+    fitter = RR.Fit.Fitter()
+    fitter.SetFunction(fitFunction, False)
+
+    fitter.Config().ParSettings(nBkgPars).SetValue(10)
+    fitter.Config().ParSettings(nBkgPars).SetLimits(0.001, 10000)
+    fitter.Config().ParSettings(nBkgPars + 1).SetValue(2.991)
+    fitter.Config().ParSettings(nBkgPars + 1).SetLimits(2.986, 3)
+    if sigmaLimits != None:
+        fitter.Config().ParSettings(nBkgPars + 2).SetValue(0.5 * (sigmaLimits[0] + sigmaLimits[1]))
+        fitter.Config().ParSettings(nBkgPars + 2).SetLimits(sigmaLimits[0], sigmaLimits[1])
+    elif fixsigma > 0:
+        fitter.Config().ParSettings(nBkgPars + 2).SetValue(fixsigma)
+        fitter.Config().ParSettings(nBkgPars + 2).Fix()
+    else:
+        fitter.Config().ParSettings(nBkgPars + 2).SetValue(0.002)
+        fitter.Config().ParSettings(nBkgPars + 2).SetLimits(0.001, 0.003)
+
+
+    # gStyle.SetOptFit(0)
+    # ####################
+
+    # histo.UseCurrentStyle()
+    # histo.SetLineColor(1)
+    # histo.SetMarkerStyle(20)
+    # histo.SetMarkerColor(1)
+    # ax_titles = ';m (^{3}He + #pi) (GeV/#it{c})^{2};Counts' + ' / {} MeV'.format(round(1000 * histo.GetBinWidth(1), 2))
+    # histo.SetTitle(ax_titles)
+    # histo.SetMaximum(1.5 * histo.GetMaximum())
+    fitter.LikelihoodFit(unBinDataSet, True)
+    # print(fitter.Result().FittedFunction().Parameters()[nBkgPars+1])
+    # histo.Fit(fitTpl, "QRL", "", 2.96, 3.04)
+    # histo.SetDrawOption("e")
+    # histo.GetXaxis().SetRangeUser(2.96, 3.04)
+    # bkgTpl.SetParameters(fitTpl.GetParameters())
+    # bkgTpl.SetLineColor(600)
+    # bkgTpl.SetLineStyle(2)
+    # bkgTpl.Draw("same")
+    # sigTpl.SetParameter(0, fitTpl.GetParameter(nBkgPars))
+    # sigTpl.SetParameter(1, fitTpl.GetParameter(nBkgPars+1))
+    # sigTpl.SetParameter(2, fitTpl.GetParameter(nBkgPars+2))
+    # sigTpl.SetLineColor(600)
+    # sigTpl.Draw("same")
+    # mu = fitTpl.GetParameter(nBkgPars+1)
+    # sigma = fitTpl.GetParameter(nBkgPars+2)
+    # sigmaErr = fitTpl.GetParError(nBkgPars+2)
+    # signal = fitTpl.GetParameter(nBkgPars)
+    # errsignal = fitTpl.GetParError(nBkgPars)
+    # bkg = bkgTpl.Integral(mu - nsigma * sigma, mu + nsigma * sigma)
+
+    # if bkg > 0:
+    #     errbkg = math.sqrt(bkg)
+    # else:
+    #     errbkg = 0
+
+    # if signal+bkg > 0:
+    #     signif = signal/math.sqrt(signal+bkg)
+    #     deriv_sig = 1/math.sqrt(signal+bkg)-signif/(2*(signal+bkg))
+    #     deriv_bkg = -signal/(2*(math.pow(signal+bkg, 1.5)))
+    #     errsignif = math.sqrt((errsignal*deriv_sig)**2+(errbkg*deriv_bkg)**2)
+    # else:
+    #     print('sig+bkg<0')
+    #     signif = 0
+    #     errsignif = 0
+
+    # pinfo2 = TPaveText(0.5, 0.5, 0.91, 0.9, "NDC")
+    # pinfo2.SetBorderSize(0)
+    # pinfo2.SetFillStyle(0)
+    # pinfo2.SetTextAlign(30+3)
+    # pinfo2.SetTextFont(42)
+    # string = 'ALICE Internal, Pb-Pb 2018 {}-{}%'.format(cent_class[0], cent_class[1])
+    # pinfo2.AddText(string)
+    # string = '{}^{3}_{#Lambda}H#rightarrow ^{3}He#pi + c.c., %i #leq #it{ct} < %i cm %i #leq #it{p}_{T} < %i GeV/#it{c} ' % (
+    #     ct_range[0], ct_range[1], pt_range[0], pt_range[1])
+    # pinfo2.AddText(string)
+    # string = 'Significance ({:.0f}#sigma) {:.1f} #pm {:.1f} '.format(nsigma, signif, errsignif)
+    # pinfo2.AddText(string)
+
+    # string = 'S ({:.0f}#sigma) {:.0f} #pm {:.0f} '.format(nsigma, signal, errsignal)
+    # pinfo2.AddText(string)
+    # string = 'B ({:.0f}#sigma) {:.0f} #pm {:.0f}'.format(nsigma, bkg, errbkg)
+    # pinfo2.AddText(string)
+    # if bkg > 0:
+    #     ratio = signal/bkg
+    #     string = 'S/B ({:.0f}#sigma) {:.4f} '.format(nsigma, ratio)
+    # pinfo2.AddText(string)
+    # pinfo2.Draw()
+    # gStyle.SetOptStat(0)
+    # st = histo.FindObject('stats')
+    # if isinstance(st, TPaveStats):
+    #     st.SetX1NDC(0.12)
+    #     st.SetY1NDC(0.62)
+    #     st.SetX2NDC(0.40)
+    #     st.SetY2NDC(0.90)
+    # if tdirectory:
+    #     tdirectory.cd()
+    #     histo.Write()
+    #     cv.Write()
+    # return (signal, errsignal, signif, errsignif, sigma, sigmaErr)
