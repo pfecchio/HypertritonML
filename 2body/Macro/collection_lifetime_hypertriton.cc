@@ -74,7 +74,7 @@ void collection_lifetime_hypertriton() {
   Float_t err_x_a[1]      = {0};
   Float_t err_y_low_a[1]  = {15};
   Float_t err_y_high_a[1] = {15};
-  Float_t errsyst_y_a[1]  = {13};
+  Float_t errsyst_y_a[1]  = {16};
   Float_t errsyst_x_a[1]  = {0.1};
 
   TGraphAsymmErrors *gSpect_alice =
