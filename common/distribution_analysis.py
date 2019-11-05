@@ -124,7 +124,7 @@ for cclass in params['CENTRALITY_CLASS']:
         cvDir.cd()
         myCv = TCanvas(f"ctSpectraCv_{model}")
         myCv.SetLogy()
-        frame = gPad.DrawFrame(0., 3, 36, 2000, ";#it{c}t (cm);dN/d(#it{c}t) (cm)^{-1}")
+        frame = gPad.DrawFrame(0., 3, 36, 2000, ";#it{c}t (cm);d#it{N}/d(#it{c}t) [(cm)^{-1}]")
         pinfo2 = TPaveText(0.5, 0.65, 0.88, 0.86, "NDC")
         pinfo2.SetBorderSize(0)
         pinfo2.SetFillStyle(0)

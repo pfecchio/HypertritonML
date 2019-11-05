@@ -124,9 +124,9 @@ class GeneralizedAnalysis:
             df_m = pd.concat([sig_m, bkg_m])
 
             train_set_a, test_set_a, y_train_a, y_test_a = train_test_split(
-                df_a[training_columns], df_a['y'], test_size=0.4)
+                df_a[training_columns], df_a['y'], test_size=0.4, random_state=42)
             train_set_m, test_set_m, y_train_m, y_test_m = train_test_split(
-                df_m[training_columns], df_m['y'], test_size=0.4)
+                df_m[training_columns], df_m['y'], test_size=0.4, random_state=42)
 
             return [train_set_a, y_train_a, test_set_a, y_test_a], [train_set_m, y_train_m, test_set_m, y_test_m]
 
@@ -149,7 +149,7 @@ class GeneralizedAnalysis:
             print('number of signal candidates: {}\n'.format(len(sig)))
 
             df = pd.concat([sig, bkg])
-            train_set, test_set, y_train, y_test = train_test_split(df[training_columns], df['y'], test_size=0.5)
+            train_set, test_set, y_train, y_test = train_test_split(df[training_columns], df['y'], test_size=0.5, random_state=42)
 
             return train_set, y_train, test_set, y_test
 

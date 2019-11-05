@@ -117,13 +117,13 @@ def plot_distr(df, column=None, figsize=None, bins=50, fig_name='features.pdf', 
         data2 = data2[column]
 
     if figsize is None:
-        figsize = [15, 10]
+        figsize = [20, 15]
 
-    axes = data1.hist(column=column, color='blue', alpha=0.5, bins=bins, figsize=figsize,
+    axes = data1.hist(column=column, color='tab:blue', alpha=0.5, bins=bins, figsize=figsize,
                       label='Background', density=True, grid=False, log=log,  **kwds)
     axes = axes.flatten()
     axes = axes[:len(column)]
-    data2.hist(ax=axes, column=column, color='red', alpha=0.5, bins=bins, label='Signal',
+    data2.hist(ax=axes, column=column, color='tab:orange', alpha=0.5, bins=bins, label='Signal',
                density=True, grid=False, log=log, **kwds)[0].legend()
     for a in axes:
         a.set_ylabel('Counts (arb. units)')
