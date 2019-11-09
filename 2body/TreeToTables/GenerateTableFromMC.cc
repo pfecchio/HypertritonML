@@ -55,7 +55,7 @@ void GenerateTableFromMC(bool reject = true) {
   // read the tree
   TFile *inFile = new TFile(inFileArg.data(), "READ");
 
-  TTreeReader fReader("_custom/fTreeV0", inFile);
+  TTreeReader fReader("_default/fTreeV0", inFile);
   TTreeReaderArray<RHyperTritonHe3pi> RHyperVec = {fReader, "RHyperTriton"};
   TTreeReaderArray<SHyperTritonHe3pi> SHyperVec = {fReader, "SHyperTriton"};
   TTreeReaderValue<RCollision> RColl            = {fReader, "RCollision"};

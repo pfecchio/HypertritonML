@@ -1,8 +1,8 @@
 NBODY: 2
 FILE_PREFIX: 'pt_analysis'
 CENTRALITY_CLASS:
-  - [0, 90]
-CT_BINS: [0, 90]
+  - [0,10]
+CT_BINS: [1, 90]
 PT_BINS: [2,3,4,5,7,10]
 
 BKG_MODELS: ['expo', 'pol1', 'pol2']
@@ -22,8 +22,8 @@ MAX_SIGXEFF: True
 SYST_UNCERTANTIES: False
 CUT_SHIFT: [0]
 
-MC_PATH: $HYPERML_TABLES_2/SignalTable.root
-DATA_PATH: $HYPERML_TABLES_2/DataTableLS.root
+MC_PATH: $HYPERML_TABLES_2/SignalTableFlatPt.root
+DATA_PATH: $HYPERML_TABLES_2/DataTable.root
 
 XGBOOST_PARAMS:
   # general parameters
@@ -38,13 +38,13 @@ XGBOOST_PARAMS:
 OPTIMIZATION_STRATEGY: bayes
 
 HYPERPARAMS:
-  max_depth: 13
-  learning_rate: 0.0982
-  n_estimators: 181
-  gamma: 0.4467
-  min_child_weight: 5.75
-  subsample: 0.74
-  colsample_bytree: 0.57
+  #max_depth: 13
+  #learning_rate: 0.0982
+  #n_estimators: 181
+  #gamma: 0.4467
+  #min_child_weight: 5.75
+  #subsample: 0.74
+  #colsample_bytree: 0.57
   seed: 42
 
 HYPERPARAMS_RANGE: #TODO: check if it works without tuples

@@ -3,7 +3,8 @@ import math
 import os
 from array import array
 from inspect import signature
-
+import matplotlib
+matplotlib.use('pdf')
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.axes_grid1 import ImageGrid
@@ -351,7 +352,7 @@ def plot_significance_scan(
     axs[0].legend(loc='upper left')
 
     bkg_side_error = np.sqrt(bkg_side_counts)
-    tot_counts_error = np.sqrt(tot_counts)
+    tot_counts_error = np.sqrt(np.absolute(tot_counts))
 
     bins_mass = bin_centers[mass_map]
 
