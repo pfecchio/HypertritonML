@@ -167,7 +167,7 @@ class GeneralizedAnalysis:
 
         total_cut = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(
             ct_min, ct_max, pt_min, pt_max, cent_min, cent_max)
-        total_cut_gen = '{}<ct<{} and {}<pT<{} and {}<centrality<{}'.format(
+        total_cut_gen = '{}<ct<{} and {}<pT<{} and {}<centrality<{} and abs(rapidity)<0.5'.format(
             ct_min, ct_max, pt_min, pt_max, cent_min, cent_max)
 
         if split_am is 'a':
