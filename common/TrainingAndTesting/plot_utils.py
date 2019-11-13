@@ -8,7 +8,7 @@ matplotlib.use('pdf')
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.axes_grid1 import ImageGrid
-
+import shap
 import pandas as pd
 import xgboost as xgb
 from pandas.core.index import Index
@@ -427,22 +427,15 @@ def plot_roc(y_truth, model_decision, mode, fig_name='/roc_curve.pdf'):
     plt.close()
 
 
-def plot_feature_imp(model, mode, fig_name='feature_imp.pdf'):
+def plot_feature_imp(df,model, mode, fig_name='feature_imp.pdf'):
 
-    importance = model.get_fscore()
-    importance_df = pd.DataFrame({
-        'Splits': list(importance.values()),
-        'Feature': list(importance.keys())
-    })
-    importance_df.sort_values(by='Splits', inplace=True)
-    importance_df.plot(kind='barh', x='Feature', figsize=(10, 6), color='blue', legend=False)
-
+    explainer = shap.TreeExplainer(model)
+    shap_values = explainer.shap_values(df)
+    fig=shap.summary_plot(shap_values, df,show=False)
     fig_sig_path = os.environ['HYPERML_FIGURES_{}'.format(mode)]+'/Feature_Imp'
     if not os.path.exists(fig_sig_path):
         os.makedirs(fig_sig_path)
-    plt.savefig(fig_sig_path + '/' + fig_name)
-
-    plt.close()
+    plt.savefig(fig_sig_path + '/' + fig_name,format='pdf', dpi=1000, bbox_inches='tight')
 
 
 def plot_confusion_matrix(y_true, df, mode, score,

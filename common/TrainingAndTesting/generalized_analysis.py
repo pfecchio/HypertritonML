@@ -288,6 +288,8 @@ class GeneralizedAnalysis:
             data[3], features=training_columns, raw=True, log=True, ct_range=ct_range, pt_range=pt_range,
             cent_class=cent_class, path=fig_path, mode=self.mode)
 
+        pu.plot_feature_imp(data[0][training_columns],model,self.mode)    
+        
         # test the model performances
         print('Testing the model: ...', end='\r')
         y_pred = model.predict(data[2][training_columns])
