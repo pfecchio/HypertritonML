@@ -51,7 +51,7 @@ with open(os.path.expandvars(args.config), 'r') as stream:
 
 resultsSysDir = os.environ['HYPERML_RESULTS_{}'.format(params['NBODY'])]
 
-var = 'p_#it{T}'
+var = 'p_{T}'
 unit = 'GeV/#it{c}'
 
 rangesFile = resultsSysDir + '/' + params['FILE_PREFIX'] + '_effranges.yaml'
@@ -120,10 +120,12 @@ for cclass in params['CENTRALITY_CLASS']:
         h1RawCounts.UseCurrentStyle()
         data_path = os.path.expandvars('$HYPERML_TABLES_2/DataTable.root')
         hist_centrality = uproot.open(data_path)['EventCounter']
-        n_events_010 = sum(hist_centrality[1:10])
-        h1RawCounts.Scale(1/n_events_010)
-        h1RawCounts.Fit(bw, "MI")
-        print(bw.Integral(0,100,1e-8))
+        n_events = sum(hist_centrality[cclass[0]+1:cclass[1]])
+        h1RawCounts.Scale(1/n_events/0.25)
+        if(cclass[1]==10):
+            h1RawCounts.Fit(bw, "MI")
+            print(bw.Integral(0,100,1e-8))
+        h1RawCounts.SetTitle(';p_{T} GeV/c;1/ (N_{ev}) d^{2}N/(dy dp_{T}) x B.R. (GeV/c)^{-1}')
         h1RawCounts.Write()
         hRawCounts.append(h1RawCounts)
         cvDir.cd()
@@ -134,7 +136,7 @@ for cclass in params['CENTRALITY_CLASS']:
         pinfo2.SetFillStyle(0)
         pinfo2.SetTextAlign(30+3)
         pinfo2.SetTextFont(42)
-        string ='ALICE Internal, Pb-Pb 2018 {}-{}%'.format(0,10)
+        string ='ALICE Internal, Pb-Pb 2018 {}-{}%'.format(cclass[0],cclass[1])
         pinfo2.AddText(string)
         h1RawCounts.Draw()
         h1RawCounts.SetMarkerStyle(20)
@@ -153,7 +155,7 @@ for cclass in params['CENTRALITY_CLASS']:
             corSyst.SetBinError(iBin, 0.086 * val)
         tmpSyst.SetLineColor(kBlueC)
         tmpSyst.SetMarkerColor(kBlueC)
-        tmpSyst.Draw("e2same")
+        #tmpSyst.Draw("e2same")
         # corSyst.Draw("e2same")
         outDir.cd()
         myCv.Write()
@@ -165,4 +167,6 @@ for cclass in params['CENTRALITY_CLASS']:
 
     outDir.cd()
 resultFile.Close()
+pwg=-1
+bw=-1
 

@@ -131,7 +131,7 @@ void Table2::Fill(const RHyperTritonHe3pi &RHyper, const RCollision &RColl)
   NpidClustersHe3 = RHyper.fNpidClustersHe3;
   NpidClustersPion = RHyper.fNpidClustersPi;
   TPCnSigmaPi = RHyper.fTPCnSigmaPi;
-  TPCnSigmaHe3 = RHyper.fTPCnSigmaHe3 - fHe3TPCcalib->Eval(He3ProngPt);
+  TPCnSigmaHe3 = RHyper.fTPCnSigmaHe3;
   HypCandPt = hyperVector.Pt();
   Rapidity = hyperVector.Rapidity();
   PseudoRapidityHe3 = he3Vector.PseudoRapidity();
