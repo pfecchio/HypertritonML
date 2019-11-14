@@ -4,18 +4,17 @@ import collections.abc
 import os
 import time
 import warnings
+from array import array
+
+import numpy as np
+import pandas as pd
+import yaml
 
 import analysis_utils as au
 import generalized_analysis as ga
-import pandas as pd
 import xgboost as xgb
 from generalized_analysis import GeneralizedAnalysis
-import yaml
-
-from array import array
-import numpy as np
-
-from ROOT import TFile, TF1, TH1D, TH2D, TH3D, TCanvas, TPaveText, gStyle, gROOT
+from ROOT import TFile, gROOT
 
 gROOT.SetBatch()
 
@@ -50,21 +49,8 @@ score_bdteff_dict = {}
 preselection_efficiency = {}
 n_hytr = {}
 
-if params['FIXED_SIGMA_FIT']:
-    h3_invmassptct = TH3D(
-        'InvMassPtCt', ';#it{M} (^{3}He + #pi^{-}) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c});c#it{t} (cm)', 40, np.
-        array(np.arange(2.96, 3.05225, 0.00225),
-              'double'),
-        len(params['PT_BINS']) - 1, np.array(params['PT_BINS'],
-                                             'double'),
-        len(params['CT_BINS']) - 1, np.array(params['CT_BINS'],
-                                             'double'))
-    h2sigma_mc = TH2D('MCsigmas', ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);#sigma',
-                      len(params['PT_BINS'])-1, np.array(
-                          params['PT_BINS'], 'double'), len(params['CT_BINS']) - 1,
-                      np.array(params['CT_BINS'], 'double'))
-
 score_bdteff_name = results_dir + '/{}_score_bdteff.yaml'.format(params['FILE_PREFIX'])
+
 if params['LOAD_SCORE_EFF']:
     with open(score_bdteff_name, 'r') as stream:
         try:
@@ -121,6 +107,9 @@ for cclass in params['CENTRALITY_CLASS']:
     # create the histos for storing analysis stuff
     h2BDTeff = au.h2_bdteff(params['PT_BINS'], params['CT_BINS'])
     h2seleff = au.h2_seleff(params['PT_BINS'], params['CT_BINS'])
+    if params['FIXED_SIGMA_FIT']:
+        h3_invmassptct = au.h3_minvptct(params['PT_BINS'], params['CT_BINS'])
+        h2sigma_mc = au.h2_mcsigma(params['PT_BINS'], params['CT_BINS'])
 
     bkg_models = params['BKG_MODELS'] if 'BKG_MODELS' in params else ['expo']
     fit_directories = []
@@ -204,7 +193,7 @@ for cclass in params['CENTRALITY_CLASS']:
                     score_bdteff_dict[key]['eff{}'.format(se[1])] = [float(se[0]), float(se[1])]
 
             if params['FIXED_SIGMA_FIT']:
-                data[2]['Score']=data[2]['Score'].astype(float)
+                data[2]['Score'] = data[2]['Score'].astype(float)
                 df_mcselected = data[2].query('y > 0.5 and Score > {}'.format(score_cut))
 
                 for _, hyp in df_mcselected.iterrows():
@@ -242,7 +231,7 @@ for cclass in params['CENTRALITY_CLASS']:
                     if params['FIXED_SIGMA_FIT']:
                         sigma = h2sigma_mc.GetBinContent(ptbin_index, ctbin_index)
                     else:
-                         sigma = -1
+                        sigma = -1
 
                     hyp_yield, err_yield, signif, errsignif, sigma, sigmaErr = au.fit(
                         counts, ctbin, ptbin, cclass, fitdir, name=k, bins=mass_bins, model=model,

@@ -4,12 +4,12 @@ import os
 from contextlib import redirect_stdout
 
 import numpy as np
+from sklearn.model_selection import cross_val_score
 
 import xgboost as xgb
-from ROOT import (TF1, TH1D, TH2D, TCanvas, TFile, TPaveStats, TPaveText,
-                  gDirectory, gStyle)
 from ROOT import ROOT as RR
-from sklearn.model_selection import cross_val_score
+from ROOT import (TF1, TH1D, TH2D, TH3D, TCanvas, TFile, TPaveStats, TPaveText,
+                  gDirectory, gStyle)
 
 
 # target function for the bayesian hyperparameter optimization
@@ -123,28 +123,44 @@ def expo(x, tau):
     return np.exp(-x / (tau * 0.029979245800))
 
 
-def h2_bdteff(ptbin, ctbin, title='BDTeff'):
-    th2 = TH2D(title, ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);BDT efficiency', len(ptbin)-1,
+def h2_bdteff(ptbin, ctbin, name='BDTeff'):
+    th2 = TH2D(name, ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);BDT efficiency', len(ptbin)-1,
                np.array(ptbin, 'double'), len(ctbin) - 1, np.array(ctbin, 'double'))
 
     return th2
 
 
-def h2_seleff(ptbin, ctbin, title='SelEff'):
-    th2 = TH2D(title, ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Preselection efficiency',
+def h2_seleff(ptbin, ctbin, name='SelEff'):
+    th2 = TH2D(name, ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Preselection efficiency',
                len(ptbin)-1, np.array(ptbin, 'double'), len(ctbin)-1, np.array(ctbin, 'double'))
 
     return th2
 
 
-def h2_rawcounts(ptbin, ctbin, title='RawCounts'):
-    th2 = TH2D(title, ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Raw counts', len(ptbin)-1,
+def h2_rawcounts(ptbin, ctbin, name='RawCounts'):
+    th2 = TH2D(name, ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Raw counts', len(ptbin)-1,
                np.array(ptbin, 'double'), len(ctbin) - 1, np.array(ctbin, 'double'))
 
     return th2
 
 
-def fit(counts, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, signif=0, errsignif=0, name='', bins=45, model="expo", fixsigma = -1, sigmaLimits=None):
+def h2_mcsigma(ptbin, ctbin, name='RawCounts'):
+    th2 = TH2D(name, ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);#sigma', len(ptbin)-1,
+               np.array(ptbin, 'double'), len(ctbin) - 1, np.array(ctbin, 'double'))
+
+    return th2
+
+
+def h3_minvptct(ptbin, ctbin, name='InvMassPtCt'):
+    th3 = TH3D(name, ';#it{M} (^{3}He + #pi^{-}) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c});c#it{t} (cm)', 40, np.array(np.arange(
+        2.96, 3.05225, 0.00225), 'double'), len(ptbin) - 1, np.array(ptbin, 'double'), len(ctbin) - 1, np.array(ctbin, 'double'))
+
+    return th3
+
+
+def fit(
+        counts, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, signif=0, errsignif=0, name='', bins=45,
+        model="expo", fixsigma=-1, sigmaLimits=None):
     histo = TH1D(
         "ct{}{}_pT{}{}_cen{}{}_{}_{}".format(
             ct_range[0],
@@ -162,7 +178,9 @@ def fit(counts, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, signi
     return fitHist(histo, ct_range, pt_range, cent_class, tdirectory, nsigma, signif, errsignif, model, fixsigma, sigmaLimits)
 
 
-def fitHist(histo, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, signif=0, errsignif=0, model="expo", fixsigma = -1, sigmaLimits=None):
+def fitHist(
+        histo, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, signif=0, errsignif=0, model="expo",
+        fixsigma=-1, sigmaLimits=None):
     if tdirectory:
         tdirectory.cd()
 
@@ -285,7 +303,9 @@ def fitHist(histo, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, si
     return (signal, errsignal, signif, errsignif, sigma, sigmaErr)
 
 
-def fitUnbinned(data, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, signif=0, errsignif=0, model="expo", fixsigma = -1, sigmaLimits=None):
+def fitUnbinned(
+        data, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, signif=0, errsignif=0, model="expo",
+        fixsigma=-1, sigmaLimits=None):
     if tdirectory:
         tdirectory.cd()
 
@@ -335,7 +355,6 @@ def fitUnbinned(data, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3,
     else:
         fitter.Config().ParSettings(nBkgPars + 2).SetValue(0.002)
         fitter.Config().ParSettings(nBkgPars + 2).SetLimits(0.001, 0.003)
-
 
     # gStyle.SetOptFit(0)
     # ####################
