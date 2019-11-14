@@ -2,7 +2,6 @@ NBODY: 2
 FILE_PREFIX: 'pt_analysis'
 CENTRALITY_CLASS:
   - [0,10]
-  - [30,50]
 CT_BINS: [1, 90]
 PT_BINS: [2,3,4,5,6,10]
 
@@ -38,6 +37,8 @@ XGBOOST_PARAMS:
 
 OPTIMIZATION_STRATEGY: bayes
 
+FIXED_SIGMA_FIT: True
+
 HYPERPARAMS:
   #max_depth: 13
   #learning_rate: 0.0982
@@ -70,3 +71,5 @@ TRAINING_COLUMNS:
   - PiProngPvDCA
   - NpidClustersHe3
   - TPCnSigmaHe3
+  - TPCnSigmaPi
+  - NitsClustersHe3

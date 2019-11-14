@@ -64,12 +64,6 @@ if params['FIXED_SIGMA_FIT']:
                           params['PT_BINS'], 'double'), len(params['CT_BINS']) - 1,
                       np.array(params['CT_BINS'], 'double'))
 
-
-# sigmaParam = TF1("sigmaParam", "pol2", 0, 35)
-# sigmaParam.SetParameters(1.544e-3, 7.015e-5, -1.965e-6)
-
-
-# load saved score-BDTeff dict or open a file for saving the new ones
 score_bdteff_name = results_dir + '/{}_score_bdteff.yaml'.format(params['FILE_PREFIX'])
 if params['LOAD_SCORE_EFF']:
     with open(score_bdteff_name, 'r') as stream:
@@ -210,6 +204,7 @@ for cclass in params['CENTRALITY_CLASS']:
                     score_bdteff_dict[key]['eff{}'.format(se[1])] = [float(se[0]), float(se[1])]
 
             if params['FIXED_SIGMA_FIT']:
+                data[2]['Score']=data[2]['Score'].astype(float)
                 df_mcselected = data[2].query('y > 0.5 and Score > {}'.format(score_cut))
 
                 for _, hyp in df_mcselected.iterrows():
