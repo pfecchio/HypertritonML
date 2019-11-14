@@ -86,6 +86,15 @@ class GeneralizedAnalysis:
             test=False, bkg_reduct=False, bkg_factor=1, sig_nocent=False, split_am=False):
         data_range_bkg = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(
             ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1])
+
+        columns = training_columns.copy()
+        columns.append('InvMass')
+
+        if 'HypCandPt' not in columns:
+            columns.append('HypCandPt')
+        if 'ct' not in columns:
+            columns.append('ct')
+        
         if sig_nocent:
             data_range_sig = '{}<ct<{} and {}<HypCandPt<{}'.format(
                 ct_range[0], ct_range[1], pt_range[0], pt_range[1])
@@ -124,9 +133,9 @@ class GeneralizedAnalysis:
             df_m = pd.concat([sig_m, bkg_m])
 
             train_set_a, test_set_a, y_train_a, y_test_a = train_test_split(
-                df_a[training_columns], df_a['y'], test_size=0.4, random_state=42)
+                df_a[columns], df_a['y'], test_size=0.5, random_state=42)
             train_set_m, test_set_m, y_train_m, y_test_m = train_test_split(
-                df_m[training_columns], df_m['y'], test_size=0.4, random_state=42)
+                df_m[columns], df_m['y'], test_size=0.5, random_state=42)
 
             return [train_set_a, y_train_a, test_set_a, y_test_a], [train_set_m, y_train_m, test_set_m, y_test_m]
 
@@ -149,7 +158,7 @@ class GeneralizedAnalysis:
             print('number of signal candidates: {}\n'.format(len(sig)))
 
             df = pd.concat([sig, bkg])
-            train_set, test_set, y_train, y_test = train_test_split(df[training_columns], df['y'], test_size=0.5, random_state=42)
+            train_set, test_set, y_train, y_test = train_test_split(df[columns], df['y'], test_size=0.5, random_state=42)
 
             return train_set, y_train, test_set, y_test
 
