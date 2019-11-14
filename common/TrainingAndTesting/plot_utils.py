@@ -427,15 +427,19 @@ def plot_roc(y_truth, model_decision, mode, fig_name='/roc_curve.pdf'):
     plt.close()
 
 
-def plot_feature_imp(df,model, mode, fig_name='feature_imp.pdf'):
-
+def plot_feature_imp(df,y,model, mode, ct_range=[0, 100], pt_range=[0, 10], cent_class=[0, 100]):
+    subs_bkg=df[y==0].sample(10000)
+    subs_sig=df[y==1].sample(10000)
+    df_subs=pd.concat([subs_bkg,subs_sig]).sample(frac=1.)
     explainer = shap.TreeExplainer(model)
-    shap_values = explainer.shap_values(df)
-    fig=shap.summary_plot(shap_values, df,show=False)
+    shap_values = explainer.shap_values(df_subs)
+    fig=shap.summary_plot(shap_values, df_subs,show=False)
     fig_sig_path = os.environ['HYPERML_FIGURES_{}'.format(mode)]+'/Feature_Imp'
+    fig_name='feature_imp_ct{}{}_pT{}{}_cen{}{}'.format(ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1])
     if not os.path.exists(fig_sig_path):
         os.makedirs(fig_sig_path)
     plt.savefig(fig_sig_path + '/' + fig_name,format='pdf', dpi=1000, bbox_inches='tight')
+    del subs_sig,subs_bkg,df_subs
 
 
 def plot_confusion_matrix(y_true, df, mode, score,

@@ -36,6 +36,7 @@ private:
   float PiProngPvDCA;
   float He3ProngPvDCA;
   float NpidClustersHe3;
+  float NitsClustersHe3;
   float NpidClustersPion;
   float TPCnSigmaPi;
   float Lrec;
@@ -75,6 +76,7 @@ Table2::Table2(std::string name, std::string title)
   tree->Branch("PiProngPvDCAXY", &PiProngPvDCAXY);
   tree->Branch("NpidClustersHe3", &NpidClustersHe3);
   tree->Branch("NpidClustersPion", &NpidClustersPion);
+  tree->Branch("NitsClustersHe3", &NitsClustersHe3);  
   tree->Branch("TPCnSigmaPi", &TPCnSigmaPi);
   tree->Branch("Lrec", &Lrec);
   tree->Branch("centrality", &centrality);
@@ -129,6 +131,7 @@ void Table2::Fill(const RHyperTritonHe3pi &RHyper, const RCollision &RColl)
   Lrec = Hypot(RHyper.fDecayX, RHyper.fDecayY, RHyper.fDecayZ);
   V0radius = Hypot(RHyper.fDecayX, RHyper.fDecayY);
   NpidClustersHe3 = RHyper.fNpidClustersHe3;
+  NitsClustersHe3 = RHyper.fITSclusHe3;
   NpidClustersPion = RHyper.fNpidClustersPi;
   TPCnSigmaPi = RHyper.fTPCnSigmaPi;
   TPCnSigmaHe3 = RHyper.fTPCnSigmaHe3;
