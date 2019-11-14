@@ -439,6 +439,7 @@ def plot_feature_imp(df,y,model, mode, ct_range=[0, 100], pt_range=[0, 10], cent
     if not os.path.exists(fig_sig_path):
         os.makedirs(fig_sig_path)
     plt.savefig(fig_sig_path + '/' + fig_name,format='pdf', dpi=1000, bbox_inches='tight')
+    plt.close()
     del subs_sig,subs_bkg,df_subs
 
 
