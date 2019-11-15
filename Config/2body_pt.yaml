@@ -3,7 +3,7 @@ FILE_PREFIX: 'pt_analysis'
 CENTRALITY_CLASS:
   - [0,10]
 CT_BINS: [1, 90]
-PT_BINS: [2,3,4,5,6,10]
+PT_BINS: [2,3]
 
 BKG_MODELS: ['expo', 'pol1', 'pol2']
 
@@ -40,13 +40,13 @@ OPTIMIZATION_STRATEGY: bayes
 FIXED_SIGMA_FIT: True
 
 HYPERPARAMS:
-  #max_depth: 13
-  #learning_rate: 0.0982
-  #n_estimators: 181
-  #gamma: 0.4467
-  #min_child_weight: 5.75
-  #subsample: 0.74
-  #colsample_bytree: 0.57
+  max_depth: 13
+  learning_rate: 0.0982
+  n_estimators: 181
+  gamma: 0.4467
+  min_child_weight: 5.75
+  subsample: 0.74
+  colsample_bytree: 0.57
   seed: 42
 
 HYPERPARAMS_RANGE: #TODO: check if it works without tuples

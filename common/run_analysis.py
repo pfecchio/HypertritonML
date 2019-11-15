@@ -165,8 +165,11 @@ for cclass in params['CENTRALITY_CLASS']:
                 print('--- model trained in {:.4f} minutes ---\n'.format((time.time() - part_time) / 60))
 
                 analysis.save_model(model, ct_range=ctbin, cent_class=cclass, pt_range=ptbin)
+                if (args.significance==False):
+                    break
             else:
                 model = analysis.load_model(ct_range=ctbin, cent_class=cclass, pt_range=ptbin)
+
 
             # significance scan if required, store best score cut and related bdt eff
             if args.significance and not params['LOAD_SCORE_EFF']:
