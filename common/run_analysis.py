@@ -108,14 +108,18 @@ for cclass in params['CENTRALITY_CLASS']:
     h2BDTeff = au.h2_bdteff(params['PT_BINS'], params['CT_BINS'])
     h2seleff = au.h2_seleff(params['PT_BINS'], params['CT_BINS'])
     if params['FIXED_SIGMA_FIT']:
-        h3_invmassptct = au.h3_minvptct(params['PT_BINS'], params['CT_BINS'])
-        h2sigma_mc = au.h2_mcsigma(params['PT_BINS'], params['CT_BINS'])
+        h3_invmassptct_list = {}
+        h2sigma_mc_list = {}
+        for eff in params['BDT_EFFICIENCY']:
+            h3_invmassptct_list['{}'.format(eff)] = au.h3_minvptct(params['PT_BINS'], params['CT_BINS'], name='SigmaPtCt{}'.format(eff))
+            h2sigma_mc_list['{}'.format(eff)] = au.h2_mcsigma(params['PT_BINS'], params['CT_BINS'], name='InvMassPtCt{}'.format(eff))
 
     bkg_models = params['BKG_MODELS'] if 'BKG_MODELS' in params else ['expo']
     fit_directories = []
     h2raw_counts = []
     h2significance = []
     h2raw_counts_fixeff_dict = []
+
     for model in bkg_models:
         fit_directories.append(cent_dir.mkdir(model))
 
@@ -196,21 +200,22 @@ for cclass in params['CENTRALITY_CLASS']:
                     score_bdteff_dict[key]['eff{}'.format(se[1])] = [float(se[0]), float(se[1])]
 
             if params['FIXED_SIGMA_FIT']:
-                data[2]['Score'] = data[2]['Score'].astype(float)
-                df_mcselected = data[2].query('y > 0.5 and Score > {}'.format(score_cut))
+                for se in score_eff:
+                    data[2]['Score'] = data[2]['Score'].astype(float)
+                    df_mcselected = data[2].query('y > 0.5 and Score > {}'.format(se[0]))
 
-                for _, hyp in df_mcselected.iterrows():
-                    h3_invmassptct.Fill(hyp['InvMass'], hyp['HypCandPt'], hyp['ct'])
+                    for _, hyp in df_mcselected.iterrows():
+                        h3_invmassptct_list[f'{se[1]}'].Fill(hyp['InvMass'], hyp['HypCandPt'], hyp['ct'])
 
-                del df_mcselected
+                    del df_mcselected
 
-                mc_minv = h3_invmassptct.ProjectionX('mc_minv', ptbin_index, ptbin_index, ctbin_index, ctbin_index)
-                mc_minv.Fit('gaus')
+                    mc_minv = h3_invmassptct_list[f'{se[1]}'].ProjectionX('mc_minv', ptbin_index, ptbin_index, ctbin_index, ctbin_index)
+                    mc_minv.Fit('gaus', 'Q')
 
-                gaus_fit = mc_minv.GetFunction('gaus')
-                if gaus_fit:
-                    h2sigma_mc.SetBinContent(ptbin_index, ctbin_index, gaus_fit.GetParameter(2))
-                    h2sigma_mc.SetBinError(ptbin_index, ctbin_index, gaus_fit.GetParError(2))
+                    gaus_fit = mc_minv.GetFunction('gaus')
+                    if gaus_fit:
+                        h2sigma_mc_list[f'{eff}'].SetBinContent(ptbin_index, ctbin_index, gaus_fit.GetParameter(2))
+                        h2sigma_mc_list[f'{eff}'].SetBinError(ptbin_index, ctbin_index, gaus_fit.GetParError(2))
 
             total_cut = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(
                 ctbin[0], ctbin[1], ptbin[0], ptbin[1], cclass[0], cclass[1])
@@ -232,7 +237,7 @@ for cclass in params['CENTRALITY_CLASS']:
 
                     # au.fitUnbinned(massArray, ctbin, ptbin, cclass, fitdir)
                     if params['FIXED_SIGMA_FIT']:
-                        sigma = h2sigma_mc.GetBinContent(ptbin_index, ctbin_index)
+                        sigma = h2sigma_mc_list[f'{eff}'].GetBinContent(ptbin_index, ctbin_index)
                     else:
                         sigma = -1
 
@@ -254,8 +259,9 @@ for cclass in params['CENTRALITY_CLASS']:
     h2BDTeff.Write()
     h2seleff.Write()
     if params['FIXED_SIGMA_FIT']:
-        h3_invmassptct.Write()
-        h2sigma_mc.Write()
+        for eff in params['BDT_EFFICIENCY']:
+            h3_invmassptct_list[f'{eff}'].Write()
+            h2sigma_mc_list[f'{eff}'].Write()
 
     for h2raw, h2sig in zip(h2raw_counts, h2significance):
         h2raw.Write()

@@ -144,7 +144,7 @@ def h2_rawcounts(ptbin, ctbin, name='RawCounts'):
     return th2
 
 
-def h2_mcsigma(ptbin, ctbin, name='RawCounts'):
+def h2_mcsigma(ptbin, ctbin, name='SigmaPtCt'):
     th2 = TH2D(name, ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);#sigma', len(ptbin)-1,
                np.array(ptbin, 'double'), len(ctbin) - 1, np.array(ctbin, 'double'))
 
