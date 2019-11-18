@@ -3,7 +3,7 @@ FILE_PREFIX: 'pt_analysis'
 CENTRALITY_CLASS:
   - [0,10]
 CT_BINS: [1, 90]
-PT_BINS: [2,3]
+PT_BINS: [2,3,4,5,6,10]
 
 BKG_MODELS: ['expo', 'pol1', 'pol2']
 

@@ -13,6 +13,10 @@ from scipy import stats
 from ROOT import (TF1, TH1D, TH2D, TAxis, TCanvas, TColor, TFile, TFrame, TIter, TKey,
                   TPaveText, gDirectory, gROOT, gStyle, gPad, AliPWGFunc)
 
+gROOT.LoadMacro("/home/alidock/HypertritonML/Utils/YieldMean.C+")
+from ROOT import YieldMean
+
+
 kBlueC = TColor.GetColor('#1f78b4')
 kBlueCT = TColor.GetColorTransparent(kBlueC, 0.5)
 kRedC = TColor.GetColor('#e31a1c')
@@ -70,6 +74,10 @@ print(file_name)
 bkgModels = params['BKG_MODELS'] if 'BKG_MODELS' in params else ['expo']
 
 for cclass in params['CENTRALITY_CLASS']:
+
+    data_path = os.path.expandvars('$HYPERML_TABLES_2/DataTable.root')
+    hist_centrality = uproot.open(data_path)['EventCounter']
+    n_events = sum(hist_centrality[cclass[0]+1:cclass[1]])
     inDirName = f"{cclass[0]}-{cclass[1]}"
     resultFile.cd(inDirName)
     outDir = distribution.mkdir(inDirName)
@@ -111,62 +119,60 @@ for cclass in params['CENTRALITY_CLASS']:
 
             for eff in np.arange(ranges['SCAN'][iBin-1][0], ranges['SCAN'][iBin-1][1], ranges['SCAN'][iBin-1][2]):
                 h2RawCounts = resultFile.Get(f'{inDirName}/RawCounts{eff:g}_{model}')
-                raws[iBin-1].append(h2RawCounts.GetBinContent(1,
-                                                              iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin))
-                errs[iBin-1].append(h2RawCounts.GetBinError(1,
-                                                            iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin))
+                raws[iBin-1].append(h2RawCounts.GetBinContent(iBin,
+                                                              1) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/n_events/0.25)
+                errs[iBin-1].append(h2RawCounts.GetBinError(iBin,
+                                                            1) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/n_events/0.25)
 
-        outDir.cd()
-        h1RawCounts.UseCurrentStyle()
-        data_path = os.path.expandvars('$HYPERML_TABLES_2/DataTable.root')
-        hist_centrality = uproot.open(data_path)['EventCounter']
-        n_events = sum(hist_centrality[cclass[0]+1:cclass[1]])
-        h1RawCounts.Scale(1/n_events/0.25)
-        if(cclass[1]==10):
-            h1RawCounts.Fit(bw, "MI")
-            print(bw.Integral(0,100,1e-8))
-        h1RawCounts.SetTitle(';p_{T} GeV/c;1/ (N_{ev}) d^{2}N/(dy dp_{T}) x B.R. (GeV/c)^{-1}')
-        h1RawCounts.Write()
-        hRawCounts.append(h1RawCounts)
-        cvDir.cd()
-        myCv = TCanvas(f"ptSpectraCv_{model}")
-        myCv.SetLogy()
-        pinfo2= TPaveText(0.5,0.5,0.91,0.9,"NDC")
-        pinfo2.SetBorderSize(0)
-        pinfo2.SetFillStyle(0)
-        pinfo2.SetTextAlign(30+3)
-        pinfo2.SetTextFont(42)
-        string ='ALICE Internal, Pb-Pb 2018 {}-{}%'.format(cclass[0],cclass[1])
-        pinfo2.AddText(string)
-        h1RawCounts.Draw()
-        h1RawCounts.SetMarkerStyle(20)
-        h1RawCounts.SetMarkerColor(600)
-        h1RawCounts.SetLineColor(600)
-        pinfo2.Draw("x0same")
-        tmpSyst = h1RawCounts.Clone("hSyst")
-        corSyst = h1RawCounts.Clone("hCorr")
-        tmpSyst.SetFillStyle(0)
-        tmpSyst.SetMinimum(0.001)
-        tmpSyst.SetMaximum(1000)
-        corSyst.SetFillStyle(3345)
-        for iBin in range(1, h1RawCounts.GetNbinsX() + 1):
-            val = tmpSyst.GetBinContent(iBin)
-            tmpSyst.SetBinError(iBin, 0.099 * val)
-            corSyst.SetBinError(iBin, 0.086 * val)
-        tmpSyst.SetLineColor(kBlueC)
-        tmpSyst.SetMarkerColor(kBlueC)
-        #tmpSyst.Draw("e2same")
+    outDir.cd()
+    h1RawCounts.UseCurrentStyle()
+    h1RawCounts.Scale(1/n_events/0.25)
+    if(cclass[1]==10):
+        h1RawCounts.Fit(bw, "MI")
+        
+    h1RawCounts.SetTitle(';p_{T} GeV/c;1/ (N_{ev}) d^{2}N/(dy dp_{T}) x B.R. (GeV/c)^{-1}')
+    h1RawCounts.Write()
+    hRawCounts.append(h1RawCounts)
+    cvDir.cd()
+    myCv = TCanvas(f"ptSpectraCv_{model}")
+    myCv.SetLogy()
+    pinfo2= TPaveText(0.5,0.5,0.91,0.9,"NDC")
+    pinfo2.SetBorderSize(0)
+    pinfo2.SetFillStyle(0)
+    pinfo2.SetTextAlign(30+3)
+    pinfo2.SetTextFont(42)
+    string ='ALICE Internal, Pb-Pb 2018 {}-{}%'.format(cclass[0],cclass[1])
+    pinfo2.AddText(string)
+    h1RawCounts.Draw()
+    h1RawCounts.SetMarkerStyle(20)
+    h1RawCounts.SetMarkerColor(600)
+    h1RawCounts.SetLineColor(600)
+    pinfo2.Draw("x0same")
+    tmpSyst = h1RawCounts.Clone("hSyst")
+    corSyst = h1RawCounts.Clone("hCorr")
+    tmpSyst.SetFillStyle(0)
+    corSyst.SetFillStyle(3345)
+    for iBin in range(1, h1RawCounts.GetNbinsX() + 1):
+        val = tmpSyst.GetBinContent(iBin)
+        tmpSyst.SetBinError(iBin, np.std(raws[iBin - 1]))
+            # corSyst.SetBinError(iBin, 0.086 * val)
+    tmpSyst.Draw("e2same")
         # corSyst.Draw("e2same")
-        outDir.cd()
-        myCv.Write()
+    fout=TF1()
+    res_hist=YieldMean(h1RawCounts,tmpSyst,fout,bw,0,20.,1e-3,1e-1,False,"log.root","","MI")
+    #tmpSyst.Draw("e2same")
+    # corSyst.Draw("e2same")
+    outDir.cd()
+    res_hist.Write()
+    myCv.Write()
 
-        h1RawCounts.Draw("ex0same")
-        pinfo2.Draw()
-        cvDir.cd()
-        myCv.Write()
+    h1RawCounts.Draw()
+    pinfo2.Draw()
+    cvDir.cd()
+    myCv.Write()
 
     outDir.cd()
 resultFile.Close()
-pwg=-1
 bw=-1
+pwg=-1
 
