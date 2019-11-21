@@ -436,3 +436,10 @@ def fitUnbinned(
     #     histo.Write()
     #     cv.Write()
     # return (signal, errsignal, signif, errsignif, sigma, sigmaErr)
+
+
+def split_name(split_type=''):
+    if split_type=='':
+        return split_type
+    else:
+        return '_'+split_type    

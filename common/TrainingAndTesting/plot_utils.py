@@ -27,7 +27,7 @@ def plot_output_train_test(
         pt_range=[0, 100],
         cent_class=[0, 100],
         model='xgb', features=None, raw=True, bins=80, figsize=(7.5, 5),
-        location='best', mode=3, **kwds):
+        location='best', mode=3, split_string='' , **kwds):
     '''
     model could be 'xgb' or 'sklearn'
     '''
@@ -83,8 +83,8 @@ def plot_output_train_test(
     if not os.path.exists(fig_score_path):
         os.makedirs(fig_score_path)
 
-    fig_name = 'BDTscorePDF_ct{}{}_pT{}{}_cen{}{}'.format(
-        ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1])
+    fig_name = 'BDTscorePDF_ct{}{}_pT{}{}_cen{}{}{}'.format(
+        ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1],split_string)
 
     plt.savefig('{}/{}.pdf'.format(fig_score_path, fig_name), dpi=500, transparent=True)
     plt.close()
@@ -306,7 +306,8 @@ def plot_eff_ct(
 
 def plot_significance_scan(
         max_index, significance, significance_error, expected_signal, bkg_df, score_list, data_range_array, bin_cent,
-        n_ev, mode, custom=True):
+        n_ev, mode, custom=True, split_string=''):
+    
     label = 'Significance'
     if custom:
         label = label + ' x Efficiency'
@@ -390,13 +391,14 @@ def plot_significance_scan(
 
     # axs[1].text(0.37, 0.95, text, transform=axs[1].transAxes, verticalalignment='top', bbox=props)
 
-    fig_name = 'Significance_ct{}{}_pT{}{}_cen{}{}.pdf'.format(
+    fig_name = 'Significance_ct{}{}_pT{}{}_cen{}{}{}.pdf'.format(
         data_range_array[0],
         data_range_array[1],
         data_range_array[2],
         data_range_array[3],
         data_range_array[4],
-        data_range_array[5])
+        data_range_array[5],
+        split_string)
 
     fig_sig_path = os.environ['HYPERML_FIGURES_{}'.format(mode)]+'/Significance'
     if not os.path.exists(fig_sig_path):
@@ -427,7 +429,7 @@ def plot_roc(y_truth, model_decision, mode, fig_name='/roc_curve.pdf'):
     plt.close()
 
 
-def plot_feature_imp(df,y,model, mode, ct_range=[0, 100], pt_range=[0, 10], cent_class=[0, 100]):
+def plot_feature_imp(df,y,model, mode, ct_range=[0, 100], pt_range=[0, 10], cent_class=[0, 100],split_string=''):
     subs_bkg=df[y==0].sample(10000)
     subs_sig=df[y==1].sample(10000)
     df_subs=pd.concat([subs_bkg,subs_sig]).sample(frac=1.)
@@ -435,7 +437,7 @@ def plot_feature_imp(df,y,model, mode, ct_range=[0, 100], pt_range=[0, 10], cent
     shap_values = explainer.shap_values(df_subs)
     fig=shap.summary_plot(shap_values, df_subs,show=False)
     fig_sig_path = os.environ['HYPERML_FIGURES_{}'.format(mode)]+'/Feature_Imp'
-    fig_name='feature_imp_ct{}{}_pT{}{}_cen{}{}'.format(ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1])
+    fig_name='feature_imp_ct{}{}_pT{}{}_cen{}{}{}'.format(ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1], split_string)
     if not os.path.exists(fig_sig_path):
         os.makedirs(fig_sig_path)
     plt.savefig(fig_sig_path + '/' + fig_name,format='pdf', dpi=1000, bbox_inches='tight')
@@ -533,3 +535,4 @@ def plot_precision_recall(y_test, y_score, mode, fig_name='precision_recall.pdf'
 
     plt.savefig(fig_sig_path + '/' + fig_name)
     plt.close()
+

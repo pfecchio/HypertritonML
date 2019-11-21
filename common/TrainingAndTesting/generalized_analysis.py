@@ -52,9 +52,9 @@ class GeneralizedAnalysis:
         # backup of the data without any selections for the significance scan
         self.df_data_all = self.df_data.drop(self.df_data_bkg.index) if dedicated_background != 0 else self.df_data
 
-        if split == 'a':
+        if split == 'antimatter':
             self.df_data_all = self.df_data_all.query('ArmenterosAlpha < 0')
-        if split == 'm':
+        if split == 'matter':
             self.df_data_all = self.df_data_all.query('ArmenterosAlpha > 0')
 
         # dataframe for signal and background with preselection
@@ -83,7 +83,7 @@ class GeneralizedAnalysis:
     def prepare_dataframe(
             self, training_columns, cent_class, pt_range=[0, 10],
             ct_range=[0, 100],
-            test=False, bkg_reduct=False, bkg_factor=1, sig_nocent=False, split_am=False):
+            test=False, bkg_reduct=False, bkg_factor=1, sig_nocent=False):
         data_range_bkg = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(
             ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1])
 
@@ -101,70 +101,32 @@ class GeneralizedAnalysis:
         else:
             data_range_sig = data_range_bkg
 
-        if split_am:
-            bkg_a = self.df_data.query(data_range_bkg + 'and ArmenterosAlpha < 0')
-            bkg_m = self.df_data.query(data_range_bkg + 'and ArmenterosAlpha > 0')
 
-            sig_a = self.df_signal.query(data_range_sig + 'and ArmenterosAlpha < 0')
-            sig_m = self.df_signal.query(data_range_sig + 'and ArmenterosAlpha > 0')
+        bkg = self.df_data_bkg.query(data_range_bkg)
+        sig = self.df_signal.query(data_range_sig)
 
-            if test:
-                if len(sig_a) >= 1000:
-                    sig_a = sig_a.sample(n=1000)
-                if len(sig_m) >= 1000:
-                    sig_m = sig_m.sample(n=1000)
-                if len(bkg_a) >= 1000:
-                    bkg_a = bkg_a.sample(n=1000)
-                if len(bkg_m) >= 1000:
-                    bkg_m = bkg_m.sample(n=1000)
+        if test:
+            if len(sig) >= 1000:
+                sig = sig.sample(n=1000)
+            if len(bkg) >= 1000:
+                bkg = bkg.sample(n=1000)
 
-            if bkg_reduct:
-                n_bkg = int(len(sig_a) * bkg_factor)
-                if n_bkg < len(bkg_a):
-                    bkg_a = bkg_a.sample(n=n_bkg)
-                    bkg_m = bkg_m.sample(n=n_bkg)
+        if bkg_reduct:
+            n_bkg = int(len(bkg) * bkg_factor)
+            if n_bkg < len(bkg):
+                bkg = bkg.sample(n=n_bkg)
 
-            print('\nnumber of anti-matter background candidates: {}'.format(len(bkg_a)))
-            print('number of matter background candidates: {}'.format(len(bkg_m)))
-            print('number of anti-matter signal candidates: {}'.format(len(sig_a)))
-            print('number of matter signal candidates: {}\n'.format(len(sig_m)))
+        print('\nnumber of background candidates: {}'.format(len(bkg)))
+        print('number of signal candidates: {}\n'.format(len(sig)))
 
-            df_a = pd.concat([sig_a, bkg_a])
-            df_m = pd.concat([sig_m, bkg_m])
+        df = pd.concat([sig, bkg])
+        train_set, test_set, y_train, y_test = train_test_split(df[columns], df['y'], test_size=0.5, random_state=42)
 
-            train_set_a, test_set_a, y_train_a, y_test_a = train_test_split(
-                df_a[columns], df_a['y'], test_size=0.5, random_state=42)
-            train_set_m, test_set_m, y_train_m, y_test_m = train_test_split(
-                df_m[columns], df_m['y'], test_size=0.5, random_state=42)
-
-            return [train_set_a, y_train_a, test_set_a, y_test_a], [train_set_m, y_train_m, test_set_m, y_test_m]
-
-        else:
-            bkg = self.df_data_bkg.query(data_range_bkg)
-            sig = self.df_signal.query(data_range_sig)
-
-            if test:
-                if len(sig) >= 1000:
-                    sig = sig.sample(n=1000)
-                if len(bkg) >= 1000:
-                    bkg = bkg.sample(n=1000)
-
-            if bkg_reduct:
-                n_bkg = int(len(bkg) * bkg_factor)
-                if n_bkg < len(bkg):
-                    bkg = bkg.sample(n=n_bkg)
-
-            print('\nnumber of background candidates: {}'.format(len(bkg)))
-            print('number of signal candidates: {}\n'.format(len(sig)))
-
-            df = pd.concat([sig, bkg])
-            train_set, test_set, y_train, y_test = train_test_split(df[columns], df['y'], test_size=0.5, random_state=42)
-
-            return train_set, y_train, test_set, y_test
+        return train_set, y_train, test_set, y_test
 
     # function to compute the preselection cuts efficiency
 
-    def preselection_efficiency(self, ct_range=[0, 100], pt_range=[0, 10], cent_class=[0, 100], split_am=''):
+    def preselection_efficiency(self, ct_range=[0, 100], pt_range=[0, 10], cent_class=[0, 100]):
         ct_min = ct_range[0]
         ct_max = ct_range[1]
 
@@ -179,14 +141,7 @@ class GeneralizedAnalysis:
         total_cut_gen = '{}<ct<{} and {}<pT<{} and {}<centrality<{} and abs(rapidity)<0.5'.format(
             ct_min, ct_max, pt_min, pt_max, cent_min, cent_max)
 
-        if split_am is 'a':
-            eff = len(self.df_signal.query(total_cut + 'and ArmenterosAlpha < 0')
-                      ) / len(self.df_generated.query(total_cut_gen + 'and matter == 0'))
-        if split_am is 'm':
-            eff = len(self.df_signal.query(total_cut + 'and ArmenterosAlpha > 0')
-                      ) / len(self.df_generated.query(total_cut_gen + 'and matter == 1'))
-        else:
-            eff = len(self.df_signal.query(total_cut))/len(self.df_generated.query(total_cut_gen))
+        eff = len(self.df_signal.query(total_cut))/len(self.df_generated.query(total_cut_gen))
 
         return eff
 
@@ -261,7 +216,7 @@ class GeneralizedAnalysis:
             self, data, training_columns, reg_params, ct_range=[0, 100],
             pt_range=[0, 10],
             cent_class=[0, 10],
-            hyperparams=0, optimize=False, optimize_mode='bayes'):
+            hyperparams=0, optimize=False, optimize_mode='bayes', split_string=''):
         data_train = [data[0], data[1]]
 
         # manage the optimization process
@@ -295,10 +250,10 @@ class GeneralizedAnalysis:
             model, data[0][training_columns],
             data[1], data[2][training_columns],
             data[3], features=training_columns, raw=True, log=True, ct_range=ct_range, pt_range=pt_range,
-            cent_class=cent_class, path=fig_path, mode=self.mode)
+            cent_class=cent_class, path=fig_path, mode=self.mode, split_string=split_string)
 
-        pu.plot_feature_imp(data[0][training_columns], data[1] ,model, self.mode, ct_range=ct_range, pt_range=pt_range,
-            cent_class=cent_class)    
+        # pu.plot_feature_imp(data[0][training_columns], data[1] ,model, self.mode, ct_range=ct_range, pt_range=pt_range,
+        #     cent_class=cent_class, split_string=split_string)    
         
         # test the model performances
         print('Testing the model: ...', end='\r')
@@ -311,26 +266,28 @@ class GeneralizedAnalysis:
 
         return model
 
-    def save_model(self, model, cent_class=[0, 90], pt_range=[0, 10], ct_range=[0, 100]):
+    def save_model(self, model, cent_class=[0, 90], pt_range=[0, 10], ct_range=[0, 100], split_string=''):
         models_path = os.environ['HYPERML_MODELS_{}'.format(self.mode)]
-        filename = '/BDT_{}{}_{}{}_{}{}.sav'.format(cent_class[0],
+        filename = '/BDT_{}{}_{}{}_{}{}{}.sav'.format(cent_class[0],
                                                     cent_class[1],
                                                     pt_range[0],
                                                     pt_range[1],
                                                     ct_range[0],
-                                                    ct_range[1])
+                                                    ct_range[1], 
+                                                    split_string)
 
         pickle.dump(model, open(models_path + filename, 'wb'))
         print('Model saved.\n')
 
-    def load_model(self, cent_class=[0, 90], pt_range=[0, 10], ct_range=[0, 100]):
+    def load_model(self, cent_class=[0, 90], pt_range=[0, 10], ct_range=[0, 100], split_string=''):
         models_path = os.environ['HYPERML_MODELS_{}'.format(self.mode)]
         filename = '/BDT_{}{}_{}{}_{}{}.sav'.format(cent_class[0],
                                                     cent_class[1],
                                                     pt_range[0],
                                                     pt_range[1],
                                                     ct_range[0],
-                                                    ct_range[1])
+                                                    ct_range[1], 
+                                                    split_string)
 
         model = pickle.load(open(models_path + filename, 'rb'))
 
@@ -395,7 +352,7 @@ class GeneralizedAnalysis:
     def significance_scan(
             self, test_data, model, training_columns, ct_range=[0, 100],
             pt_range=[0, 10],
-            cent_class=[0, 100], custom=True, n_points=100, split_am=''):
+            cent_class=[0, 100], custom=True, n_points=100, split_string=''):
         print('Significance scan: ...', end='\r')
 
         ct_min = ct_range[0]
@@ -414,13 +371,7 @@ class GeneralizedAnalysis:
         columns = training_columns.copy()
         columns.append('InvMass')
 
-        if split_am is 'a':
-            df_bkg = self.df_data.query(data_range + 'and ArmenterosAlpha < 0')[columns]
-        if split_am is 'm':
-            df_bkg = self.df_data.query(data_range + 'and ArmenterosAlpha > 0')[columns]
-        else:
-            df_bkg = self.df_data.query(data_range)[columns]
-
+        df_bkg = self.df_data.query(data_range)[columns]
         y_pred = model.predict(test_data[0][training_columns], output_margin=True)
         y_pred_bkg = model.predict(df_bkg[training_columns], output_margin=True)
 
@@ -456,13 +407,13 @@ class GeneralizedAnalysis:
             h, residuals, _, _, _ = np.polyfit(bins_side, counts_side, 2, full=True)
             y = np.polyval(h, bins_side)
 
-            eff_presel = self.preselection_efficiency(ct_range, pt_range, cent_class, split_am=split_am)
+            eff_presel = self.preselection_efficiency(ct_range, pt_range, cent_class)
 
             exp_signal_ctint = au.expected_signal_counts(
                 bw, pt_range, eff_presel * bdt_efficiency[index],
                 cent_class, self.hist_centrality)
 
-            if split_am is not '':
+            if split_string is not '':
                 exp_signal_ctint = 0.5 * exp_signal_ctint
 
             ctrange_correction = au.expo(ct_min, hyp_lifetime)-au.expo(ct_max, hyp_lifetime)
@@ -498,7 +449,7 @@ class GeneralizedAnalysis:
 
             pu.plot_significance_scan(
                 max_index, significance_custom, significance_custom_error, expected_signal, df_bkg,
-                threshold_space, data_range_array, bin_centers, nevents, self.mode, custom=True)
+                threshold_space, data_range_array, bin_centers, nevents, self.mode, custom=True, split_string=split_string)
 
         else:
             max_index = np.argmax(significance)
@@ -507,7 +458,7 @@ class GeneralizedAnalysis:
 
             pu.plot_significance_scan(
                 max_index, significance, significance_error, expected_signal, df_bkg, threshold_space,
-                data_range_array, bin_centers, nevents, self.mode, custom=False)
+                data_range_array, bin_centers, nevents, self.mode, custom=False, split_string=split_string)
 
         bdt_eff_max_score = bdt_efficiency[max_index]
 
