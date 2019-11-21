@@ -81,8 +81,6 @@ for cclass in params['CENTRALITY_CLASS']:
     inDirName = f"{cclass[0]}-{cclass[1]}"
     resultFile.cd(inDirName)
     outDir = distribution.mkdir(inDirName)
-    cvDir = outDir.mkdir("canvas")
-
     h2PreselEff = resultFile.Get(f'{inDirName}/SelEff')
     h1PreselEff = h2PreselEff.ProjectionX()
 
@@ -92,8 +90,7 @@ for cclass in params['CENTRALITY_CLASS']:
     h1PreselEff.SetTitle(f';{var} ({unit}); Preselection efficiency')
     h1PreselEff.UseCurrentStyle()
     h1PreselEff.SetMinimum(0)
-    outDir.cd()
-    h1PreselEff.Write("h1PreselEff")
+
 
     hRawCounts = []
     raws = []
@@ -124,18 +121,21 @@ for cclass in params['CENTRALITY_CLASS']:
                 errs[iBin-1].append(h2RawCounts.GetBinError(iBin,
                                                             1) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/n_events/0.25)
 
-    outDir.cd()
+    h1PreselEff.Scale(0.5) #takes into account the rapidity correction
     h1RawCounts.UseCurrentStyle()
     h1RawCounts.Scale(1/n_events/0.25)
+    tmpSyst = h1RawCounts.Clone("hSyst")
     if(cclass[1]==10):
         h1RawCounts.Fit(bw, "MI")
-        
+    
+    for iBin in range(1, h1RawCounts.GetNbinsX() + 1):
+        val = tmpSyst.GetBinContent(iBin)
+        tmpSyst.SetBinError(iBin, np.std(raws[iBin - 1]))
+    fout=TF1()
+    res_hist=YieldMean(h1RawCounts,tmpSyst,fout,bw,0,20.,1e-3,1e-1,False,"log.root","","I")
+
+    #final plots
     h1RawCounts.SetTitle(';p_{T} GeV/c;1/ (N_{ev}) d^{2}N/(dy dp_{T}) x B.R. (GeV/c)^{-1}')
-    h1RawCounts.Write()
-    hRawCounts.append(h1RawCounts)
-    cvDir.cd()
-    myCv = TCanvas(f"ptSpectraCv_{model}")
-    myCv.SetLogy()
     pinfo2= TPaveText(0.5,0.5,0.91,0.9,"NDC")
     pinfo2.SetBorderSize(0)
     pinfo2.SetFillStyle(0)
@@ -148,30 +148,21 @@ for cclass in params['CENTRALITY_CLASS']:
     h1RawCounts.SetMarkerColor(600)
     h1RawCounts.SetLineColor(600)
     pinfo2.Draw("x0same")
-    tmpSyst = h1RawCounts.Clone("hSyst")
-    corSyst = h1RawCounts.Clone("hCorr")
     tmpSyst.SetFillStyle(0)
-    corSyst.SetFillStyle(3345)
-    for iBin in range(1, h1RawCounts.GetNbinsX() + 1):
-        val = tmpSyst.GetBinContent(iBin)
-        tmpSyst.SetBinError(iBin, np.std(raws[iBin - 1]))
-            # corSyst.SetBinError(iBin, 0.086 * val)
-    tmpSyst.Draw("e2same")
-        # corSyst.Draw("e2same")
-    fout=TF1()
-    res_hist=YieldMean(h1RawCounts,tmpSyst,fout,bw,0,20.,1e-3,1e-1,False,"log.root","","MI")
-    #tmpSyst.Draw("e2same")
-    # corSyst.Draw("e2same")
+
     outDir.cd()
+    h1PreselEff.Write("h1PreselEff")
     res_hist.Write()
-    myCv.Write()
 
+    myCv = TCanvas(f"ptSpectraCv_{model}")
+    myCv.SetLogy()
+    myCv.cd()
     h1RawCounts.Draw()
-    pinfo2.Draw()
-    cvDir.cd()
+    tmpSyst.Draw("e2same")
+    pinfo2.Draw("x0same")
     myCv.Write()
-
-    outDir.cd()
+    myCv.Close()
+    
 resultFile.Close()
 bw=-1
 pwg=-1
