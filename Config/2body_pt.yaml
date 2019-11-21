@@ -2,7 +2,7 @@ NBODY: 2
 FILE_PREFIX: 'pt_analysis'
 CENTRALITY_CLASS:
   - [0,10]
-CT_BINS: [1, 90]
+CT_BINS: [0, 90]
 PT_BINS: [2,3,4,5,6,10]
 
 BKG_MODELS: ['expo', 'pol1', 'pol2']
@@ -23,7 +23,7 @@ SYST_UNCERTANTIES: False
 CUT_SHIFT: [0]
 
 MC_PATH: $HYPERML_TABLES_2/SignalTableFlatPt.root
-DATA_PATH: $HYPERML_TABLES_2/DataTable.root
+DATA_PATH: $HYPERML_TABLES_2/DataTableLS.root
 
 XGBOOST_PARAMS:
   # general parameters
@@ -37,7 +37,7 @@ XGBOOST_PARAMS:
 
 OPTIMIZATION_STRATEGY: bayes
 
-FIXED_SIGMA_FIT: False
+FIXED_SIGMA_FIT: True
 
 HYPERPARAMS:
   max_depth: 13

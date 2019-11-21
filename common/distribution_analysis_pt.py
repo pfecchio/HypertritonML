@@ -70,7 +70,6 @@ distribution = TFile(file_name, 'recreate')
 
 file_name = resultsSysDir + '/' + params['FILE_PREFIX'] + '_results.root'
 resultFile = TFile(file_name)
-print(file_name)
 bkgModels = params['BKG_MODELS'] if 'BKG_MODELS' in params else ['expo']
 
 for cclass in params['CENTRALITY_CLASS']:

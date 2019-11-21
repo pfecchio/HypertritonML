@@ -70,11 +70,11 @@ for split_type in split_list:
 
     if split_type=='matter':
         signal_selection = '{}<=HypCandPt<={} and ArmenterosAlpha > 0'.format(params['PT_BINS'][0], params['PT_BINS'][-1])
-        backgound_selection = '(InvMass<2.98 or InvMass>3.005) and {}<=HypCandPt<={} and ArmenterosAlpha > 0'.format(
+        backgound_selection = '{}<=HypCandPt<={} and ArmenterosAlpha > 0'.format(
             params['PT_BINS'][0], params['PT_BINS'][-1])
     if split_type=='antimatter':
         signal_selection = '{}<=HypCandPt<={} and ArmenterosAlpha < 0'.format(params['PT_BINS'][0], params['PT_BINS'][-1])
-        backgound_selection = '(InvMass<2.98 or InvMass>3.005) and {}<=HypCandPt<={} and ArmenterosAlpha < 0'.format(
+        backgound_selection = '{}<=HypCandPt<={} and ArmenterosAlpha < 0'.format(
             params['PT_BINS'][0], params['PT_BINS'][-1])
             
     if split_type=='':

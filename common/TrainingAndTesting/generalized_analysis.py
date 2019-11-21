@@ -111,6 +111,8 @@ class GeneralizedAnalysis:
             if len(bkg) >= 1000:
                 bkg = bkg.sample(n=1000)
 
+            self.df_data=self.df_data.sample(n=1000)    
+
         if bkg_reduct:
             n_bkg = int(len(bkg) * bkg_factor)
             if n_bkg < len(bkg):
@@ -370,7 +372,6 @@ class GeneralizedAnalysis:
 
         columns = training_columns.copy()
         columns.append('InvMass')
-
         df_bkg = self.df_data.query(data_range)[columns]
         y_pred = model.predict(test_data[0][training_columns], output_margin=True)
         y_pred_bkg = model.predict(df_bkg[training_columns], output_margin=True)
