@@ -23,7 +23,7 @@ SYST_UNCERTANTIES: False
 CUT_SHIFT: [0]
 
 MC_PATH: $HYPERML_TABLES_2/SignalTableFlatPt.root
-DATA_PATH: $HYPERML_TABLES_2/DataTableLS.root
+DATA_PATH: $HYPERML_TABLES_2/DataTable.root
 
 XGBOOST_PARAMS:
   # general parameters

@@ -60,7 +60,7 @@ for split_type in split_list:
     score_bdteff_dict = {}
     preselection_efficiency = {}
     n_hytr = {}
-    score_bdteff_name = results_dir + '/{}_score_bdteff_{}.yaml'.format(params['FILE_PREFIX'],split_string)
+    score_bdteff_name = results_dir + '/{}_score_bdteff{}.yaml'.format(params['FILE_PREFIX'],split_string)
     if params['LOAD_SCORE_EFF']:
         with open(score_bdteff_name, 'r') as stream:
             try:
@@ -94,7 +94,7 @@ for split_type in split_list:
     hyperparams = params['HYPERPARAMS_RANGE'] if args.optimize else params['HYPERPARAMS']
     optimisation_strategy = 'gs' if params['OPTIMIZATION_STRATEGY'] == 'gs' else 'bayes'
 
-    file_name = results_dir + '/' + params['FILE_PREFIX'] + '_results.root' + split_string
+    file_name = results_dir + '/' + params['FILE_PREFIX'] + '_results' + split_string + '.root'
     results_file = TFile(file_name, 'recreate')
 
 
@@ -169,6 +169,7 @@ for split_type in split_list:
                     if (args.significance==False):
                         break
                 else:
+                    print(split_string)
                     model = analysis.load_model(ct_range=ctbin, cent_class=cclass, pt_range=ptbin, split_string=split_string)
 
 
@@ -191,7 +192,7 @@ for split_type in split_list:
                         model, data[2: 4],
                         params['BDT_EFFICIENCY'],
                         params['TRAINING_COLUMNS'],
-                        ct_range=ctbin, pt_range=ptbin, cent_class=cclass)
+                        ct_range=ctbin, pt_range=ptbin, cent_class=cclass, split_string = split_string)
 
                     for se in score_eff:
                         score_bdteff_dict[key]['eff{}'.format(se[1])] = [float(se[0]), float(se[1])]

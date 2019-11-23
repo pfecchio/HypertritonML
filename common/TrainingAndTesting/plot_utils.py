@@ -90,7 +90,7 @@ def plot_output_train_test(
     plt.close()
 
 
-def plot_distr(df, column=None, figsize=None, bins=50, fig_name='features.pdf', mode=2, log=True, **kwds):
+def plot_distr(sig_df,bkg_df, column=None, figsize=None, bins=50, fig_name='features.pdf', mode=2, log=True, **kwds):
     """Build a DataFrame and create two dataset for signal and bkg
 
     Draw histogram of the DataFrame's series comparing the distribution
@@ -108,8 +108,8 @@ def plot_distr(df, column=None, figsize=None, bins=50, fig_name='features.pdf', 
         To be passed to hist function
     """
 
-    data1 = df[df.y < 0.5]
-    data2 = df[df.y > 0.5]
+    data1 = bkg_df
+    data2 = sig_df
 
     if column is not None:
         if not isinstance(column, (list, np.ndarray, Index)):
@@ -137,15 +137,13 @@ def plot_distr(df, column=None, figsize=None, bins=50, fig_name='features.pdf', 
     plt.close()
 
 
-def plot_corr(df, columns, mode=3, **kwds):
+def plot_corr(sig_df,bkg_df, columns, mode=3, **kwds):
     """Calculate pairwise correlation between features.
     Extra arguments are passed on to DataFrame.corr()
     """
-    col = columns+['y']
-    df = df[col]
 
-    data_sig = df[df.y > 0.5].drop('y', 1)
-    data_bkg = df[df.y < 0.5].drop('y', 1)
+    data_sig = sig_df[columns]
+    data_bkg = bkg_df[columns]
 
     corrmat_sig = data_sig.corr(**kwds)
     corrmat_bkg = data_bkg.corr(**kwds)
@@ -208,7 +206,7 @@ def plot_corr(df, columns, mode=3, **kwds):
     plt.close()
 
 
-def plot_bdt_eff(threshold, eff_sig, mode, ct_range=[0, 100], pt_range=[0, 100], cent_class=[0, 100]):
+def plot_bdt_eff(threshold, eff_sig, mode, ct_range=[0, 100], pt_range=[0, 100], cent_class=[0, 100], split_string=''):
     plt.plot(threshold, eff_sig, 'r.', label='Signal efficiency')
     plt.legend()
     plt.xlabel('BDT Score')
@@ -220,8 +218,8 @@ def plot_bdt_eff(threshold, eff_sig, mode, ct_range=[0, 100], pt_range=[0, 100],
     if not os.path.exists(fig_eff_path):
         os.makedirs(fig_eff_path)
 
-    fig_name = '/BDTeffct{}{}_pT{}{}_cen{}{}.pdf'.format(
-        ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1])
+    fig_name = '/BDTeffct{}{}_pT{}{}_cen{}{}{}.pdf'.format(
+        ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1], split_string)
     plt.savefig(fig_eff_path + fig_name)
     plt.close()
 

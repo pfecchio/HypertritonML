@@ -5,7 +5,7 @@ from contextlib import redirect_stdout
 
 import numpy as np
 from sklearn.model_selection import cross_val_score
-
+import yaml
 import xgboost as xgb
 from ROOT import ROOT as RR
 from ROOT import (TF1, TH1D, TH2D, TH3D, TCanvas, TFile, TPaveStats, TPaveText,
@@ -443,3 +443,24 @@ def split_name(split_type=''):
         return split_type
     else:
         return '_'+split_type    
+
+def create_ranges(score_bdteff_dict) :
+    ranges_best=[]
+    ranges_scan=[]
+    score_keys = score_bdteff_dict.keys()
+    for k in score_keys:
+        best=round(score_bdteff_dict[k]['sig_scan'][1],2)
+        ranges_best.append(best)
+        ranges_scan.append([best-0.1,best+0.1,0.01])
+
+    ranges_dict= {
+        'BEST' : ranges_best,
+        'SCAN' : ranges_scan
+    }
+    return ranges_dict
+
+    
+
+
+   
+

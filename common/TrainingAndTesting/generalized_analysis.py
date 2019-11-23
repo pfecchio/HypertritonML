@@ -54,15 +54,18 @@ class GeneralizedAnalysis:
 
         if split == 'antimatter':
             self.df_data_all = self.df_data_all.query('ArmenterosAlpha < 0')
+            self.df_generated = self.df_generated.query('ArmenterosAlpha < 0')
         if split == 'matter':
             self.df_data_all = self.df_data_all.query('ArmenterosAlpha > 0')
+            self.df_generated = self.df_generated.query('ArmenterosAlpha > 0')
 
         # dataframe for signal and background with preselection
         if isinstance(sig_selection, str):
             self.df_signal = self.df_signal.query(sig_selection)
         if isinstance(bkg_selection, str):
             self.df_data = self.df_data.query(bkg_selection)
-
+            self.df_data_bkg = self.df_data_bkg.query(bkg_selection)
+        
         # df = pd.concat([self.df_signal, self.df_data_bkg])
 
         # columns = training_columns.copy()
@@ -283,7 +286,7 @@ class GeneralizedAnalysis:
 
     def load_model(self, cent_class=[0, 90], pt_range=[0, 10], ct_range=[0, 100], split_string=''):
         models_path = os.environ['HYPERML_MODELS_{}'.format(self.mode)]
-        filename = '/BDT_{}{}_{}{}_{}{}.sav'.format(cent_class[0],
+        filename = '/BDT_{}{}_{}{}_{}{}{}.sav'.format(cent_class[0],
                                                     cent_class[1],
                                                     pt_range[0],
                                                     pt_range[1],
@@ -296,7 +299,7 @@ class GeneralizedAnalysis:
         print('Model loaded.\n')
         return model
 
-    def bdt_efficiency_array(self, df, ct_range=[0, 100], pt_range=[0, 10], cent_class=[0, 90], n_points=10):
+    def bdt_efficiency_array(self, df, ct_range=[0, 100], pt_range=[0, 10], cent_class=[0, 90], n_points=10, split_string=''):
         min_score = df['Score'].min()
         max_score = df['Score'].max()
 
@@ -311,7 +314,7 @@ class GeneralizedAnalysis:
             sig_selected = np.sum(df_selected)
             efficiency.append(sig_selected / n_sig)
 
-        pu.plot_bdt_eff(threshold, efficiency, self.mode, ct_range, pt_range, cent_class)
+        pu.plot_bdt_eff(threshold, efficiency, self.mode, ct_range, pt_range, cent_class, split_string=split_string)
 
         return efficiency, threshold
 
@@ -322,14 +325,14 @@ class GeneralizedAnalysis:
 
         return sig_selected / n_sig
 
-    def score_from_efficiency(self, model, test_data, efficiency_cut, training_columns, ct_range, pt_range, cent_class):
+    def score_from_efficiency(self, model, test_data, efficiency_cut, training_columns, ct_range, pt_range, cent_class, split_string=''):
         y_pred = model.predict(test_data[0][training_columns], output_margin=True)
 
         test_data[0].eval('Score = @y_pred', inplace=True)
         test_data[0].eval('y = @test_data[1]', inplace=True)
 
         bdt_efficiency, threshold_space = self.bdt_efficiency_array(
-            test_data[0], ct_range, pt_range, cent_class, n_points=1000)
+            test_data[0], ct_range, pt_range, cent_class, n_points=1000, split_string = split_string)
 
         for index in range(0, len(bdt_efficiency)):
             bdt_efficiency[index] = round(bdt_efficiency[index], 2)
@@ -381,7 +384,7 @@ class GeneralizedAnalysis:
         df_bkg.eval('Score = @y_pred_bkg', inplace=True)
 
         bdt_efficiency, threshold_space = self.bdt_efficiency_array(
-            test_data[0], ct_range, pt_range, cent_class, n_points)
+            test_data[0], ct_range, pt_range, cent_class, n_points, split_string=split_string)
 
         expected_signal = []
         significance = []
