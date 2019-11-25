@@ -10,30 +10,14 @@ import numpy as np
 import yaml
 from scipy import stats
 from ROOT import (TF1, TH1D, TH2D, TAxis, TCanvas, TColor, TFile, TFrame, TIter, TKey,
-                  TPaveText, gDirectory, gROOT, gStyle, gPad, AliPWGFunc)
+                  TPaveText, gDirectory, gROOT, gStyle, gPad, AliPWGFunc, kBlack, kBlue, kRed)
 
 gROOT.LoadMacro("/home/alidock/HypertritonML/Utils/YieldMean.C+")
+
 from ROOT import YieldMean
 import analysis_utils as au
 
 random.seed(1989)
-
-kBlueC = TColor.GetColor('#1f78b4')
-kBlueCT = TColor.GetColorTransparent(kBlueC, 0.5)
-kRedC = TColor.GetColor('#e31a1c')
-kRedCT = TColor.GetColorTransparent(kRedC, 0.5)
-kPurpleC = TColor.GetColor('#911eb4')
-kPurpleCT = TColor.GetColorTransparent(kPurpleC, 0.5)
-kOrangeC = TColor.GetColor('#ff7f00')
-kOrangeCT = TColor.GetColorTransparent(kOrangeC, 0.5)
-kGreenC = TColor.GetColor('#33a02c')
-kGreenCT = TColor.GetColorTransparent(kGreenC, 0.5)
-kMagentaC = TColor.GetColor('#f032e6')
-kMagentaCT = TColor.GetColorTransparent(kMagentaC, 0.5)
-kYellowC = TColor.GetColor('#ffe119')
-kYellowCT = TColor.GetColorTransparent(kYellowC, 0.5)
-kBrownC = TColor.GetColor('#b15928')
-kBrownCT = TColor.GetColorTransparent(kBrownC, 0.5)
 
 
 parser = argparse.ArgumentParser()
@@ -44,9 +28,12 @@ gROOT.SetBatch()
 bw_file = TFile(os.environ['HYPERML_UTILS'] + '/BlastWaveFits.root')
 bw = bw_file.Get('BlastWave/BlastWave0')
 params=bw.GetParameters()
-params[0]=2.991
+params[0]=2.992
 pwg=AliPWGFunc()
 bw=pwg.GetBGBW(params[0],params[1],params[2],params[3],params[4])
+bw.SetParLimits(1,0,2)
+bw.SetParLimits(2,0,1)
+bw.SetParLimits(3,0,2)
 with open(os.path.expandvars(args.config), 'r') as stream:
     try:
         params = yaml.full_load(stream)
@@ -68,7 +55,8 @@ split_list=['_matter','_antimatter']
 hist_list=[]
 eff_list=[]
 syst_list=[]
-
+absorption_list_values=[uproot.open(os.environ['HYPERML_UTILS'] + '/absorption.root')['hOssHyp1'].values,uproot.open(os.environ['HYPERML_UTILS'] + "/absorption.root")['hOssAntiHyp1'].values]
+absorption_list_edges=[uproot.open(os.environ['HYPERML_UTILS'] + '/absorption.root')['hOssHyp1'].edges,uproot.open(os.environ['HYPERML_UTILS'] + "/absorption.root")['hOssAntiHyp1'].edges]
 
 
 for split_string in split_list:
@@ -122,7 +110,6 @@ for split_string in split_list:
                     iBin,1) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin))
                 raws.append([])
                 errs.append([])
-
                 for eff in np.arange(ranges['SCAN'][iBin-1][0], ranges['SCAN'][iBin-1][1], ranges['SCAN'][iBin-1][2]):
                     h2RawCounts = resultFile.Get(f'{inDirName}/RawCounts{eff:g}_{model}')
                     raws[iBin-1].append(h2RawCounts.GetBinContent(iBin,
@@ -130,20 +117,32 @@ for split_string in split_list:
                     errs[iBin-1].append(h2RawCounts.GetBinError(iBin,
                                                                 1) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/n_events/0.25)
 
+
         h1PreselEff.Scale(0.5) #takes into account the rapidity correction
         h1RawCounts.UseCurrentStyle()
         h1RawCounts.Scale(1/n_events/0.25)
-        tmpSyst = h1RawCounts.Clone("hSyst")
-        if(cclass[1]==10):
-            h1RawCounts.Fit(bw, "MI")
-        
+
+
+
+        abs_corr=h1RawCounts.Clone("abs_corr")
+        abs_val=absorption_list_values[split_list.index(split_string)]
+        abs_edg=absorption_list_edges[split_list.index(split_string)][1:]
         for iBin in range(1, h1RawCounts.GetNbinsX() + 1):
-            val = tmpSyst.GetBinContent(iBin)
+            low_edge=h1RawCounts.GetBinLowEdge(iBin)
+            high_edge=h1RawCounts.GetBinLowEdge(iBin+1)
+            absorption=np.mean(abs_val[np.logical_and(abs_edg>=low_edge,abs_edg<high_edge)])
+            abs_corr.SetBinContent(iBin,absorption)
+
+        h1RawCounts.Divide(abs_corr)
+        tmpSyst = h1RawCounts.Clone("hSyst")
+        for iBin in range(1, h1RawCounts.GetNbinsX() + 1):
             tmpSyst.SetBinError(iBin, np.std(raws[iBin - 1]))
 
-        #fout=TF1()
-        #res_hist=YieldMean(h1RawCounts,tmpSyst,fout,bw,0,20.,1e-3,1e-1,False,"log.root","","I")
-
+        if(cclass[1]==10):
+            h1RawCounts.Fit(bw, "I")
+        fout=TF1()
+        res_hist=YieldMean(h1RawCounts,tmpSyst,fout,bw,0,12.,1e-2,1e-1,False,"log.root","","I")
+    
     distribution.cd()
     h1RawCounts.SetTitle(';p_{T} GeV/c;1/ (N_{ev}) d^{2}N/(dy dp_{T}) x B.R. (GeV/c)^{-1}')
     pinfo2= TPaveText(0.5,0.5,0.91,0.9,"NDC")
@@ -154,11 +153,11 @@ for split_string in split_list:
     string ='ALICE Internal, Pb-Pb 2018 {}-{}%'.format(cclass[0],cclass[1])
     pinfo2.AddText(string)
     h1RawCounts.SetMarkerStyle(20)
-    h1RawCounts.SetMarkerColor(600)
+    h1RawCounts.SetMarkerColor(kBlue)
     h1RawCounts.SetLineColor(600)
     tmpSyst.SetFillStyle(0)
     h1PreselEff.Write("h1PreselEff{}".format(split_string))
-    #res_hist.Write("yield_mean{}".format(split_string))
+    res_hist.Write("yield_mean{}".format(split_string))
     myCv = TCanvas("ptSpectraCv{}".format(split_string))
     myCv.SetLogy()
     myCv.cd()
@@ -167,18 +166,23 @@ for split_string in split_list:
     pinfo2.Draw("x0same")
     myCv.Write()
     myCv.Close()
-
-    hist_list.append(h1RawCounts.Clone("aa"))
-    eff_list.append(h1PreselEff.Clone("bb"))
+    hist_list.append(h1RawCounts.Clone("pT spectrum" + split_string))
+    eff_list.append(h1PreselEff.Clone("Efficiecy x Acceptance" + split_string))
     syst_list.append(tmpSyst.Clone("cc"))
+    
 
 
 
 myCv_common=TCanvas("ptSpectraCv_common")
 myCv_common.SetLogy()
 myCv_common.cd()
+hist_list[0].GetListOfFunctions().Remove(hist_list[0].GetFunction("fBGBW")) 
+hist_list[1].GetListOfFunctions().Remove(hist_list[1].GetFunction("fBGBW"))
 hist_list[0].Draw()
-hist_list[1].Draw("e2same")
+hist_list[1].SetMarkerColor(kRed)
+hist_list[1].SetLineColor(kRed)
+syst_list[1].SetLineColor(kRed)
+hist_list[1].Draw("same")
 syst_list[0].Draw("e2same")
 syst_list[1].Draw("e2same")
 pinfo2.Draw("x0same")
@@ -187,18 +191,29 @@ myCv_common.Close()
 
 cv_eff_common=TCanvas("EffCv_common")
 cv_eff_common.cd()
+eff_list[0].SetLineColor(kRed)
+eff_list[1].SetLineColor(kBlue)
 eff_list[0].Draw()
-eff_list[1].Draw("same")
+eff_list[1].Draw("SAME")
 pinfo2.Draw("x0same")
+gPad.BuildLegend()
 cv_eff_common.Write()
 cv_eff_common.Close()
 cv_eff_common.Close()
 
+myCv_ratio=TCanvas("ratio")
+myCv_ratio.cd()
+hist_list[0].Divide(hist_list[1])
+hist_list[0].SetTitle(";p_{T} GeV/c;Matter/AntiMatter")
+hist_list[0].Draw("P")
+hist_list[0].SetMarkerColor(kBlue)
+hist_list[0].SetMarkerStyle(20)
+pinfo2.Draw("x0same")
+myCv_ratio.Write()
+myCv_ratio.Close()
+
 
 resultFile.Close()
 
-
-
 bw=-1
 pwg=-1
-

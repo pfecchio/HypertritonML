@@ -54,10 +54,10 @@ class GeneralizedAnalysis:
 
         if split == 'antimatter':
             self.df_data_all = self.df_data_all.query('ArmenterosAlpha < 0')
-            self.df_generated = self.df_generated.query('ArmenterosAlpha < 0')
+            self.df_generated = self.df_generated.query('matter < 0.5')
         if split == 'matter':
             self.df_data_all = self.df_data_all.query('ArmenterosAlpha > 0')
-            self.df_generated = self.df_generated.query('ArmenterosAlpha > 0')
+            self.df_generated = self.df_generated.query('matter > 0.5')
 
         # dataframe for signal and background with preselection
         if isinstance(sig_selection, str):
@@ -257,8 +257,8 @@ class GeneralizedAnalysis:
             data[3], features=training_columns, raw=True, log=True, ct_range=ct_range, pt_range=pt_range,
             cent_class=cent_class, path=fig_path, mode=self.mode, split_string=split_string)
 
-        # pu.plot_feature_imp(data[0][training_columns], data[1] ,model, self.mode, ct_range=ct_range, pt_range=pt_range,
-        #     cent_class=cent_class, split_string=split_string)    
+        pu.plot_feature_imp(data[0][training_columns], data[1] ,model, self.mode, ct_range=ct_range, pt_range=pt_range,
+            cent_class=cent_class, split_string=split_string)    
         
         # test the model performances
         print('Testing the model: ...', end='\r')
