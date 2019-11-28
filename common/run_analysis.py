@@ -169,7 +169,6 @@ for split_type in split_list:
                     if (args.significance==False):
                         break
                 else:
-                    print(split_string)
                     model = analysis.load_model(ct_range=ctbin, cent_class=cclass, pt_range=ptbin, split_string=split_string)
 
 
