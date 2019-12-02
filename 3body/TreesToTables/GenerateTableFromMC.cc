@@ -17,6 +17,7 @@ using namespace std;
 #include "../../common/GenerateTable/Table3.h"
 
 void GenerateTableFromMC(bool reject = true) {
+  gRandom->SetSeed(42);
 
   string hypDataDir  = getenv("HYPERML_DATA_3");
   string hypTableDir = getenv("HYPERML_TABLES_3");
@@ -31,6 +32,13 @@ void GenerateTableFromMC(bool reject = true) {
   string bwFileName = "BlastWaveFits.root";
   string bwFileArg  = hypUtilsDir + "/" + bwFileName;
 
+  string absFileName = "absorption.root";
+  string absFileArg  = hypUtilsDir + "/" + absFileName;
+
+  TFile absFile(absFileArg.data());
+  TH1 *hCorrM = (TH1 *)absFile.Get("hCorrectionHyp");
+  TH1 *hCorrA = (TH1 *)absFile.Get("hCorrectionAntiHyp");
+
   // get the bw functions for the pt rejection
   TFile bwFile(bwFileArg.data());
 
@@ -38,10 +46,6 @@ void GenerateTableFromMC(bool reject = true) {
   TF1 *BlastWave0{(TF1 *)bwFile.Get("BlastWave/BlastWave0")};
   TF1 *BlastWave1{(TF1 *)bwFile.Get("BlastWave/BlastWave1")};
   TF1 *BlastWave2{(TF1 *)bwFile.Get("BlastWave/BlastWave2")};
-
-  BlastWave0->SetNormalized(1);
-  BlastWave1->SetNormalized(1);
-  BlastWave2->SetNormalized(1);
 
   float max  = 0.0;
   float max0 = BlastWave0->GetMaximum();
@@ -61,6 +65,12 @@ void GenerateTableFromMC(bool reject = true) {
   Table3 table("SignalTable", "SignalTable");
   GenTable3 genTable("GenerateTable", "Generated particle table");
 
+  TH1D genHA("genA", ";ct (cm)",50,0,40);
+  TH1D absHA("absA", ";ct (cm)",50,0,40);
+
+  TH1D genHM("genM", ";ct (cm)",50,0,40);
+  TH1D absHM("absM", ";ct (cm)",50,0,40);
+
   std::cout << "\n\nGenerating derived tables from MC tree..." << std::endl;
 
   // info for progress bar
@@ -72,7 +82,6 @@ void GenerateTableFromMC(bool reject = true) {
   while (fReader.Next()) {
     // get centrality for pt rejection
     auto cent = rEv->fCent;
-
     // define the BW to use for the rejection
     if (cent <= 10) {
       BlastWave = BlastWave0;
@@ -118,11 +127,25 @@ void GenerateTableFromMC(bool reject = true) {
     }
   }
 
+  // TODO: implement absorption part
+
   inFile->Close();
   outFile.cd();
 
   table.Write();
   genTable.Write();
+
+  absHM.Sumw2();
+  genHM.Sumw2();
+
+  absHM.Divide(&genHM);
+  absHM.Write();
+
+  absHA.Sumw2();
+  genHA.Sumw2();
+
+  absHA.Divide(&genHA);
+  absHA.Write();
 
   outFile.Close();
 

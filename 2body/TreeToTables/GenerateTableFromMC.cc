@@ -32,12 +32,13 @@ void GenerateTableFromMC(bool reject = true) {
 
   string absFileName = "absorption.root";
   string absFileArg  = hypUtilsDir + "/" + absFileName;
-  TFile absFile(absFileArg.data());
-  TH1* hCorrM = (TH1*)absFile.Get("hCorrectionHyp");
-  TH1* hCorrA = (TH1*)absFile.Get("hCorrectionAntiHyp");
 
   string bwFileName = "BlastWaveFits.root";
   string bwFileArg  = hypUtilsDir + "/" + bwFileName;
+  
+  TFile absFile(absFileArg.data());
+  TH1* hCorrM = (TH1*)absFile.Get("hCorrectionHyp");
+  TH1* hCorrA = (TH1*)absFile.Get("hCorrectionAntiHyp");
 
   // get the bw functions for the pt rejection
   TFile bwFile(bwFileArg.data());
@@ -73,6 +74,7 @@ void GenerateTableFromMC(bool reject = true) {
 
   TH1D genHM("genM", ";ct (cm)",50,0,40);
   TH1D absHM("absM", ";ct (cm)",50,0,40);
+  
   while (fReader.Next()) {
     auto cent = RColl->fCent;
 
