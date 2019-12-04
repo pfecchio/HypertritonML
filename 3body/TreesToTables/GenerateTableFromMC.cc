@@ -26,7 +26,7 @@ void GenerateTableFromMC(bool reject = true) {
   string inFileName = "HyperTritonTree_19d2.root";
   string inFileArg  = hypDataDir + "/" + inFileName;
 
-  string outFileName = "HyperTritonTable_19d2.root";
+  string outFileName = "SignalTable.root";
   string outFileArg  = hypTableDir + "/" + outFileName;
 
   string bwFileName = "BlastWaveFits.root";

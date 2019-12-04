@@ -22,7 +22,7 @@ void GenerateTableFromData() {
   string inFileName = "HyperTritonTree_18qr.root";
   string inFileArg  = dataDir + "/" + inFileName;
 
-  string outFileName = "HyperTritonTable_18qr.root";
+  string outFileName = "DataTable.root";
   string outFileArg  = tableDir + "/" + outFileName;
 
   // read the tree
