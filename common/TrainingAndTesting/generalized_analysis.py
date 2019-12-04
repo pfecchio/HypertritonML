@@ -3,7 +3,6 @@
 
 import csv
 import os
-import pickle
 
 import numpy as np
 
@@ -273,7 +272,7 @@ class GeneralizedAnalysis:
 
     def save_model(self, model, cent_class=[0, 90], pt_range=[0, 10], ct_range=[0, 100], split_string=''):
         models_path = os.environ['HYPERML_MODELS_{}'.format(self.mode)]
-        filename = '/BDT_{}{}_{}{}_{}{}{}.sav'.format(cent_class[0],
+        filename = '/BDT_{}{}_{}{}_{}{}{}.model'.format(cent_class[0],
                                                     cent_class[1],
                                                     pt_range[0],
                                                     pt_range[1],
@@ -281,12 +280,12 @@ class GeneralizedAnalysis:
                                                     ct_range[1], 
                                                     split_string)
 
-        pickle.dump(model, open(models_path + filename, 'wb'))
+        model.save_model(models_path + filename)
         print('Model saved.\n')
 
     def load_model(self, cent_class=[0, 90], pt_range=[0, 10], ct_range=[0, 100], split_string=''):
         models_path = os.environ['HYPERML_MODELS_{}'.format(self.mode)]
-        filename = '/BDT_{}{}_{}{}_{}{}{}.sav'.format(cent_class[0],
+        filename = '/BDT_{}{}_{}{}_{}{}{}.model'.format(cent_class[0],
                                                     cent_class[1],
                                                     pt_range[0],
                                                     pt_range[1],
@@ -294,8 +293,8 @@ class GeneralizedAnalysis:
                                                     ct_range[1], 
                                                     split_string)
 
-        model = pickle.load(open(models_path + filename, 'rb'))
-
+        model = xgb.XGBClassifier()
+        model.load_model(models_path + filename)
         print('Model loaded.\n')
         return model
 
