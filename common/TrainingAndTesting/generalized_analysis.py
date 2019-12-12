@@ -65,15 +65,10 @@ class GeneralizedAnalysis:
             self.df_data = self.df_data.query(bkg_selection)
             self.df_data_bkg = self.df_data_bkg.query(bkg_selection)
         
-        # df = pd.concat([self.df_signal, self.df_data_bkg])
 
-        # columns = training_columns.copy()
-        # columns.append('InvMass')
+        # pu.plot_distr(sig_df, bkg_df, column=training_columns, mode=self.mode)
+        # pu.plot_corr(sig_df, bkg_df, training_columns+['InvMass'], mode=self.mode)
 
-        # pu.plot_distr(df, column=training_columns, mode=self.mode)
-        # pu.plot_corr(df, columns, mode=self.mode)
-
-        # del df
 
         if mode == 2:
             self.hist_centrality = uproot.open(data_file_name)['EventCounter']
@@ -410,7 +405,7 @@ class GeneralizedAnalysis:
             h, residuals, _, _, _ = np.polyfit(bins_side, counts_side, 2, full=True)
             y = np.polyval(h, bins_side)
 
-            eff_presel = self.preselection_efficiency(ct_range, pt_range, cent_class)
+            eff_presel = 0.5 * self.preselection_efficiency(ct_range, pt_range, cent_class)
 
             exp_signal_ctint = au.expected_signal_counts(
                 bw, pt_range, eff_presel * bdt_efficiency[index],

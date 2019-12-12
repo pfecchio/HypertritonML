@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import analysis_utils as au
-
 import argparse
 import math
 import os
@@ -57,31 +56,33 @@ absorption_list_edges = [uproot.open(os.environ['HYPERML_UTILS'] + '/absorption.
                                      'hOssHyp1'].edges, uproot.open(os.environ['HYPERML_UTILS'] + "/absorption.root")['hOssAntiHyp1'].edges]
 
 for cclass in params['CENTRALITY_CLASS']:
-
+    ranges_list=[]
+    raws_list=[]
     hist_list = []
     eff_list = []
     syst_list = []
     inDirName = f"{cclass[0]}-{cclass[1]}"
     outDir = distribution.mkdir(inDirName)
     for split_string in split_list:
-
-        rangesFile = resultsSysDir + '/' + \
-            params['FILE_PREFIX'] + '_score_bdteff{}.yaml'.format(split_string)
-        with open(os.path.expandvars(rangesFile), 'r') as stream:
-            try:
-                score_dict = yaml.full_load(stream)
-            except yaml.YAMLError as exc:
-                print(exc)
-
-        ranges = au.create_ranges(score_dict)
-
         file_name = resultsSysDir + '/' + \
             params['FILE_PREFIX'] + '_results{}.root'.format(split_string)
         resultFile = TFile(file_name)
         bkgModels = params['BKG_MODELS'] if 'BKG_MODELS' in params else [
             'expo']
+        resultFile.cd(inDirName)
+        h2BDTEff = resultFile.Get(f'{inDirName}/BDTeff')
+        h1BDTEff = h2BDTEff.ProjectionX()
 
-        data_path = os.path.expandvars('$HYPERML_TABLES_2/DataTable.root')
+        best_sig = np.round(np.array(h1BDTEff)[1:-1],2)
+        sig_ranges=[]
+        for i in best_sig:
+            sig_ranges.append([i-0.1,i+0.1,0.01])
+        ranges={
+        'BEST' : best_sig,
+        'SCAN' : sig_ranges
+        }
+        
+        data_path = os.path.expandvars(params['DATA_PATH'])
         hist_centrality = uproot.open(data_path)['EventCounter']
         n_events = sum(hist_centrality[cclass[0]+1:cclass[1]])
         
@@ -103,8 +104,6 @@ for cclass in params['CENTRALITY_CLASS']:
             h1RawCounts = h1PreselEff.Clone(f"best_{model}")
             h1RawCounts.Reset()
 
-            # h2Significance = resultFile.Get(f'{inDirName}/significance_{model}')
-            # h2Significance.ProjectionX().Write(f'significance_pt_{model}')
 
             for iBin in range(1, h1RawCounts.GetNbinsX()+1):
 
@@ -136,20 +135,26 @@ for cclass in params['CENTRALITY_CLASS']:
             absorption = np.mean(abs_val[np.logical_and(
                 abs_edg >= low_edge, abs_edg < high_edge)])
             abs_corr.SetBinContent(iBin, absorption)
-
         h1RawCounts.Divide(abs_corr)
         tmpSyst = h1RawCounts.Clone("hSyst")
         for iBin in range(1, h1RawCounts.GetNbinsX() + 1):
             tmpSyst.SetBinError(iBin, np.std(raws[iBin - 1]))
 
+
+##------------------ Fill YieldMean histo-----------------------------------------
         if(cclass[1] == 10):
             h1RawCounts.Fit(bw, "I")
             fout = TF1()
             res_hist = YieldMean(h1RawCounts, tmpSyst, fout, bw,
                                  0, 12., 1e-2, 1e-1, False, "log.root", "", "I")
+        outDir.cd()
+        if(cclass[1] == 10): 
+            res_hist.Write()
+##--------------------------------------------------------------------------------
 
-        outDir.cd()                         
 
+
+##------------------Fill corrected spectrum histo---------------------------------
         h1RawCounts.SetTitle(
         ';p_{T} GeV/c;1/ (N_{ev}) d^{2}N/(dy dp_{T}) x B.R. (GeV/c)^{-1}')
         pinfo2 = TPaveText(0.5,0.5,0.91,0.9,"NDC")
@@ -164,8 +169,6 @@ for cclass in params['CENTRALITY_CLASS']:
         h1RawCounts.SetLineColor(600)
         tmpSyst.SetFillStyle(0)
         h1PreselEff.Write("h1PreselEff{}".format(split_string))
-        if(cclass[1]==10):
-            res_hist.Write("yield_mean{}".format(split_string))
         myCv = TCanvas("ptSpectraCv{}".format(split_string))
         myCv.SetLogy()
         myCv.cd()
@@ -174,13 +177,15 @@ for cclass in params['CENTRALITY_CLASS']:
         pinfo2.Draw("x0same")
         myCv.Write()
         myCv.Close()
+##----------------------------------------------------------------------------------
         hist_list.append(h1RawCounts.Clone("pT spectrum" + split_string))
         eff_list.append(h1PreselEff.Clone("Efficiecy x Acceptance" + split_string))
         syst_list.append(tmpSyst.Clone("cc"))
+        raws_list.append(raws)
 
 
 
-    
+##-------------------Spectra in the same canvas ------------------------------------    
     myCv_common = TCanvas("ptSpectraCv_common")
     myCv_common.SetLogy()
     myCv_common.cd()
@@ -196,7 +201,10 @@ for cclass in params['CENTRALITY_CLASS']:
     pinfo2.Draw("x0same")
     myCv_common.Write()
     myCv_common.Close()
+##-----------------------------------------------------------------------------------
 
+
+##--------------------Fill summed spectra histo -------------------------------------
     myCv_sum = TCanvas("ptSpectraCv_sum")
     myCv_sum.SetLogy()
     myCv_sum.cd()
@@ -210,7 +218,11 @@ for cclass in params['CENTRALITY_CLASS']:
     pinfo2.Draw("x0same")
     myCv_sum.Write()
     myCv_sum.Close()
+##-----------------------------------------------------------------------------------
 
+
+
+##-------------------Fill efficiencies hist -----------------------------------------
     cv_eff_common = TCanvas("EffCv_common")
     cv_eff_common.cd()
     eff_list[0].SetLineColor(kRed)
@@ -222,21 +234,33 @@ for cclass in params['CENTRALITY_CLASS']:
     cv_eff_common.Write()
     cv_eff_common.Close()
     cv_eff_common.Close()
+##-----------------------------------------------------------------------------------
 
+
+
+##-----------------Fill ratio histo -------------------------------------------------
+    ratio_error=[]
+    for i in range(0,h1RawCounts.GetNbinsX()):
+        syst_tot=np.array(raws_list[1][i])/np.array(raws_list[0][i])
+        ratio_error.append(np.std(syst_tot))
     myCv_ratio = TCanvas("ratio")
     myCv_ratio.cd()
-    hist_list[0].Divide(hist_list[1])
-    syst_list[0].Divide(syst_list[1])
-    hist_list[0].SetTitle(";p_{T} GeV/c;Matter/AntiMatter")
-    hist_list[0].Draw("P")
-    hist_list[0].SetMarkerColor(kBlue)
-    hist_list[0].SetMarkerStyle(20)
-    syst_list[0].Draw("e2same")
-
-
+    hist_list[1].Divide(hist_list[0])
+    for iBin in range(1, h1RawCounts.GetNbinsX() + 1):
+        syst_list[1].SetBinContent(iBin,hist_list[1].GetBinContent(iBin))
+        syst_list[1].SetBinError(iBin, ratio_error[iBin-1])    
+    hist_list[1].SetTitle(";#it{p}_{T} GeV/#it{c}; {}^{3}_{#bar{#Lambda}} #bar{H} / ^{3}_{#Lambda} H")
+    hist_list[1].Draw("P")
+    hist_list[1].SetMarkerColor(kBlue)
+    hist_list[1].SetLineColor(kBlue)
+    syst_list[1].SetLineColor(kBlue)
+    hist_list[1].SetMarkerStyle(20)
+    syst_list[1].Draw("e2same")
     pinfo2.Draw("x0same")
     myCv_ratio.Write()
     myCv_ratio.Close()
+##-----------------------------------------------------------------------------------
+
 
 
 resultFile.Close()

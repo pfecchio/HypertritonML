@@ -139,7 +139,7 @@ void Table2::Fill(const RHyperTritonHe3pi &RHyper, const RCollision &RColl)
   Rapidity = hyperVector.Rapidity();
   PseudoRapidityHe3 = he3Vector.PseudoRapidity();
   PseudoRapidityPion = piVector.PseudoRapidity();
-  if (V0CosPA > 0.99 && He3ProngPt > 1.2 && ProngsDCA < 1.6)
+  if (V0CosPA > 0.99 && He3ProngPt > 1.2 && ProngsDCA < 1.6 && NpidClustersHe3>30)
     tree->Fill();
   else
   {
