@@ -3,13 +3,14 @@ import math
 import os
 from array import array
 from inspect import signature
+
 import matplotlib
-matplotlib.use('pdf')
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.axes_grid1 import ImageGrid
-import shap
+
 import pandas as pd
+import shap
 import xgboost as xgb
 from pandas.core.index import Index
 from ROOT import TH1D, TCanvas, TFile, gStyle
@@ -20,6 +21,8 @@ from sklearn.metrics import (auc, average_precision_score, confusion_matrix,
 from sklearn.model_selection import learning_curve
 from xgboost import plot_importance
 
+matplotlib.use('pdf')
+
 
 # plot the BDT score distribution in the train and in the test set for both signal and background
 def plot_output_train_test(
@@ -27,7 +30,7 @@ def plot_output_train_test(
         pt_range=[0, 100],
         cent_class=[0, 100],
         model='xgb', features=None, raw=True, bins=80, figsize=(7.5, 5),
-        location='best', mode=3, split_string='' , **kwds):
+        location='best', mode=3, split_string='', **kwds):
     '''
     model could be 'xgb' or 'sklearn'
     '''
@@ -84,13 +87,13 @@ def plot_output_train_test(
         os.makedirs(fig_score_path)
 
     fig_name = 'BDTscorePDF_ct{}{}_pT{}{}_cen{}{}{}'.format(
-        ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1],split_string)
+        ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1], split_string)
 
     plt.savefig('{}/{}.pdf'.format(fig_score_path, fig_name), dpi=500, transparent=True)
     plt.close()
 
 
-def plot_distr(sig_df,bkg_df, column=None, figsize=None, bins=50, fig_name='features.pdf', mode=2, log=True, **kwds):
+def plot_distr(sig_df, bkg_df, column=None, figsize=None, bins=50, fig_name='features.pdf', mode=2, log=True, **kwds):
     """Build a DataFrame and create two dataset for signal and bkg
 
     Draw histogram of the DataFrame's series comparing the distribution
@@ -137,7 +140,7 @@ def plot_distr(sig_df,bkg_df, column=None, figsize=None, bins=50, fig_name='feat
     plt.close()
 
 
-def plot_corr(sig_df,bkg_df, columns, mode=3, **kwds):
+def plot_corr(sig_df, bkg_df, columns, mode=3, **kwds):
     """Calculate pairwise correlation between features.
     Extra arguments are passed on to DataFrame.corr()
     """
@@ -305,7 +308,7 @@ def plot_eff_ct(
 def plot_significance_scan(
         max_index, significance, significance_error, expected_signal, bkg_df, score_list, data_range_array, bin_cent,
         n_ev, mode, custom=True, split_string=''):
-    
+
     label = 'Significance'
     if custom:
         label = label + ' x Efficiency'
@@ -427,20 +430,27 @@ def plot_roc(y_truth, model_decision, mode, fig_name='/roc_curve.pdf'):
     plt.close()
 
 
-def plot_feature_imp(df,y,model, mode, ct_range=[0, 100], pt_range=[0, 10], cent_class=[0, 100],split_string=''):
-    subs_bkg=df[y==0].sample(10000)
-    subs_sig=df[y==1].sample(10000)
-    df_subs=pd.concat([subs_bkg,subs_sig]).sample(frac=1.)
+def plot_feature_imp(df, y, model, mode, ct_range=[0, 100], pt_range=[0, 10], cent_class=[0, 100], split_string=''):
+    subs_bkg = df[y == 0].sample(10000)
+    subs_sig = df[y == 1].sample(10000)
+    df_subs = pd.concat([subs_bkg, subs_sig]).sample(frac=1.)
     explainer = shap.TreeExplainer(model)
     shap_values = explainer.shap_values(df_subs)
-    fig=shap.summary_plot(shap_values, df_subs,show=False)
-    fig_sig_path = os.environ['HYPERML_FIGURES_{}'.format(mode)]+'/Feature_Imp'
-    fig_name='feature_imp_ct{}{}_pT{}{}_cen{}{}{}'.format(ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1], split_string)
+    fig = shap.summary_plot(shap_values, df_subs, show=False, plot_type='violin')
+    fig_sig_path = os.environ['HYPERML_FIGURES_{}'.format(mode)]+'/FeatureImp'
+    fig_name = 'feature_imp_ct{}{}_pT{}{}_cen{}{}{}'.format(
+        ct_range[0],
+        ct_range[1],
+        pt_range[0],
+        pt_range[1],
+        cent_class[0],
+        cent_class[1],
+        split_string)
     if not os.path.exists(fig_sig_path):
         os.makedirs(fig_sig_path)
-    plt.savefig(fig_sig_path + '/' + fig_name,format='pdf', dpi=1000, bbox_inches='tight')
+    plt.savefig(fig_sig_path + '/' + fig_name, format='pdf', dpi=1000, bbox_inches='tight')
     plt.close()
-    del subs_sig,subs_bkg,df_subs
+    del subs_sig, subs_bkg, df_subs
 
 
 def plot_confusion_matrix(y_true, df, mode, score,
@@ -533,4 +543,3 @@ def plot_precision_recall(y_test, y_score, mode, fig_name='precision_recall.pdf'
 
     plt.savefig(fig_sig_path + '/' + fig_name)
     plt.close()
-
