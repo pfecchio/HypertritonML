@@ -25,7 +25,7 @@ def evaluate_hyperparams(data, training_columns, reg_params, max_depth, learning
     params = {**reg_params, **params}
 
     model = xgb.XGBClassifier(**params)
-    return np.mean(cross_val_score(model, data[0][training_columns], data[1], cv=nfold, scoring='roc_auc'))
+    return np.mean(cross_val_score(model, data[0][training_columns], data[1], cv=nfold, scoring='roc_auc')) * 100. - 99.
 
 
 def gs_1par(gs_dict, par_dict, train_data, num_rounds, seed, folds, metrics, n_early_stop):
