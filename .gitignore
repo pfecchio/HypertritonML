@@ -106,6 +106,9 @@ venv.bak/
 #vscode 
 .vscode/
 
+# .DS_Store banished
+.DS_Store
+
 # Analysis artefacts
 Models/
 Figures/
