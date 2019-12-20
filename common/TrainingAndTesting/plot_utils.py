@@ -431,14 +431,28 @@ def plot_roc(y_truth, model_decision, mode, fig_name='/roc_curve.pdf'):
 
 
 def plot_feature_imp(df, y, model, mode, ct_range=[0, 100], pt_range=[0, 10], cent_class=[0, 100], split_string=''):
-    subs_bkg = df[y == 0].sample(10000)
-    subs_sig = df[y == 1].sample(10000)
+    if mode == 3:
+        if len(df[y == 1]) > 10000:
+            subs_bkg = df[y == 0].sample(10000)
+            subs_sig = df[y == 1].sample(10000)
+        elif len(df[y == 1]) > 7000:
+            subs_bkg = df[y == 0].sample(7000)
+            subs_sig = df[y == 1].sample(7000)
+        else:
+            subs_bkg = df[y == 0].sample(500)
+            subs_sig = df[y == 1].sample(500)
+    else:
+        subs_bkg = df[y == 0].sample(10000)
+        subs_sig = df[y == 1].sample(10000)
+
     df_subs = pd.concat([subs_bkg, subs_sig]).sample(frac=1.)
+
     explainer = shap.TreeExplainer(model)
-    shap_values = explainer.shap_values(df_subs)
-    fig = shap.summary_plot(shap_values, df_subs, show=False, plot_type='violin')
+    shap_values=explainer.shap_values(df_subs)
+    
+    fig = shap.summary_plot(shap_values, df_subs, show=False, plot_type='violin', max_display=42)
     fig_sig_path = os.environ['HYPERML_FIGURES_{}'.format(mode)]+'/FeatureImp'
-    fig_name = 'feature_imp_ct{}{}_pT{}{}_cen{}{}{}'.format(
+    fig_name = 'feature_imp_ct{}{}_pT{}{}_cen{}{}{}.png'.format(
         ct_range[0],
         ct_range[1],
         pt_range[0],
@@ -446,10 +460,13 @@ def plot_feature_imp(df, y, model, mode, ct_range=[0, 100], pt_range=[0, 10], ce
         cent_class[0],
         cent_class[1],
         split_string)
+
     if not os.path.exists(fig_sig_path):
         os.makedirs(fig_sig_path)
-    plt.savefig(fig_sig_path + '/' + fig_name, format='pdf', dpi=1000, bbox_inches='tight')
+
+    plt.savefig(fig_sig_path + '/' + fig_name, format='png', dpi=500, bbox_inches='tight')
     plt.close()
+
     del subs_sig, subs_bkg, df_subs
 
 
@@ -501,11 +518,13 @@ def plot_confusion_matrix(y_true, df, mode, score,
     # Loop over data dimensions and create text annotations.
     fmt = '.2f' if normalize else 'd'
     thresh = cm.max() / 2.
+
     for i in range(cm.shape[0]):
         for j in range(cm.shape[1]):
             ax.text(j, i, format(cm[i, j], fmt),
                     ha="center", va="center",
                     color="white" if cm[i, j] > thresh else "black")
+                    
     fig.tight_layout()
 
     fig_sig_path = os.environ['HYPERML_FIGURES_{}'.format(mode)]+'/Confusion'
