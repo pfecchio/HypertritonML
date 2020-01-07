@@ -3,6 +3,7 @@
 
 #include <TFile.h>
 #include <TH1D.h>
+#include <TList.h>
 #include <TTree.h>
 #include <TTreeReader.h>
 #include <TTreeReaderArray.h>
@@ -19,14 +20,19 @@ void GenerateTableFromData(bool appData = true) {
   string dataDir  = getenv("HYPERML_DATA_3");
   string tableDir = getenv("HYPERML_TABLES_3");
 
-  string inFileName = "HyperTritonTree_18q.root";
+  string inFileName = "HyperTritonTree_18qr.root";
   string inFileArg  = dataDir + "/" + inFileName;
+
+  string inAnResultsName = "AnalysisResults_18qr.root";
+  string inAnResultsArg  = dataDir + "/" + inAnResultsName;
 
   string outFileName = "DataTable.root";
   string outFileArg  = tableDir + "/" + outFileName;
 
   // read the tree
-  TFile *inFile = new TFile(inFileArg.data(), "READ");
+  TFile *inFile          = new TFile(inFileArg.data(), "READ");
+  TFile *inAnResultsFile = new TFile(inAnResultsArg.data(), "READ");
+
   // new flat tree with the features
   TFile outFile(outFileArg.data(), "RECREATE");
 
@@ -43,8 +49,12 @@ void GenerateTableFromData(bool appData = true) {
       }
     }
 
+    TList *l    = (TList *)inAnResultsFile->Get("AliAnalysisTaskHypertriton3ML_summary");
+    TH1F *hCent = (TH1F *)l->FindObject("Centrality_selected");
+
     outFile.cd();
     table.Write();
+    hCent->Write();
 
   } else {
     TTreeReaderValue<REvent> rEv             = {fReader, "REvent"};
