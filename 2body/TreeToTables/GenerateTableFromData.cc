@@ -54,7 +54,7 @@ void GenerateTableFromData(bool likeSign = false, bool kInt7 = false)
   {
     if (kInt7)
     {
-      if (!(RColl->fTrigger == 9 || RColl->fTrigger == 1))
+      if (!(RColl->fTrigger == 9 || RColl->fTrigger == 1 || RColl->fTrigger == 9+2 || RColl->fTrigger == 1+2 || RColl->fTrigger == 9+4 || RColl->fTrigger == 1+4))
         continue;
     }
     eventCounter.Fill(RColl->fCent);
