@@ -163,10 +163,10 @@ void Table3::Fill(const RHypertriton3 &rHyp3, const REvent &rEv) {
   fDCAPrimaryVtxPi    = Hypot(rHyp3.fDCAxyPi, rHyp3.fDCAzPi);
 
   // vectors of the closest position to the decay vertex of the daughter's tracks
-  const TVector3 decayVtxPos(rHyp3.fDecayVtxX, rHyp3.fDecayVtxY, rHyp3.fDecayVtxZ);
-  const TVector3 deuPosVector(rHyp3.fPosXDeu, rHyp3.fPosYDeu, rHyp3.fPosZDeu);
-  const TVector3 pPosVector(rHyp3.fPosXP, rHyp3.fPosYP, rHyp3.fPosZP);
-  const TVector3 piPosVector(rHyp3.fPosXPi, rHyp3.fPosYPi, rHyp3.fPosZPi);
+  const double decayVtxPos[3]  = {rHyp3.fDecayVtxX, rHyp3.fDecayVtxY, rHyp3.fDecayVtxZ};
+  const double deuPosVector[3] = {rHyp3.fPosXDeu, rHyp3.fPosYDeu, rHyp3.fPosZDeu};
+  const double pPosVector[3]   = {rHyp3.fPosXP, rHyp3.fPosYP, rHyp3.fPosZP};
+  const double piPosVector[3]  = {rHyp3.fPosXPi, rHyp3.fPosYPi, rHyp3.fPosZPi};
 
   // DCA to the decay vertex
   fDCAxyDecayVtxDeu = DistanceXY(decayVtxPos, deuPosVector);
@@ -209,7 +209,7 @@ void Table3::Fill(const RHypertriton3 &rHyp3, const REvent &rEv) {
   fInvMass   = hyper4Vector.M();
 
   // define the decay lenght vector
-  const double decayLenght{rHyp3.fDecayVtxX - rEv.fX, rHyp3.fDecayVtxY - rEv.fY, rHyp3.fDecayVtxZ - rEv.fZ};
+  const double decayLenght[3]{rHyp3.fDecayVtxX - rEv.fX, rHyp3.fDecayVtxY - rEv.fY, rHyp3.fDecayVtxZ - rEv.fZ};
   const double decayLenghtNorm = Hypot(decayLenght[0], decayLenght[1], decayLenght[2]);
 
   double cosPA =
@@ -217,7 +217,7 @@ void Table3::Fill(const RHypertriton3 &rHyp3, const REvent &rEv) {
   cosPA /= decayLenghtNorm * hyper4Vector.P();
 
   // compute the candidate ct
-  fCt = kHyperTritonMass * decayLenghtVector.Mag() / hyper4Vector.P();
+  fCt = kHyperTritonMass * decayLenghtNorm / hyper4Vector.P();
 
   // compute the cos(theta pointing)
   fCosPA = cosPA;
