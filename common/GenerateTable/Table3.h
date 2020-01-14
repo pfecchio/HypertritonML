@@ -209,13 +209,18 @@ void Table3::Fill(const RHypertriton3 &rHyp3, const REvent &rEv) {
   fInvMass   = hyper4Vector.M();
 
   // define the decay lenght vector
-  const TVector3 decayLenghtVector = decayVtxPos - primaryVtxPos;
+  const double decayLenght{rHyp3.fDecayVtxX - rEv.fX, rHyp3.fDecayVtxY - rEv.fY, rHyp3.fDecayVtxZ - rEv.fZ};
+  const double decayLenghtNorm = Hypot(decayLenght[0], decayLenght[1], decayLenght[2]);
+
+  double cosPA =
+      hyper4Vector.Px() * decayLenght[0] + hyper4Vector.Py() * decayLenght[1] + hyper4Vector.Pz() * decayLenght[2];
+  cosPA /= decayLenghtNorm * hyper4Vector.P();
 
   // compute the candidate ct
   fCt = kHyperTritonMass * decayLenghtVector.Mag() / hyper4Vector.P();
 
   // compute the cos(theta pointing)
-  fCosPA = std::cos(hyper4Vector.Angle(decayLenghtVector));
+  fCosPA = cosPA;
 
   // matter or anti-matter
   fMatter = rHyp3.fIsMatter;
