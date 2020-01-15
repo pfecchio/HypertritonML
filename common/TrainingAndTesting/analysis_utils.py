@@ -160,7 +160,7 @@ def h3_minvptct(ptbin, ctbin, name='InvMassPtCt'):
 
 def fit(
         counts, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, signif=0, errsignif=0, name='', bins=45,
-        model="expo", fixsigma=-1, sigmaLimits=None):
+        model="expo", fixsigma=-1, sigmaLimits=None, file_name = 'prova.root'):
     histo = TH1D(
         "ct{}{}_pT{}{}_cen{}{}_{}_{}".format(
             ct_range[0],
@@ -175,12 +175,12 @@ def fit(
     for index in range(0, len(counts)):
         histo.SetBinContent(index+1, counts[index])
         histo.SetBinError(index+1, math.sqrt(counts[index]))
-    return fitHist(histo, ct_range, pt_range, cent_class, tdirectory, nsigma, signif, errsignif, model, fixsigma, sigmaLimits)
+    return fitHist(histo, ct_range, pt_range, cent_class, tdirectory, nsigma, signif, errsignif, model, fixsigma, sigmaLimits, file_name = file_name)
 
 
 def fitHist(
         histo, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, signif=0, errsignif=0, model="expo",
-        fixsigma=-1, sigmaLimits=None):
+        fixsigma=-1, sigmaLimits=None, file_name = 'prova.root'):
     if tdirectory:
         tdirectory.cd()
 
@@ -298,6 +298,11 @@ def fitHist(
         st.SetY2NDC(0.90)
     if tdirectory:
         tdirectory.cd()
+        histo.Write()
+        cv.Write()
+    else:
+        new_file = TFile(file_name,'UPDATE')
+        new_file.cd()
         histo.Write()
         cv.Write()
     return (signal, errsignal, signif, errsignif, sigma, sigmaErr)

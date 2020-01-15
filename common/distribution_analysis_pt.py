@@ -12,6 +12,7 @@ import yaml
 from scipy import stats
 from ROOT import (TF1, TH1D, TH2D, TAxis, TCanvas, TColor, TFile, TFrame, TIter, TKey,
                   TPaveText, gDirectory, gROOT, gStyle, gPad, AliPWGFunc, kBlack, kBlue, kRed)
+from statsmodels.robust.scale import huber
 
 gROOT.LoadMacro("/home/alidock/HypertritonML/Utils/YieldMean.C+")
 
@@ -118,12 +119,16 @@ for cclass in params['CENTRALITY_CLASS']:
                 for eff in np.arange(ranges['SCAN'][iBin-1][0], ranges['SCAN'][iBin-1][1], ranges['SCAN'][iBin-1][2]):
                     h2RawCounts = resultFile.Get(
                         f'{inDirName}/RawCounts{eff:g}_{model}')
-                    raws[iBin-1].append(h2RawCounts.GetBinContent(iBin,
-                                                                  1) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/n_events/0.25)
+                    val = h2RawCounts.GetBinContent(iBin,1) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/n_events/0.25
+                    raws[iBin-1].append(val)
                     errs[iBin-1].append(h2RawCounts.GetBinError(iBin,
                                                                 1) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/n_events/0.25)
+                    # if(split_string=='_matter' and iBin==1 and val == 1.1343769943680133e-07):
+                    #     print('raws:' ,raws[iBin-1])
+                    #     print('model: ',model)
+                    #     print('eff: ', eff)
 
-        h1PreselEff.Scale(0.5)  
+        # h1PreselEff.Scale(0.5)  ##rapidity cut correction
         h1RawCounts.UseCurrentStyle()
         h1RawCounts.Scale(1/n_events/0.25)
         abs_corr = h1RawCounts.Clone("abs_corr")
@@ -242,7 +247,7 @@ for cclass in params['CENTRALITY_CLASS']:
     ratio_error=[]
     for i in range(0,h1RawCounts.GetNbinsX()):
         syst_tot=np.array(raws_list[1][i])/np.array(raws_list[0][i])
-        ratio_error.append(np.std(syst_tot))
+        ratio_error.append(float(huber(syst_tot)[1]))
     myCv_ratio = TCanvas("ratio")
     myCv_ratio.cd()
     hist_list[1].Divide(hist_list[0])

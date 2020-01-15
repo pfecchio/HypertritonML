@@ -38,9 +38,10 @@ class GeneralizedAnalysis:
             self.df_data = uproot.open(data_file_name)['BackgroundTable'].pandas.df()
 
         if mode == 2:
-            self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df()
-            self.df_generated = uproot.open(mc_file_name)['GenTable'].pandas.df()
-            self.df_data = uproot.open(data_file_name)['DataTable'].pandas.df()
+            self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df().query('abs(Rapidity)<0.5')
+            self.df_generated = uproot.open(mc_file_name)['GenTable'].pandas.df().query('abs(rapidity)<0.5')
+            self.df_data = uproot.open(data_file_name)['DataTable'].pandas.df().query('abs(Rapidity)<0.5')
+
 
         self.df_signal['y'] = 1
         self.df_data['y'] = 0
@@ -137,11 +138,10 @@ class GeneralizedAnalysis:
 
         total_cut = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(
             ct_min, ct_max, pt_min, pt_max, cent_min, cent_max)
-        total_cut_gen = '{}<ct<{} and {}<pT<{} and {}<centrality<{} and abs(rapidity)<0.5'.format(
+        total_cut_gen = '{}<ct<{} and {}<pT<{} and {}<centrality<{}'.format(
             ct_min, ct_max, pt_min, pt_max, cent_min, cent_max)
 
         eff = len(self.df_signal.query(total_cut))/len(self.df_generated.query(total_cut_gen))
-
         return eff
 
     # function that manage the bayesian optimization
