@@ -62,27 +62,33 @@ with open(os.path.expandvars(rangesFile), 'r') as stream:
 file_name = resultsSysDir + '/' + params['FILE_PREFIX'] + '_dist.root'
 distribution = TFile(file_name, 'recreate')
 
-file_name = resultsSysDir + '/' + params['FILE_PREFIX'] + '_results.root'
-resultFile = TFile(file_name)
+file_name = resultsSysDir + '/' + params['FILE_PREFIX'] + '_results_fit.root'
+# file_name = resultsSysDir + '/3b.root' 
+results_file = TFile(file_name, 'read')
+
+# file_name = '~/HypertritonML/3body/PreselectionEfficiency/PreselectionEfficiencyHist.root'
+# eff_file = TFile(file_name, 'read')
 
 bkgModels = params['BKG_MODELS'] if 'BKG_MODELS' in params else ['expo']
 
 for cclass in params['CENTRALITY_CLASS']:
     inDirName = f"{cclass[0]}-{cclass[1]}"
-    resultFile.cd(inDirName)
-    outDir = distribution.mkdir(inDirName)
-    cvDir = outDir.mkdir("canvas")
+    results_file.cd(inDirName)
+    out_dir = distribution.mkdir(inDirName)
+    cvDir = out_dir.mkdir("canvas")
 
-    h2PreselEff = resultFile.Get(f'{inDirName}/SelEff')
+    h2PreselEff = results_file.Get(f'{inDirName}/SelEff')
     h1PreselEff = h2PreselEff.ProjectionY()
 
-    for i in range(1, h1PreselEff.GetNbinsX()+1):
+    # h1PreselEff = eff_file.Get('fHistEfficiencyVsCt')
+
+    for i in range(1, h1PreselEff.GetNbinsX() + 1):
         h1PreselEff.SetBinError(i, 0)
 
     h1PreselEff.SetTitle(f';{var} ({unit}); Preselection efficiency')
     h1PreselEff.UseCurrentStyle()
     h1PreselEff.SetMinimum(0)
-    outDir.cd()
+    out_dir.cd()
     h1PreselEff.Write("h1PreselEff")
 
     hRawCounts = []
@@ -93,12 +99,12 @@ for cclass in params['CENTRALITY_CLASS']:
         h1RawCounts = h1PreselEff.Clone(f"best_{model}")
         h1RawCounts.Reset()
 
-        h2Significance = resultFile.Get(f'{inDirName}/significance_{model}')
-        outDir.cd()
-        h2Significance.ProjectionY().Write(f'significance_ct_{model}')
+        # h2Significance = results_file.Get(f'{inDirName}/significance_{model}')
+        out_dir.cd()
+        # h2Significance.ProjectionY().Write(f'significance_ct_{model}')
 
-        for iBin in range(1, h1RawCounts.GetNbinsX()+1):
-            h2RawCounts = resultFile.Get(f'{inDirName}/RawCounts{ranges["BEST"][iBin-1]}_{model}')
+        for iBin in range(1, h1RawCounts.GetNbinsX()):
+            h2RawCounts = results_file.Get(f'{inDirName}/RawCounts{ranges["BEST"][iBin-1]:.2f}_{model}')
             h1RawCounts.SetBinContent(iBin, h2RawCounts.GetBinContent(
                 1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin))
             h1RawCounts.SetBinError(iBin, h2RawCounts.GetBinError(
@@ -106,14 +112,14 @@ for cclass in params['CENTRALITY_CLASS']:
             raws.append([])
             errs.append([])
 
-            for eff in np.arange(ranges['SCAN'][iBin-1][0], ranges['SCAN'][iBin-1][1], ranges['SCAN'][iBin-1][2]):
-                h2RawCounts = resultFile.Get(f'{inDirName}/RawCounts{eff:g}_{model}')
-                raws[iBin-1].append(h2RawCounts.GetBinContent(1,
-                                                              iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin))
-                errs[iBin-1].append(h2RawCounts.GetBinError(1,
-                                                            iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin))
+            # for eff in np.arange(ranges['SCAN'][iBin-1][0], ranges['SCAN'][iBin-1][1], ranges['SCAN'][iBin-1][2]):
+            #     h2RawCounts = results_file.Get(f'{inDirName}/RawCounts{eff:.2f}_{model}')
+            #     raws[iBin-1].append(h2RawCounts.GetBinContent(1,
+            #                                                   iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin))
+            #     errs[iBin-1].append(h2RawCounts.GetBinError(1,
+            #                                                 iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin))
 
-        outDir.cd()
+        out_dir.cd()
         h1RawCounts.UseCurrentStyle()
         h1RawCounts.Fit(expo, "MI0+")
         fit_function = h1RawCounts.GetFunction("myexpo")
@@ -135,11 +141,11 @@ for cclass in params['CENTRALITY_CLASS']:
         string2 = 'Pb-Pb  #sqrt{#it{s}_{NN}} = 5.02 TeV,  0-90%'
         pinfo2.AddText(string1)
         pinfo2.AddText(string2)
-        # string='#tau = {:.0f} #pm {:.0f} ps '.format(expo.GetParameter(1),expo.GetParError(1))
-        # pinfo2.AddText(string)
-        # if expo.GetNDF()is not 0:
-        #   string='#chi^{{2}} / NDF = {}'.format(expo.GetChisquare() / (expo.GetNDF()))
-        # pinfo2.AddText(string)
+        string='#tau = {:.0f} #pm {:.0f} ps '.format(expo.GetParameter(1),expo.GetParError(1))
+        pinfo2.AddText(string)
+        if expo.GetNDF()is not 0:
+          string='#chi^{{2}} / NDF = {}'.format(expo.GetChisquare() / (expo.GetNDF()))
+        pinfo2.AddText(string)
         fit_function.Draw("same")
         h1RawCounts.Draw("ex0same")
         h1RawCounts.SetMarkerStyle(20)
@@ -168,7 +174,7 @@ for cclass in params['CENTRALITY_CLASS']:
         tmpSyst.SetMarkerColor(kBlueC)
         tmpSyst.Draw("e2same")
         # corSyst.Draw("e2same")
-        outDir.cd()
+        out_dir.cd()
         myCv.Write()
 
         h1RawCounts.Draw("ex0same")
@@ -176,43 +182,43 @@ for cclass in params['CENTRALITY_CLASS']:
         cvDir.cd()
         myCv.Write()
 
-    outDir.cd()
+    out_dir.cd()
 
-    syst = TH1D("syst", ";#tau (ps);Entries", 300, 100, 400)
-    prob = TH1D("prob", ";Lifetime fit probability;Entries", 100, 0, 1)
-    pars = TH2D("pars", ";#tau (ps);Normalisation;Entries", 300, 100, 400, 4000, 2500, 6500)
-    tmpCt = hRawCounts[0].Clone("tmpCt")
+    # syst = TH1D("syst", ";#tau (ps);Entries", 300, 100, 400)
+    # prob = TH1D("prob", ";Lifetime fit probability;Entries", 100, 0, 1)
+    # pars = TH2D("pars", ";#tau (ps);Normalisation;Entries", 300, 100, 400, 4000, 2500, 6500)
+    # tmpCt = hRawCounts[0].Clone("tmpCt")
 
-    combinations = set()
-    size = 100000
+    # combinations = set()
+    # size = 100
 
-    for _ in range(size):
-        tmpCt.Reset()
-        comboList = []
+    # for _ in range(size):
+    #     tmpCt.Reset()
+    #     comboList = []
 
-        for iBin in range(1, tmpCt.GetNbinsX()+1):
-            index = random.randint(0, len(raws[iBin-1])-1)
-            comboList.append(index)
-            tmpCt.SetBinContent(iBin, raws[iBin-1][index])
-            tmpCt.SetBinError(iBin, errs[iBin-1][index])
+    #     for iBin in range(1, tmpCt.GetNbinsX()):
+    #         index = random.randint(0, len(raws[iBin-1])-1)
+    #         comboList.append(index)
+    #         tmpCt.SetBinContent(iBin, raws[iBin-1][index])
+    #         tmpCt.SetBinError(iBin, errs[iBin-1][index])
 
-        combo = (x for x in comboList)
-        if combo in combinations:
-            continue
+    #     combo = (x for x in comboList)
+    #     if combo in combinations:
+    #         continue
 
-        combinations.add(combo)
-        tmpCt.Fit(expo, "MI")
-        prob.Fill(expo.GetProb())
-        if expo.GetChisquare() < 3 * expo.GetNDF():
-            syst.Fill(expo.GetParameter(1))
-            pars.Fill(expo.GetParameter(1), expo.GetParameter(0))
+    #     combinations.add(combo)
+    #     tmpCt.Fit(expo, "MI")
+    #     prob.Fill(expo.GetProb())
+    #     if expo.GetChisquare() < 3 * expo.GetNDF():
+    #         syst.Fill(expo.GetParameter(1))
+    #         pars.Fill(expo.GetParameter(1), expo.GetParameter(0))
 
-    syst.SetFillColor(600)
-    syst.SetFillStyle(3345)
-    syst.Scale(1./syst.Integral())
-    syst.Write()
-    prob.Write()
-    pars.Write()
+    # syst.SetFillColor(600)
+    # syst.SetFillStyle(3345)
+    # syst.Scale(1./syst.Integral())
+    # syst.Write()
+    # prob.Write()
+    # pars.Write()
 
     # myCv = TCanvas("ctSpectraCv")
     # pinfo2= TPaveText(0.5,0.6,0.91,0.9,"NDC")
@@ -243,7 +249,7 @@ for cclass in params['CENTRALITY_CLASS']:
     #   corSyst.SetBinError(iBin, 0.086 * val)
     # tmpSyst.Draw("e2same")
     # corSyst.Draw("e2same")
-    # outDir.cd()
+    # out_dir.cd()
     # myCv.Write()
 
-resultFile.Close()
+results_file.Close()

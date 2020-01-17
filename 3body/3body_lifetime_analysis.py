@@ -126,77 +126,76 @@ for cclass in params['CENTRALITY_CLASS']:
 
             model = analysis.load_model(ct_range=ctbin, cent_class=cclass, pt_range=ptbin)
 
-            score_cut, bdt_efficiency = analysis.sig_scan(
-                data[2: 4],
-                model, params['TRAINING_COLUMNS'], ct_range=ctbin, pt_range=ptbin, cent_class=cclass,
-                custom=params['MAX_SIGXEFF'])
+            # score_cut, bdt_efficiency = analysis.sig_scan(
+            #     data[2: 4],
+            #     model, params['TRAINING_COLUMNS'], ct_range=ctbin, pt_range=ptbin, cent_class=cclass,
+            #     custom=params['MAX_SIGXEFF'])
 
-            score_bdteff_dict[key]['sig_scan'] = [float(score_cut), float(bdt_efficiency)]
+            # score_bdteff_dict[key]['sig_scan'] = [float(score_cut), float(bdt_efficiency)]
 
-        h2BDTeff.SetBinContent(ptbin_index, ctbin_index, score_bdteff_dict[key]['sig_scan'][1])
-        h2seleff.SetBinContent(ptbin_index, ctbin_index, preselection_efficiency[key])
+            # h2BDTeff.SetBinContent(ptbin_index, ctbin_index, score_bdteff_dict[key]['sig_scan'][1])
+            h2seleff.SetBinContent(ptbin_index, ctbin_index, preselection_efficiency[key])
 
-        # compute and store score cut for fixed efficiencies, if required
-        if params['BDT_EFF_CUTS']:
-            score_eff = analysis.score_from_efficiency(
-                model, data[2: 4],
-                params['BDT_EFFICIENCY'],
-                params['TRAINING_COLUMNS'],
-                ct_range=ctbin, pt_range=ptbin, cent_class=cclass)
+            # compute and store score cut for fixed efficiencies, if required
+            if params['BDT_EFF_CUTS']:
+                score_eff = analysis.score_from_efficiency(
+                    model, data[2: 4],
+                    params['BDT_EFFICIENCY'],
+                    params['TRAINING_COLUMNS'],
+                    ct_range=ctbin, pt_range=ptbin, cent_class=cclass)
 
-            for se in score_eff:
-                score_bdteff_dict[key]['eff{}'.format(se[1])] = [float(se[0]), float(se[1])]
+                for se in score_eff:
+                    score_bdteff_dict[key]['eff{}'.format(se[1])] = [float(se[0]), float(se[1])]
 
-        if params['FIXED_SIGMA_FIT']:
-            for se in score_eff:
-                data[2]['Score'] = data[2]['Score'].astype(float)
-                df_mcselected = data[2].query('y > 0.5 and Score > {}'.format(se[0]))
+            if params['FIXED_SIGMA_FIT']:
+                for se in score_eff:
+                    data[2]['Score'] = data[2]['Score'].astype(float)
+                    df_mcselected = data[2].query('y > 0.5 and Score > {}'.format(se[0]))
 
-                for _, hyp in df_mcselected.iterrows():
-                    h3_invmassptct_list[f'{se[1]}'].Fill(hyp['InvMass'], hyp['HypCandPt'], hyp['ct'])
+                    for _, hyp in df_mcselected.iterrows():
+                        h3_invmassptct_list[f'{se[1]}'].Fill(hyp['InvMass'], hyp['HypCandPt'], hyp['ct'])
 
-                del df_mcselected
+                    del df_mcselected
 
-                mc_minv = h3_invmassptct_list[f'{se[1]}'].ProjectionX('mc_minv', ptbin_index, ptbin_index, ctbin_index, ctbin_index)
-                mc_minv.Fit('gaus', 'Q')
+                    mc_minv = h3_invmassptct_list[f'{se[1]}'].ProjectionX('mc_minv', ptbin_index, ptbin_index, ctbin_index,     ctbin_index)
+                    mc_minv.Fit('gaus', 'Q')
 
-                gaus_fit = mc_minv.GetFunction('gaus')
-                if gaus_fit:
-                    h2sigma_mc_list[f'{eff}'].SetBinContent(ptbin_index, ctbin_index, gaus_fit.GetParameter(2))
-                    h2sigma_mc_list[f'{eff}'].SetBinError(ptbin_index, ctbin_index, gaus_fit.GetParError(2))
+                    gaus_fit = mc_minv.GetFunction('gaus')
+                    if gaus_fit:
+                        h2sigma_mc_list[f'{eff}'].SetBinContent(ptbin_index, ctbin_index, gaus_fit.GetParameter(2))
+                        h2sigma_mc_list[f'{eff}'].SetBinError(ptbin_index, ctbin_index, gaus_fit.GetParError(2))
 
-        total_cut = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(
-                    ctbin[0], ctbin[1], ptbin[0], ptbin[1], cclass[0], cclass[1])
+            total_cut = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(
+                        ctbin[0], ctbin[1], ptbin[0], ptbin[1], cclass[0], cclass[1])
 
-        df_data = analysis.df_data_all.query(total_cut)
+            df_data = analysis.df_data_all.query(total_cut)
 
-        # extract the signal for each bdtscore-eff configuration
-        for k, se in score_bdteff_dict[key].items():
-            # obtain the selected invariant mass dist
-            mass_bins = 40 if ctbin[1] < 16 else 36
+            # extract the signal for each bdtscore-eff configuration
+            for k, se in score_bdteff_dict[key].items():
+                # obtain the selected invariant mass dist
+                mass_bins = 40 if ctbin[1] < 16 else 36
 
-            for model, fitdir, h2raw, h2sig, h2raw_dict in zip(
-                    bkg_models, fit_directories, h2raw_counts, h2significance, h2raw_counts_fixeff_dict):
-                massArray = np.array(df_data.query('score >@se[0]')['InvMass'].values, dtype=np.float64)
-                counts, bins = np.histogram(massArray, bins=mass_bins, range=[2.96, 3.05])
+                for model, fitdir, h2raw, h2sig, h2raw_dict in zip(
+                        bkg_models, fit_directories, h2raw_counts, h2significance, h2raw_counts_fixeff_dict):
+                    massArray = np.array(df_data.query('score >@se[0]')['InvMass'].values, dtype=np.float64)
+                    counts, bins = np.histogram(massArray, bins=mass_bins, range=[2.96, 3.05])
 
-                # au.fitUnbinned(massArray, ctbin, ptbin, cclass, fitdir)
-                if params['FIXED_SIGMA_FIT']:
-                    sigma = h2sigma_mc_list[f'{eff}'].GetBinContent(ptbin_index, ctbin_index)
-                else:
-                    sigma = -1
+                    if params['FIXED_SIGMA_FIT']:
+                        sigma = h2sigma_mc_list[f'{eff}'].GetBinContent(ptbin_index, ctbin_index)
+                    else:
+                        sigma = -1
 
-                hyp_yield, err_yield, signif, errsignif, sigma, sigmaErr = au.fit(
-                    counts, ctbin, ptbin, cclass, fitdir, name=k, bins=mass_bins, model=model, fixsigma=sigma)
+                    hyp_yield, err_yield, signif, errsignif, sigma, sigmaErr = au.fit(
+                        counts, ctbin, ptbin, cclass, fitdir, name=k, bins=mass_bins, model=model, fixsigma=sigma)
 
-                if k is 'sig_scan':
-                    h2raw.SetBinContent(ptbin_index, ctbin_index, hyp_yield)
-                    h2raw.SetBinError(ptbin_index, ctbin_index, err_yield)
-                    h2sig.SetBinContent(ptbin_index, ctbin_index, signif)
-                    h2sig.SetBinError(ptbin_index, ctbin_index, errsignif)
-                else:
-                    h2raw_dict[k].SetBinContent(ptbin_index, ctbin_index, hyp_yield)
-                    h2raw_dict[k].SetBinError(ptbin_index, ctbin_index, err_yield)
+                    if k is 'sig_scan':
+                        h2raw.SetBinContent(ptbin_index, ctbin_index, hyp_yield)
+                        h2raw.SetBinError(ptbin_index, ctbin_index, err_yield)
+                        h2sig.SetBinContent(ptbin_index, ctbin_index, signif)
+                        h2sig.SetBinError(ptbin_index, ctbin_index, errsignif)
+                    else:
+                        h2raw_dict[k].SetBinContent(ptbin_index, ctbin_index, hyp_yield)
+                        h2raw_dict[k].SetBinError(ptbin_index, ctbin_index, err_yield)
 
     # write on file
     cent_dir.cd()

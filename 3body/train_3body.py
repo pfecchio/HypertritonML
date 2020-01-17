@@ -76,6 +76,8 @@ for cclass in params['CENTRALITY_CLASS']:
                 data, params['TRAINING_COLUMNS'],
                 params['XGBOOST_PARAMS'],
                 hyperparams=hyperparams, ct_range=ctbin, cent_class=cclass, pt_range=ptbin, optimize=args.optimize,
-                optimize_mode=optimisation_strategy, split_string=split_string)
+                optimize_mode=optimisation_strategy)
 
+            analysis.save_model(model, ct_range=ctbin, cent_class=cclass, pt_range=ptbin)
+            
             print('--- model trained in {:.4f} minutes ---\n'.format((time.time() - part_time) / 60))
