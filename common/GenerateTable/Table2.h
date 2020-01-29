@@ -47,6 +47,9 @@ private:
   float Rapidity;
   float PseudoRapidityHe3;
   float PseudoRapidityPion;
+  float Matter;
+  float TOFnSigmaHe3;
+  float TOFnSigmaPi;
 };
 
 Table2::Table2(std::string name, std::string title)
@@ -84,6 +87,9 @@ Table2::Table2(std::string name, std::string title)
   tree->Branch("Rapidity", &Rapidity);
   tree->Branch("PseudoRapidityHe3", &PseudoRapidityHe3);
   tree->Branch("PseudoRapidityPion", &PseudoRapidityPion);
+  tree->Branch("Matter", &Matter);
+  tree->Branch("TOFnSigmaHe3",&TOFnSigmaHe3);
+  tree->Branch("TOFnSigmaPi",&TOFnSigmaPi);
 };
 
 void Table2::Fill(const RHyperTritonHe3pi &RHyper, const RCollision &RColl)
@@ -135,8 +141,11 @@ void Table2::Fill(const RHyperTritonHe3pi &RHyper, const RCollision &RColl)
   NpidClustersPion = RHyper.fNpidClustersPi;
   TPCnSigmaPi = RHyper.fTPCnSigmaPi;
   TPCnSigmaHe3 = RHyper.fTPCnSigmaHe3;
+  TOFnSigmaHe3 = RHyper.fTOFnSigmaHe3;
+  TOFnSigmaPi = RHyper.fTOFnSigmaPi;
   HypCandPt = hyperVector.Pt();
   Rapidity = hyperVector.Rapidity();
+  Matter = RHyper.fMatter;
   PseudoRapidityHe3 = he3Vector.PseudoRapidity();
   PseudoRapidityPion = piVector.PseudoRapidity();
   if (V0CosPA > 0.99 && He3ProngPt > 1.2 && ProngsDCA < 1.6 && NpidClustersHe3>30)

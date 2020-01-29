@@ -32,7 +32,7 @@ void GenerateTableFromData(bool likeSign = false, bool kInt7 = false)
   string inFileName15 = "HyperTritonTree_15";
   string inFileArg15 = dataDir + "/" + inFileName15 + lsString;
 
-  string outFileName = "DataTable";
+  string outFileName = "DataTable_18";
   string outFileArg = tableDir + "/" + outFileName + kintstring + lsString;
 
   TChain inputChain("_custom/fTreeV0");
@@ -54,7 +54,7 @@ void GenerateTableFromData(bool likeSign = false, bool kInt7 = false)
   {
     if (kInt7)
     {
-      if (!(RColl->fTrigger == 9 || RColl->fTrigger == 1 || RColl->fTrigger == 9+2 || RColl->fTrigger == 1+2 || RColl->fTrigger == 9+4 || RColl->fTrigger == 1+4))
+      if (!(RColl->fTrigger == 9 || RColl->fTrigger == 1 || RColl->fTrigger == 9 + 2 || RColl->fTrigger == 1 + 2 || RColl->fTrigger == 9 + 4 || RColl->fTrigger == 1 + 4))
         continue;
     }
     eventCounter.Fill(RColl->fCent);
