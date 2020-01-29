@@ -26,37 +26,37 @@ class GeneralizedAnalysis:
             cent_class=[[0, 10],
                         [10, 30],
                         [30, 50],
-                        [50, 90]], split=0, dedicated_background=0, training_columns=[]):
+                        [50, 90]], split='', training_columns=[]):
         self.mode = mode
 
         self.cent_class = cent_class.copy()
-        self.n_events = [0, 0, 0, 0]
+        self.n_events = []
 
         if mode == 3:
             self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df()
             self.df_generated = uproot.open(mc_file_name)['GenerateTable'].pandas.df()
             self.df_data = uproot.open(data_file_name)['BackgroundTable'].pandas.df()
 
+            # self.hist_centrality = uproot.open(data_file_name)['Centrality_selected']
+
         if mode == 2:
             self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df().query('abs(Rapidity)<0.5')
             self.df_generated = uproot.open(mc_file_name)['GenTable'].pandas.df().query('abs(rapidity)<0.5')
             self.df_data = uproot.open(data_file_name)['DataTable'].pandas.df().query('abs(Rapidity)<0.5')
 
+            # self.hist_centrality = uproot.open(data_file_name)['EventCounter']
+
+        # for cent in self.cent_class:
+        #     self.n_events.append(sum(self.hist_centrality[cent[0]+1:cent[1]]))
 
         self.df_signal['y'] = 1
         self.df_data['y'] = 0
 
-        self.df_data_bkg = self.df_data.sample(
-            n=round(len(self.df_data) * dedicated_background)) if dedicated_background != 0 else self.df_data
-
-        # backup of the data without any selections for the significance scan
-        self.df_data_all = self.df_data.drop(self.df_data_bkg.index) if dedicated_background != 0 else self.df_data
-
         if split == 'antimatter':
-            self.df_data_all = self.df_data_all.query('ArmenterosAlpha < 0')
+            self.df_data = self.df_data.query('ArmenterosAlpha < 0')
             self.df_generated = self.df_generated.query('matter < 0.5')
         if split == 'matter':
-            self.df_data_all = self.df_data_all.query('ArmenterosAlpha > 0')
+            self.df_data = self.df_data.query('ArmenterosAlpha > 0')
             self.df_generated = self.df_generated.query('matter > 0.5')
 
         # dataframe for signal and background with preselection
@@ -64,26 +64,14 @@ class GeneralizedAnalysis:
             self.df_signal = self.df_signal.query(sig_selection)
         if isinstance(bkg_selection, str):
             self.df_data = self.df_data.query(bkg_selection)
-            self.df_data_bkg = self.df_data_bkg.query(bkg_selection)
-        
 
-        # pu.plot_distr(sig_df, bkg_df, column=training_columns, mode=self.mode)
-        # pu.plot_corr(sig_df, bkg_df, training_columns+['InvMass'], mode=self.mode)
-
-
-        if mode == 2:
-            self.hist_centrality = uproot.open(data_file_name)['EventCounter']
-            self.n_events = []
-            for cent in self.cent_class:
-                self.n_events.append(sum(self.hist_centrality[cent[0]+1:cent[1]]))
+        # pu.plot_distr(df_signal, df_bkg, column=training_columns, mode=self.mode)
+        # pu.plot_corr(df_signal, df_bkg, training_columns+['InvMass'], mode=self.mode)
 
     # function to prepare the dataframe for the training and testing
     def prepare_dataframe(
-            self, training_columns, cent_class, pt_range=[0, 10],
-            ct_range=[0, 100],
-            test=False, bkg_reduct=False, bkg_factor=1, sig_nocent=False):
-        data_range_bkg = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(
-            ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1])
+            self, training_columns, cent_class, pt_range=[0, 10], ct_range=[0, 100], test=False, sig_nocent=False):
+        data_range_bkg = f'{ct_range[0]}<ct<{ct_range[1]} and {pt_range[0]}<HypCandPt<{pt_range[1]} and {cent_class[0]}<centrality<{cent_class[1]}'
 
         columns = training_columns.copy()
         columns.append('InvMass')
@@ -92,15 +80,13 @@ class GeneralizedAnalysis:
             columns.append('HypCandPt')
         if 'ct' not in columns:
             columns.append('ct')
-        
+
         if sig_nocent:
-            data_range_sig = '{}<ct<{} and {}<HypCandPt<{}'.format(
-                ct_range[0], ct_range[1], pt_range[0], pt_range[1])
+            data_range_sig = f'{ct_range[0]}<ct<{ct_range[1]} and {pt_range[0]}<HypCandPt<{pt_range[1]}'
         else:
             data_range_sig = data_range_bkg
 
-
-        bkg = self.df_data_bkg.query(data_range_bkg)
+        bkg = self.df_data.query(data_range_bkg)
         sig = self.df_signal.query(data_range_sig)
 
         if test:
@@ -109,15 +95,10 @@ class GeneralizedAnalysis:
             if len(bkg) >= 1000:
                 bkg = bkg.sample(n=1000)
 
-            self.df_data=self.df_data.sample(n=1000)    
+            self.df_data = self.df_data.sample(n=1000)
 
-        if bkg_reduct:
-            n_bkg = int(len(bkg) * bkg_factor)
-            if n_bkg < len(bkg):
-                bkg = bkg.sample(n=n_bkg)
-
-        print('\nnumber of background candidates: {}'.format(len(bkg)))
-        print('number of signal candidates: {}\n'.format(len(sig)))
+        print(f'\nnumber of background candidates: {len(bkg)}')
+        print(f'number of signal candidates: {len(sig)}\n')
 
         df = pd.concat([sig, bkg])
         train_set, test_set, y_train, y_test = train_test_split(df[columns], df['y'], test_size=0.5, random_state=42)
@@ -136,12 +117,11 @@ class GeneralizedAnalysis:
         cent_min = cent_class[0]
         cent_max = cent_class[1]
 
-        total_cut = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(
-            ct_min, ct_max, pt_min, pt_max, cent_min, cent_max)
-        total_cut_gen = '{}<ct<{} and {}<pT<{} and {}<centrality<{}'.format(
-            ct_min, ct_max, pt_min, pt_max, cent_min, cent_max)
+        total_cut = f'{ct_min}<ct<{ct_max} and {pt_min}<HypCandPt<{pt_max} and {cent_min}<centrality<{cent_max}'
+        total_cut_gen = f'{ct_min}<ct<{ct_max} and {pt_min}<pT<{pt_max} and {cent_min}<centrality<{cent_max}'
 
-        eff = len(self.df_signal.query(total_cut))/len(self.df_generated.query(total_cut_gen))
+        eff = len(self.df_signal.query(total_cut)) / len(self.df_generated.query(total_cut_gen))
+
         return eff
 
     # function that manage the bayesian optimization
@@ -175,8 +155,9 @@ class GeneralizedAnalysis:
             # 'lambda': optimizer.max['params']['lambda'],
             # 'alpha': optimizer.max['params']['alpha'],
         }
-        print('Best target: {0:.6f}'.format(optimizer.max['target']))
-        print('Best parameters: {}'.format(max_params))
+
+        print('Best target: {:.6f}'.format(optimizer.max['target']))
+        print(f'Best parameters: {max_params}')
 
         return max_params
 
@@ -235,98 +216,92 @@ class GeneralizedAnalysis:
         # join the dictionaries of the regressor params with the maximized hyperparams
         best_params = {**max_params, **reg_params}
 
-
         # final training with the optimized hyperparams
         print('Training the final model: ...', end='\r')
         model = xgb.XGBClassifier(**best_params)
         model.fit(data[0][training_columns], data[1])
-        print('{}'.format(model.get_params()))
+        print(f'{model.get_params()}')
         print('Training the final model: Done!\n')
 
         # BDT output distributions plot
-        fig_path = os.environ['HYPERML_FIGURES_{}'.format(self.mode)] + '/TrainTest'
+        fig_path = os.environ[f'HYPERML_FIGURES_{self.mode}'] + '/TrainTest'
+
         pu.plot_output_train_test(
             model, data[0][training_columns],
             data[1], data[2][training_columns],
             data[3], features=training_columns, raw=True, log=True, ct_range=ct_range, pt_range=pt_range,
             cent_class=cent_class, path=fig_path, mode=self.mode, split_string=split_string)
+        pu.plot_feature_imp(data[0][training_columns], data[1], model, self.mode, ct_range=ct_range,
+                            pt_range=pt_range, cent_class=cent_class, split_string=split_string)
 
-        pu.plot_feature_imp(data[0][training_columns], data[1] ,model, self.mode, ct_range=ct_range, pt_range=pt_range,
-            cent_class=cent_class, split_string=split_string)    
-        
         # test the model performances
         print('Testing the model: ...', end='\r')
         y_pred = model.predict(data[2][training_columns])
         roc_score = roc_auc_score(data[3], y_pred)
         print('Testing the model: Done!\n')
 
-        print('ROC_AUC_score: {}\n'.format(roc_score))
+        print(f'ROC_AUC_score: {roc_score}\n')
         print('==============================\n')
 
         return model
 
     def save_model(self, model, cent_class=[0, 90], pt_range=[0, 10], ct_range=[0, 100], split_string=''):
-        models_path = os.environ['HYPERML_MODELS_{}'.format(self.mode)]
-        filename = '/BDT_{}{}_{}{}_{}{}{}.model'.format(cent_class[0],
-                                                    cent_class[1],
-                                                    pt_range[0],
-                                                    pt_range[1],
-                                                    ct_range[0],
-                                                    ct_range[1], 
-                                                    split_string)
+        models_path = os.environ[f'HYPERML_MODELS_{self.mode}']
+        filename = f'/BDT_{cent_class[0]}{cent_class[1]}_{pt_range[0]}{pt_range[1]}_{ct_range[0]}{ct_range[1]}{split_string}.model'
 
         model.save_model(models_path + filename)
         print('Model saved.\n')
 
     def load_model(self, cent_class=[0, 90], pt_range=[0, 10], ct_range=[0, 100], split_string=''):
-        models_path = os.environ['HYPERML_MODELS_{}'.format(self.mode)]
-        filename = '/BDT_{}{}_{}{}_{}{}{}.model'.format(cent_class[0],
-                                                    cent_class[1],
-                                                    pt_range[0],
-                                                    pt_range[1],
-                                                    ct_range[0],
-                                                    ct_range[1], 
-                                                    split_string)
+        models_path = os.environ[f'HYPERML_MODELS_{self.mode}']
+        filename = f'/BDT_{cent_class[0]}{cent_class[1]}_{pt_range[0]}{pt_range[1]}_{ct_range[0]}{ct_range[1]}{split_string}.model'
 
         model = xgb.XGBClassifier()
         model.load_model(models_path + filename)
         print('Model loaded.\n')
         return model
 
-    def bdt_efficiency_array(self, df, ct_range=[0, 100], pt_range=[0, 10], cent_class=[0, 90], n_points=10, split_string=''):
+    def bdt_efficiency_array(
+            self, df, ct_range=[0, 100],
+            pt_range=[0, 10],
+            cent_class=[0, 90],
+            n_points=100, split_string=''):
         min_score = df['Score'].min()
         max_score = df['Score'].max()
 
         threshold = np.linspace(min_score, max_score, n_points)
-
         efficiency = []
 
-        n_sig = sum(df['y'])
+        n_sig = np.sum(df['y'])
+
+        df_index = df.set_index('Score')
 
         for t in threshold:
-            df_selected = df.query('Score>@t')['y']
+            df_selected = df_inxed.query('Score>@t')['y']
             sig_selected = np.sum(df_selected)
             efficiency.append(sig_selected / n_sig)
+            del df_selected
+
+        del df_index
 
         pu.plot_bdt_eff(threshold, efficiency, self.mode, ct_range, pt_range, cent_class, split_string=split_string)
 
         return efficiency, threshold
 
     def bdt_efficiency(self, df, cut):
-        n_sig = sum(df['y'])
+        n_sig = np.sum(df['y'])
         df_selected = df.query('Score>@cut')['y']
         sig_selected = np.sum(df_selected)
 
         return sig_selected / n_sig
 
-    def score_from_efficiency(self, model, test_data, efficiency_cut, training_columns, ct_range, pt_range, cent_class, split_string=''):
-        y_pred = model.predict(test_data[0][training_columns], output_margin=True)
-
-        test_data[0].eval('Score = @y_pred', inplace=True)
-        test_data[0].eval('y = @test_data[1]', inplace=True)
+    def score_from_efficiency(
+            self, model, test_data, efficiency_cut, training_columns, ct_range, pt_range, cent_class, split_string=''):
+        test_data[0]['Score'] = np.asarray(model.predict(test_data[0][training_columns], output_margin=True))
+        test_data[0]['y'] = np.asarray(test_data[1])
 
         bdt_efficiency, threshold_space = self.bdt_efficiency_array(
-            test_data[0], ct_range, pt_range, cent_class, n_points=1000, split_string = split_string)
+            test_data[0], ct_range, pt_range, cent_class, n_points=1000, split_string=split_string)
 
         for index in range(0, len(bdt_efficiency)):
             bdt_efficiency[index] = round(bdt_efficiency[index], 2)
@@ -363,19 +338,20 @@ class GeneralizedAnalysis:
         cent_min = cent_class[0]
         cent_max = cent_class[1]
 
-        data_range = '{}<ct<{} and {}<HypCandPt<{} and {}<centrality<{}'.format(
-            ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1])
+        data_range = f'{ct_range[0]}<ct<{ct_range[1]} and {pt_range[0]}<HypCandPt<{pt_range[1]} and {cent_class[0]}<centrality<{cent_class[1]}'
         data_range_array = [ct_min, ct_max, pt_min, pt_max, cent_min, cent_max]
 
         columns = training_columns.copy()
         columns.append('InvMass')
         df_bkg = self.df_data.query(data_range)[columns]
-        y_pred = model.predict(test_data[0][training_columns], output_margin=True)
-        y_pred_bkg = model.predict(df_bkg[training_columns], output_margin=True)
 
-        test_data[0].eval('Score = @y_pred', inplace=True)
-        test_data[0].eval('y = @test_data[1]', inplace=True)
-        df_bkg.eval('Score = @y_pred_bkg', inplace=True)
+        y_pred = np.asarray(model.predict(test_data[0][training_columns], output_margin=True))
+        y_pred_bkg = np.asarray(model.predict(df_bkg[training_columns], output_margin=True))
+        y_test = np.asarray(test_data[1])
+
+        test_data[0]['Score'] = y_pred
+        test_data[0]['y'] = y_test
+        df_bkg['Score'] = y_pred_bkg
 
         bdt_efficiency, threshold_space = self.bdt_efficiency_array(
             test_data[0], ct_range, pt_range, cent_class, n_points, split_string=split_string)
@@ -389,10 +365,13 @@ class GeneralizedAnalysis:
         hyp_lifetime = 206
 
         bw_file = TFile(os.environ['HYPERML_UTILS'] + '/BlastWaveFits.root')
-        bw = [bw_file.Get("BlastWave/BlastWave{}".format(i)) for i in [0, 1, 2]]
+        bw = [bw_file.Get(f'BlastWave/BlastWave{i}') for i in [0, 1, 2]]
+
+        df_bkg_index = df_bkg.set_index('Score')
+        del df_bkg
 
         for index, tsd in enumerate(threshold_space):
-            df_selected = df_bkg.query('Score>@tsd')
+            df_selected = df_bkg_index.query('Score>@tsd')
 
             counts, bins = np.histogram(df_selected['InvMass'], bins=45, range=[2.96, 3.05])
             bin_centers = 0.5 * (bins[1:] + bins[:-1])
@@ -446,8 +425,9 @@ class GeneralizedAnalysis:
             max_significance = significance_custom[max_index]
 
             pu.plot_significance_scan(
-                max_index, significance_custom, significance_custom_error, expected_signal, df_bkg,
-                threshold_space, data_range_array, bin_centers, nevents, self.mode, custom=True, split_string=split_string)
+                max_index, significance_custom, significance_custom_error, expected_signal, df_bkg_index,
+                threshold_space, data_range_array, bin_centers, nevents, self.mode, custom=True,
+                split_string=split_string)
 
         else:
             max_index = np.argmax(significance)
@@ -455,7 +435,7 @@ class GeneralizedAnalysis:
             max_significance = significance[max_index]
 
             pu.plot_significance_scan(
-                max_index, significance, significance_error, expected_signal, df_bkg, threshold_space,
+                max_index, significance, significance_error, expected_signal, df_bkg_index, threshold_space,
                 data_range_array, bin_centers, nevents, self.mode, custom=False, split_string=split_string)
 
         bdt_eff_max_score = bdt_efficiency[max_index]
