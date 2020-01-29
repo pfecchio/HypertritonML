@@ -37,62 +37,110 @@ def pot2(x):
     return x*x
 
 
+def hypot3(x0, x1, x2):
+    return math.sqrt(pot2(x0) + pot2(x1) + pot2(x2))
+
+
 def hypot4(x0, x1, x2, x3):
     return math.sqrt(pot2(x0) + pot2(x1) + pot2(x2) + pot2(x3))
 
 
+hyp_mass = 2.99131
+
+suffix = '19d2'
+
 # import environment
 # input_file_path = '~/run_nitty/reference'
 # input_file_path = '~/run_nitty/latest'
+# input_file_path = '~/3body_workspace/preseleff_study/trees/'
 input_file_path = os.environ['HYPERML_DATA_3']
 
 # open input file and tree
-input_file_name = 'HyperTritonTree_19d2.root'
+input_file_name = f'HyperTritonTree_{suffix}.root'
 
 input_file = TFile(f'{input_file_path}/{input_file_name}', 'read')
 
 tree = input_file.fHypertritonTree
 n_events = tree.GetEntries()
 
-N_BINS = 40
+bins = np.array([1., 2., 4., 6., 8., 10., 14., 18., 23., 35., 50.])
+# bins = np.arange(0., 50., 1.)
+n_bins = len(bins) - 1
 
-bins = np.array([1., 2., 4., 6., 8., 10., 14., 18., 23., 35.])
+########################################
+# ct sim and rec
+hist_ctsim = TH1D('fHistCtSim', '', n_bins, bins)
+hist_ctrec = TH1D('fHistCtRec', '', n_bins, bins)
 
-# create histos for the efficiency
-hist_sim = TH1D('fHistSim', '', 9, bins)
-hist_rec = TH1D('fHistRec', '', 9, bins)
+hist_ctsim.SetDirectory(0)
+hist_ctrec.SetDirectory(0)
 
-hist_sim.SetDirectory(0)
-hist_rec.SetDirectory(0)
-
-hist_costheta_sim = TH1D('fHistCosThetaSim', '', 1000, -0.01, 1.)
-hist_costheta_rec = TH1D('fHistCosThetaRec', '', 1000, -0.01, 1.)
-
-hist_costheta_sim.SetDirectory(0)
-hist_costheta_rec.SetDirectory(0)
-
-hist_ptsim = TH1D('fHistPtSim', '', 20, 0, 10)
-hist_ptrec = TH1D('fHistPtRec', '', 20, 0, 10)
+########################################
+# pt sim and rec
+hist_ptsim = TH1D('fHistPtSim', '', 40, 0, 10)
+hist_ptrec = TH1D('fHistPtRec', '', 40, 0, 10)
 
 hist_ptsim.SetDirectory(0)
 hist_ptrec.SetDirectory(0)
+
+########################################
+# p sim and rec
+hist_psim = TH1D('fHistPSim', '', 40, 0, 10)
+hist_prec = TH1D('fHistPRec', '', 40, 0, 10)
+
+hist_psim.SetDirectory(0)
+hist_prec.SetDirectory(0)
+
+########################################
+# eta sim e rec
+hist_etasim = TH1D('fHistEtaSim', '', 40, -2, 2)
+hist_etarec = TH1D('fHistEtaRec', '', 40, -2, 2)
+
+hist_etasim.SetDirectory(0)
+hist_etarec.SetDirectory(0)
+
+########################################
+# phi sim e rec
+hist_phisim = TH1D('fHistPhiSim', '', 20, -5, 5)
+hist_phirec = TH1D('fHistPhiRec', '', 20, -5, 5)
+
+hist_phisim.SetDirectory(0)
+hist_phirec.SetDirectory(0)
+
+########################################
+# l_sim-l_rec
+hist_deltal = TH1D('fHistDeltaL', '', 400, -20, 20)
+hist_deltal.SetDirectory(0)
+
+########################################
+# p_sim-p_rec
+hist_deltap = TH1D('fHistDeltaP', '', 100, -5, 5)
+hist_deltap.SetDirectory(0)
+
+########################################
+# eta_sim-eta_rec
+hist_deltaeta = TH1D('fHistDeltaEta', '', 50, -2, 2)
+hist_deltaeta.SetDirectory(0)
+
+########################################
+# ct_sim-ct_rec
+hist_deltact = TH1D('fHistDeltaCt', '', 200, -10, 10)
+hist_deltact.SetDirectory(0)
 
 analyzed_events = 0
 counter = 0
 
 # main loop over the events
 for ev in tree:
-    # if counter > 200000:
+    # counter += 1
+    # if counter == 1000:
     #     break
 
     if ev.REvent.fCent > 90.:
         continue
 
-    # counter = counter + 1
-
     # loop over the simulated hypertritons
     for sim in ev.SHypertriton:
-
         hyp = TLorentzVector()
         deu = TLorentzVector()
         p = TLorentzVector()
@@ -102,30 +150,56 @@ for ev in tree:
         e_p = hypot4(sim.fPxP, sim.fPyP, sim.fPzP, AliPID.ParticleMass(AliPID.kProton))
         e_pi = hypot4(sim.fPxPi, sim.fPyPi, sim.fPzPi, AliPID.ParticleMass(AliPID.kPion))
 
-        deu.SetPxPyPzE(sim.fPxDeu, sim.fPyDeu, sim.fPzDeu, e_deu)
-        p.SetPxPyPzE(sim.fPxP, sim.fPyP, sim.fPzP, e_p)
-        pi.SetPxPyPzE(sim.fPxPi, sim.fPyPi, sim.fPzPi, e_pi)
+        deu.SetXYZM(sim.fPxDeu, sim.fPyDeu, sim.fPzDeu, AliPID.ParticleMass(AliPID.kDeuteron))
+        p.SetXYZM(sim.fPxP, sim.fPyP, sim.fPzP, AliPID.ParticleMass(AliPID.kProton))
+        pi.SetXYZM(sim.fPxPi, sim.fPyPi, sim.fPzPi, AliPID.ParticleMass(AliPID.kPion))
 
         hyp = deu + p + pi
 
-        # decay_lenght = decay_vtx - primary_vtx
-        dl = [sim.fDecayVtxX, sim.fDecayVtxY, sim.fDecayVtxZ]
-        dl_norm = math.sqrt(dl[0] * dl[0] + dl[1] * dl[1] + dl[2] * dl[2])
+        decay_lenght = TVector3(sim.fDecayVtxX, sim.fDecayVtxY, sim.fDecayVtxZ)
 
-        # cos_theta = hyp.Px() * dl[0] + hyp.Py() * dl[1] + hyp.Pz() * dl[2]
-        # cos_theta /= dl_norm * hyp.P()
+        m = hyp_mass
+        dl = decay_lenght.Mag()
+        p = hyp.P()
 
-        if hyp.P() == 0.:
-            continue
+        t = m * dl
+        ct = dl / (hyp.Gamma() * hyp.Beta())
 
-        ct = 2.99131 * dl_norm / hyp.P()
+        if hyp.Pt() >= 1. or hyp.Pt() <= 10.:
+            hist_ctsim.Fill(ct)
+            hist_ptsim.Fill(hyp.Pt())
+            hist_psim.Fill(hyp.P())
+            hist_etasim.Fill(hyp.Eta())
+            hist_phisim.Fill(hyp.Phi())
 
-        if hyp.Pt() >= 2. or hyp.Pt() <= 10.:
-            hist_sim.Fill(ct)
+        # rec - sim diff
+        if sim.fRecoIndex >= 0:
+            r = ev.RHypertriton[sim.fRecoIndex]
 
-        hist_ptsim.Fill(hyp.Pt())
-        
-        # hist_costheta_sim.Fill(cos_theta)
+            hyp_rec = TLorentzVector()
+            deu_rec = TLorentzVector()
+            p_rec = TLorentzVector()
+            pi_rec = TLorentzVector()
+
+            deu_rec.SetXYZM(r.fPxDeu, r.fPyDeu, r.fPzDeu, AliPID.ParticleMass(AliPID.kDeuteron))
+            p_rec.SetXYZM(r.fPxP, r.fPyP, r.fPzP, AliPID.ParticleMass(AliPID.kProton))
+            pi_rec.SetXYZM(r.fPxPi, r.fPyPi, r.fPzPi, AliPID.ParticleMass(AliPID.kPion))
+
+            hyp_rec = deu_rec + p_rec + pi_rec
+
+            p_rec = hyp_rec.P()
+            decay_lenght_rec = TVector3(r.fDecayVtxX, r.fDecayVtxY, r.fDecayVtxZ)
+
+            delta_l = decay_lenght.Mag() - decay_lenght_rec.Mag()
+            delta_p = hyp.P() - hyp_rec.P()
+            delta_eta = hyp.Eta() - hyp_rec.Eta()
+
+            delta_ct = ct - (hyp_mass * decay_lenght_rec.Mag() / hyp_rec.P())
+
+            hist_deltal.Fill(delta_l)
+            hist_deltap.Fill(delta_p)
+            hist_deltaeta.Fill(delta_eta)
+            hist_deltact.Fill(delta_ct)
 
     # loop over the reconstructed hypertritons
     for rec in ev.RHypertriton:
@@ -139,28 +213,28 @@ for ev in tree:
         e_p = hypot4(rec.fPxP, rec.fPyP, rec.fPzP, AliPID.ParticleMass(AliPID.kProton))
         e_pi = hypot4(rec.fPxPi, rec.fPyPi, rec.fPzPi, AliPID.ParticleMass(AliPID.kPion))
 
-        deu.SetPxPyPzE(rec.fPxDeu, rec.fPyDeu, rec.fPzDeu, e_deu)
-        p.SetPxPyPzE(rec.fPxP, rec.fPyP, rec.fPzP, e_p)
-        pi.SetPxPyPzE(rec.fPxPi, rec.fPyPi, rec.fPzPi, e_pi)
+        deu.SetXYZM(rec.fPxDeu, rec.fPyDeu, rec.fPzDeu, AliPID.ParticleMass(AliPID.kDeuteron))
+        p.SetXYZM(rec.fPxP, rec.fPyP, rec.fPzP, AliPID.ParticleMass(AliPID.kProton))
+        pi.SetXYZM(rec.fPxPi, rec.fPyPi, rec.fPzPi, AliPID.ParticleMass(AliPID.kPion))
 
         hyp = deu + p + pi
 
-        dl = [rec.fDecayVtxX - ev.REvent.fX, rec.fDecayVtxY - ev.REvent.fY, rec.fDecayVtxZ - ev.REvent.fZ]
-        dl_norm = math.sqrt(dl[0] * dl[0] + dl[1] * dl[1] + dl[2] * dl[2])
+        decay_lenght = TVector3(rec.fDecayVtxX - ev.REvent.fX,
+                                rec.fDecayVtxY - ev.REvent.fY, rec.fDecayVtxZ - ev.REvent.fZ)
 
-        cos_theta = hyp.Px() * dl[0] + hyp.Py() * dl[1] + hyp.Pz() * dl[2]
-        cos_theta /= dl_norm * hyp.P()
+        m = hyp_mass
+        dl = decay_lenght.Mag()
+        p = hyp.P()
 
-        if hyp.P() == 0.:
-            continue
+        t = m * dl
+        ct = dl / (hyp.Gamma() * hyp.Beta())
 
-        ct = 2.99131 * dl_norm / hyp.P()
-
-        if hyp.Pt() >= 2. or hyp.Pt() <= 10.:
-            hist_rec.Fill(ct)
-
-        hist_ptrec.Fill(hyp.Pt())
-        hist_costheta_rec.Fill(cos_theta)
+        if hyp.Pt() >= 1. or hyp.Pt() <= 10.:
+            hist_ctrec.Fill(ct)
+            hist_ptrec.Fill(hyp.Pt())
+            hist_prec.Fill(hyp.P())
+            hist_etarec.Fill(hyp.Eta())
+            hist_phirec.Fill(hyp.Phi())
 
     analyzed_events += 1
     update_progress(analyzed_events/n_events)
@@ -169,64 +243,106 @@ input_file.Close()
 
 # create output file
 home_path = os.environ['HOME']
-output_file_path = home_path + '/HypertritonAnalysis/PreselEfficiency/3Body'
-output_file_name = 'PreselectionEfficiencyHist.root'
+output_file_path = home_path + '/3body_workspace/preseleff_study'
+output_file_name = f'PreselEff_{suffix}.root'
 
-output_file = TFile(output_file_name, 'recreate')
+output_file = TFile(f'{output_file_path}/{output_file_name}', 'recreate')
 
-hist_sim.Write()
-hist_rec.Write()
-hist_ptrec.Write()
+hist_ctsim.Write()
+hist_ctrec.Write()
 hist_ptsim.Write()
-hist_costheta_sim.Write()
-hist_costheta_rec.Write()
+hist_ptrec.Write()
+hist_psim.Write()
+hist_prec.Write()
+hist_etasim.Write()
+hist_etarec.Write()
+hist_phisim.Write()
+hist_phirec.Write()
 
-# compute efficiency
-CT_BINS = 9
-bins = np.array([1., 2., 4., 6., 8., 10., 14., 18., 23., 35.])
+# hist_deltal.Write()
+# hist_deltap.Write()
+# hist_deltaeta.Write()
+# hist_deltact.Write()
 
-hist_effct = TH1D('fHistEfficiencyVsCt', '', CT_BINS, bins)
+################################################################################
+# ct efficiency
+################################################################################
+
+hist_effct = hist_ctrec.Clone('fHistEfficiencyVsCt')
 hist_effct.SetDirectory(0)
 
-for b in range(1, CT_BINS):
-    count_sim = hist_sim.Integral(b, b)
-    count_rec = hist_rec.Integral(b, b)
+hist_effct.Divide(hist_ctsim)
 
-    if count_sim != 0:
-        eff = count_rec / count_sim
-        err_eff = eff * (1 - eff) / count_sim
-    else:
-        eff = 0
-        err_eff = 0
-
-    hist_effct.SetBinContent(b, eff)
-    hist_effct.SetBinError(b, err_eff)
+for b in range(1, hist_effct.GetNbinsX() + 1):
+    hist_effct.SetBinError(b, 0)
 
 prp.histo_makeup(hist_effct, x_title='#it{c}t (cm)',
-                 y_title='Efficiency #times Acceptance', color=prp.kRedC, y_range=(-0.01, 0.8), l_width=3, opt='he')
+                 y_title='Efficiency #times Acceptance', color=prp.kBlueC, y_range=(-0.01, 0.8), l_width=2, opt='he')
+hist_effct.Write()
 
-hist_effpt = TH1D('fHistEfficiencyVsPt', '', 20, 0, 10)
+################################################################################
+# pt efficiency
+################################################################################
+
+hist_effpt = hist_ptrec.Clone('fHistEfficiencyVsPt')
 hist_effpt.SetDirectory(0)
 
-for b in range(1, 20):
-    count_sim = hist_ptsim.Integral(b, b)
-    count_rec = hist_ptrec.Integral(b, b)
+hist_effpt.Divide(hist_ptsim)
 
-    if count_sim != 0:
-        eff = count_rec / count_sim
-        err_eff = eff * (1 - eff) / count_sim
-    else:
-        eff = 0
-        err_eff = 0
-
-    hist_effpt.SetBinContent(b, eff)
-    hist_effpt.SetBinError(b, err_eff)
+for b in range(1, hist_effpt.GetNbinsX() + 1):
+    hist_effpt.SetBinError(b, 0)
 
 prp.histo_makeup(hist_effpt, x_title='#it{p}_{T} (GeV/#it{c} )',
-                 y_title='Efficiency #times Acceptance', color=prp.kRedC, y_range=(-0.01, 0.8), l_width=3, opt='he')
-
-hist_effct.Write()
+                 y_title='Efficiency #times Acceptance', color=prp.kBlueC, y_range=(-0.01, 0.8), l_width=2, opt='he')
 hist_effpt.Write()
+
+################################################################################
+# p efficiency
+################################################################################
+
+hist_effp = hist_prec.Clone('fHistEfficiencyVsP')
+hist_effp.SetDirectory(0)
+
+hist_effp.Divide(hist_psim)
+
+for b in range(1, hist_effp.GetNbinsX() + 1):
+    hist_effp.SetBinError(b, 0)
+
+prp.histo_makeup(hist_effp, x_title='#it{p} (GeV/#it{c} )',
+                 y_title='Efficiency #times Acceptance', color=prp.kBlueC, y_range=(-0.01, 0.8), l_width=2, opt='he')
+hist_effp.Write()
+
+################################################################################
+# eta efficiency
+################################################################################
+
+hist_effeta = hist_etarec.Clone('fHistEfficiencyVsEta')
+hist_effeta.SetDirectory(0)
+
+hist_effeta.Divide(hist_etasim)
+
+for b in range(1, hist_effeta.GetNbinsX() + 1):
+    hist_effeta.SetBinError(b, 0)
+
+prp.histo_makeup(hist_effeta, x_title='#eta',
+                 y_title='Efficiency #times Acceptance', color=prp.kBlueC, y_range=(-0.01, 0.8), l_width=2, opt='he')
+hist_effeta.Write()
+
+################################################################################
+# phi efficiency
+################################################################################
+
+hist_effphi = hist_phirec.Clone('fHistEfficiencyVsPhi')
+hist_effphi.SetDirectory(0)
+
+hist_effphi.Divide(hist_phisim)
+
+for b in range(1, hist_effphi.GetNbinsX() + 1):
+    hist_effphi.SetBinError(b, 0)
+
+prp.histo_makeup(hist_effphi, x_title='#phi',
+                 y_title='Efficiency #times Acceptance', color=prp.kBlueC, y_range=(-0.01, 0.8), l_width=2, opt='he')
+hist_effphi.Write()
 
 output_file.Close()
 
