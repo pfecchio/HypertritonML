@@ -161,7 +161,7 @@ class TrainingAnalysis:
                                                  pt_range[1], ct_range[0], ct_range[1], split_string)
 
         bdt_eff_path = fig_path + '/Efficiency'
-        feat_imp_path = fig_path + '/Feature_Imp'
+        feat_imp_path = fig_path + '/FeatureImportance'
 
         BDT_EFFICIENCY_PLOT = plot_utils.plot_bdt_eff(
             efficiency_score_array[1], efficiency_score_array[0])
