@@ -62,6 +62,7 @@ if [ $BODY_3 -eq 1 ]; then
       export HYPERML_TABLES_3="$HYPERML_TABLES/3Body"
       export HYPERML_FIGURES_3="$HYPERML_FIGURES/3Body"
       export HYPERML_MODELS_3="$HYPERML_MODELS/3Body"
+      export HYPERML_EFFICIENCIES_3="$HYPERML_EFFICIENCIES/3Body"
       export HYPERML_RESULTS_3="$HYPERML_RESULTS/3Body"
       export HYPERML_UTILS_3="$HYPERML_UTILS/3Body"
 
@@ -70,7 +71,7 @@ if [ $BODY_3 -eq 1 ]; then
       [ ! -d "$HYPERML_FIGURES_3" ] && mkdir -p $HYPERML_FIGURES_3
       [ ! -d "$HYPERML_MODELS_3" ] && mkdir -p $HYPERML_MODELS_3
       [ ! -d "$HYPERML_RESULTS_3" ] && mkdir -p $HYPERML_RESULTS_3
-      [ ! -d "$HYPERML_EFFICIENCIES_2" ] && mkdir -p $HYPERML_EFFICIENCIES_2
+      [ ! -d "$HYPERML_EFFICIENCIES_3" ] && mkdir -p $HYPERML_EFFICIENCIES_3
       [ ! -d "$HYPERML_UTILS_3" ] && mkdir -p $HYPERML_UTILS_3      
       [ ! -f "$HYPERML_DATA_3/HyperTritonTreeData_18q.root"  ] && alien_cp /alice/cern.ch/user/a/alitrain/PWGLF/LF_PbPb/1218_20200122-1031/merge/HyperTritonTree.root  file://$HYPERML_DATA_3/HyperTritonTreeData_18q.root
       [ ! -f "$HYPERML_DATA_3/HyperTritonTreeData_18r.root"  ] && alien_cp /alice/cern.ch/user/a/alitrain/PWGLF/LF_PbPb/1219_20200122-1031/merge/HyperTritonTree.root  file://$HYPERML_DATA_3/HyperTritonTreeData_18r.root
