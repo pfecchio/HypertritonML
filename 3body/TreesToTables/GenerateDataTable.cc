@@ -18,7 +18,7 @@ using namespace std;
 #include "../../common/GenerateTable/AppliedTable3.h"
 #include "../../common/GenerateTable/Common.h"
 
-void GenerateTableFromData() {
+void GenerateDataTable() {
   gRandom->SetSeed(42);
 
   string dataDir  = getenv("HYPERML_DATA_3");

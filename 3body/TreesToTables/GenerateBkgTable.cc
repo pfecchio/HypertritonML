@@ -18,7 +18,7 @@ using namespace std;
 #include "../../common/GenerateTable/Common.h"
 #include "../../common/GenerateTable/Table3.h"
 
-void GenerateTableFromData() {
+void GenerateBkgTable() {
   gRandom->SetSeed(42);
 
   string dataDir  = getenv("HYPERML_DATA_3");
@@ -46,8 +46,8 @@ void GenerateTableFromData() {
 
   Table3 table("BackgroundTable", "BackgroundTable");
 
-  int counter[9];
-  float redFactor[9] = {0.9, 0.343, 0.580, 0.565, 0.540, 0.536, 0.455, 0.350, 0.011};
+  int counter[9]{0};
+  float redFactor[9] = {0.009, 0.343, 0.580, 0.565, 0.540, 0.536, 0.455, 0.350, 0.011};
 
   while (fReader.Next()) {
     if (rEv->fCent > 90.) continue;

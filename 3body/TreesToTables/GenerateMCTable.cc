@@ -16,7 +16,7 @@ using namespace std;
 #include "../../common/GenerateTable/GenTable3.h"
 #include "../../common/GenerateTable/Table3.h"
 
-void GenerateTableFromMC(bool reject = true) {
+void GenerateMCTable(bool reject = true) {
   gRandom->SetSeed(42);
 
   string hypDataDir  = getenv("HYPERML_DATA_3");
