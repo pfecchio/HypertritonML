@@ -68,6 +68,7 @@ void GenerateDataTable() {
   TH1F *hCentR = (TH1F *)listR->FindObject("Centrality_selected");
 
   hCentQ->Add(hCentR);
+  hCentQ->SetName("EventCounter");
 
   outFile.cd();
 
