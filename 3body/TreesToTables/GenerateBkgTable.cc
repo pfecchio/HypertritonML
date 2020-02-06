@@ -46,8 +46,7 @@ void GenerateBkgTable() {
 
   Table3 table("BackgroundTable", "BackgroundTable");
 
-  int counter[9]{0};
-  float redFactor[9] = {0.009, 0.343, 0.580, 0.565, 0.540, 0.536, 0.455, 0.350, 0.011};
+  int counter[11]{0};
 
   while (fReader.Next()) {
     if (rEv->fCent > 90.) continue;
@@ -66,12 +65,17 @@ void GenerateBkgTable() {
 
       float ct = decayLenghtNorm / (hyper4Vector.Beta() * hyper4Vector.Gamma());
 
+      // if (ct < 1.) counter[9]++;
+
       if (ct > 1. && ct <= 2.) {
-        if (gRandom->Rndm() < redFactor[0]) {
+        if (gRandom->Rndm() < 0.026) {
           table.Fill(rHyp3, *rEv);
           counter[0]++;
         }
+      } else {
+        table.Fill(rHyp3, *rEv);
       }
+      
       // if (ct > 2. && ct <= 4.) {
       //   if (gRandom->Rndm() < redFactor[1]) {
       //     table.Fill(rHyp3, *rEv);
@@ -115,23 +119,26 @@ void GenerateBkgTable() {
       //   }
       // }
       // if (ct > 23. && ct <= 50.) {
-      //   // if (gRandom->Rndm() < redFactor[8]) {
+      //   if (gRandom->Rndm() < redFactor[8]) {
       //     table.Fill(rHyp3, *rEv);
       //     counter[8]++;
       //   }
       // }
+      // if (ct > 50.) counter[10]++;
     }
   }
 
-  cout << "ct 1-2: " << counter[0] << endl;
-  cout << "ct 2-4: " << counter[1] << endl;
-  cout << "ct 4-6: " << counter[2] << endl;
-  cout << "ct 6-8: " << counter[3] << endl;
-  cout << "ct 8-10: " << counter[4] << endl;
-  cout << "ct 10-14: " << counter[5] << endl;
-  cout << "ct 14-18: " << counter[6] << endl;
-  cout << "ct 18-23: " << counter[7] << endl;
-  cout << "ct 23-50: " << counter[8] << endl;
+  // cout << "ct 0-1: " << counter[9] << endl;
+  // cout << "ct 1-2: " << counter[0] << endl;
+  // cout << "ct 2-4: " << counter[1] << endl;
+  // cout << "ct 4-6: " << counter[2] << endl;
+  // cout << "ct 6-8: " << counter[3] << endl;
+  // cout << "ct 8-10: " << counter[4] << endl;
+  // cout << "ct 10-14: " << counter[5] << endl;
+  // cout << "ct 14-18: " << counter[6] << endl;
+  // cout << "ct 18-23: " << counter[7] << endl;
+  // cout << "ct 23-50: " << counter[8] << endl;
+  // cout << "ct   >50: " << counter[10] << endl;
 
   outFile.cd();
   table.Write();
