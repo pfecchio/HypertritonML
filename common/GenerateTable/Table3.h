@@ -11,6 +11,7 @@
 
 #include "AliAnalysisTaskHypertriton3ML.h"
 #include "AliPID.h"
+#include "Math/LorentzVector.h"
 
 class Table3 {
 public:
@@ -76,40 +77,40 @@ Table3::Table3(std::string name, std::string title) {
   tree->Branch("ct", &fCt);
   tree->Branch("InvMass", &fInvMass);
   tree->Branch("HypCandPt", &fHypCandPt);
-  tree->Branch("PtDeu", &fPtDeu);
-  tree->Branch("PtP", &fPtP);
-  tree->Branch("PtPi", &fPtPi);
+  // tree->Branch("PtDeu", &fPtDeu);
+  // tree->Branch("PtP", &fPtP);
+  // tree->Branch("PtPi", &fPtPi);
   tree->Branch("nClsTPCDeu", &nClsTPCDeu);
   tree->Branch("nClsTPCP", &nClsTPCP);
   tree->Branch("nClsTPCPi", &nClsTPCPi);
-  tree->Branch("nClsITSDeu", &nClsITSDeu);
-  tree->Branch("nClsITSP", &nClsITSP);
-  tree->Branch("nClsITSPi", &nClsITSPi);
+  // tree->Branch("nClsITSDeu", &nClsITSDeu);
+  // tree->Branch("nClsITSP", &nClsITSP);
+  // tree->Branch("nClsITSPi", &nClsITSPi);
   tree->Branch("nSigmaTPCDeu", &fNSigmaTPCDeu);
   tree->Branch("nSigmaTPCP", &fNSigmaTPCP);
   tree->Branch("nSigmaTPCPi", &fNSigmaTPCPi);
   tree->Branch("nSigmaTOFDeu", &fNSigmaTOFDeu);
   tree->Branch("nSigmaTOFP", &fNSigmaTOFP);
-  tree->Branch("nSigmaTOFPi", &fNSigmaTOFPi);
-  tree->Branch("trackChi2Deu", &fTrackChi2Deu);
-  tree->Branch("trackChi2P", &fTrackChi2P);
-  tree->Branch("trackChi2Pi", &fTrackChi2Pi);
+  // tree->Branch("nSigmaTOFPi", &fNSigmaTOFPi);
+  // tree->Branch("trackChi2Deu", &fTrackChi2Deu);
+  // tree->Branch("trackChi2P", &fTrackChi2P);
+  // tree->Branch("trackChi2Pi", &fTrackChi2Pi);
   tree->Branch("vertexChi2", &fDecayVertexChi2NDF);
-  tree->Branch("DCA2xyPrimaryVtxDeu", &fDCAxyPrimaryVtxDeu);
-  tree->Branch("DCAxyPrimaryVtxP", &fDCAxyPrimaryVtxP);
-  tree->Branch("DCAxyPrimaryVtxPi", &fDCAxyPrimaryVtxPi);
-  tree->Branch("DCAzPrimaryVtxDeu", &fDCAzPrimaryVtxDeu);
-  tree->Branch("DCAzPrimaryVtxP", &fDCAzPrimaryVtxP);
-  tree->Branch("DCAzPrimaryVtxPi", &fDCAzPrimaryVtxPi);
+  // tree->Branch("DCAxyPrimaryVtxDeu", &fDCAxyPrimaryVtxDeu);
+  // tree->Branch("DCAxyPrimaryVtxP", &fDCAxyPrimaryVtxP);
+  // tree->Branch("DCAxyPrimaryVtxPi", &fDCAxyPrimaryVtxPi);
+  // tree->Branch("DCAzPrimaryVtxDeu", &fDCAzPrimaryVtxDeu);
+  // tree->Branch("DCAzPrimaryVtxP", &fDCAzPrimaryVtxP);
+  // tree->Branch("DCAzPrimaryVtxPi", &fDCAzPrimaryVtxPi);
   tree->Branch("DCAPrimaryVtxDeu", &fDCAPrimaryVtxDeu);
   tree->Branch("DCAPrimaryVtxP", &fDCAPrimaryVtxP);
   tree->Branch("DCAPrimaryVtxPi", &fDCAPrimaryVtxPi);
-  tree->Branch("DCAxyDecayVtxDeu", &fDCAxyDecayVtxDeu);
-  tree->Branch("DCAxyDecayVtxP", &fDCAxyDecayVtxP);
-  tree->Branch("DCAxyDecayVtxPi", &fDCAxyDecayVtxPi);
-  tree->Branch("DCAzDecayVtxDeu", &fDCAzDecayVtxDeu);
-  tree->Branch("DCAzDecayVtxP", &fDCAzDecayVtxP);
-  tree->Branch("DCAzDecayVtxPi", &fDCAzDecayVtxPi);
+  // tree->Branch("DCAxyDecayVtxDeu", &fDCAxyDecayVtxDeu);
+  // tree->Branch("DCAxyDecayVtxP", &fDCAxyDecayVtxP);
+  // tree->Branch("DCAxyDecayVtxPi", &fDCAxyDecayVtxPi);
+  // tree->Branch("DCAzDecayVtxDeu", &fDCAzDecayVtxDeu);
+  // tree->Branch("DCAzDecayVtxP", &fDCAzDecayVtxP);
+  // tree->Branch("DCAzDecayVtxPi", &fDCAzDecayVtxPi);
   tree->Branch("DCADecayVtxDeu", &fDCADecayVtxDeu);
   tree->Branch("DCADecayVtxP", &fDCADecayVtxP);
   tree->Branch("DCADecayVtxPi", &fDCADecayVtxPi);
@@ -117,7 +118,7 @@ Table3::Table3(std::string name, std::string title) {
   tree->Branch("TrackDistPPi", &fTrackDistPPi);
   tree->Branch("TrackDistDeuPi", &fTrackDistDeuPi);
   tree->Branch("CosPA", &fCosPA);
-  tree->Branch("matter", &fMatter);
+  // tree->Branch("matter", &fMatter);
 };
 
 void Table3::Fill(const RHypertriton3 &rHyp3, const REvent &rEv) {
@@ -179,14 +180,11 @@ void Table3::Fill(const RHypertriton3 &rHyp3, const REvent &rEv) {
   fDCADecayVtxP     = Distance3D(decayVtxPos, pPosVector);
   fDCADecayVtxPi    = Distance3D(decayVtxPos, piPosVector);
 
-  // compute the 4-vector of the daughter tracks
-  const double eDeu = Hypot(rHyp3.fPxDeu, rHyp3.fPyDeu, rHyp3.fPzDeu, kDeuMass);
-  const double eP   = Hypot(rHyp3.fPxP, rHyp3.fPyP, rHyp3.fPzP, kPMass);
-  const double ePi  = Hypot(rHyp3.fPxPi, rHyp3.fPyPi, rHyp3.fPzPi, kPiMass);
-
-  const TLorentzVector deu4Vector{rHyp3.fPxDeu, rHyp3.fPyDeu, rHyp3.fPzDeu, eDeu};
-  const TLorentzVector p4Vector{rHyp3.fPxP, rHyp3.fPyP, rHyp3.fPzP, eP};
-  const TLorentzVector pi4Vector{rHyp3.fPxPi, rHyp3.fPyPi, rHyp3.fPzPi, ePi};
+  // 4-vector of the daughter tracks
+  using namespace ROOT::Math;
+  const LorentzVector<PxPyPzM4D<double>> deu4Vector{rHyp3.fPxDeu, rHyp3.fPyDeu, rHyp3.fPzDeu, kDeuMass};
+  const LorentzVector<PxPyPzM4D<double>> p4Vector{rHyp3.fPxP, rHyp3.fPyP, rHyp3.fPzP, kPMass};
+  const LorentzVector<PxPyPzM4D<double>> pi4Vector{rHyp3.fPxPi, rHyp3.fPyPi, rHyp3.fPzPi, kPiMass};
 
   // pT of the daughter particles
   fPtDeu = deu4Vector.Pt();
@@ -203,10 +201,9 @@ void Table3::Fill(const RHypertriton3 &rHyp3, const REvent &rEv) {
   fTrackDistDeuPi = Distance3D(deuPos, piPos);
 
   // compute the 4-vector of the hypertriton candidate
-  const TLorentzVector hyper4Vector = deu4Vector + p4Vector + pi4Vector;
-  // fill the candidate pT and invariant mass
-  fHypCandPt = hyper4Vector.Pt();
-  fInvMass   = hyper4Vector.M();
+  const LorentzVector<PxPyPzM4D<double>> hyper4Vector = deu4Vector + p4Vector + pi4Vector;
+  fHypCandPt                                          = hyper4Vector.Pt();
+  fInvMass                                            = hyper4Vector.M();
 
   // define the decay lenght vector
   const double decayLenght[3]{rHyp3.fDecayVtxX - rEv.fX, rHyp3.fDecayVtxY - rEv.fY, rHyp3.fDecayVtxZ - rEv.fZ};
@@ -217,7 +214,7 @@ void Table3::Fill(const RHypertriton3 &rHyp3, const REvent &rEv) {
   cosPA /= decayLenghtNorm * hyper4Vector.P();
 
   // compute the candidate ct
-  fCt = kHyperTritonMass * decayLenghtNorm / hyper4Vector.P();
+  fCt = decayLenghtNorm / (hyper4Vector.Beta() * hyper4Vector.Gamma());
 
   // compute the cos(theta pointing)
   fCosPA = cosPA;

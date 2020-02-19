@@ -25,16 +25,16 @@ void GenerateDataTable() {
   string tableDir = getenv("HYPERML_TABLES_3");
 
   string inFileNameQ = "HyperTritonTreeData_18q.root";
-  string inFileArgQ  = dataDir + "/" + inFileNameQ;
+  string inFileArgQ  = dataDir + "/old/" + inFileNameQ;
 
   string inFileNameR = "HyperTritonTreeData_18r.root";
-  string inFileArgR  = dataDir + "/" + inFileNameR;
+  string inFileArgR  = dataDir + "/old/" + inFileNameR;
 
   string inAnResultsNameQ = "AnalysisResults_18q.root";
-  string inAnResultsArgQ  = dataDir + "/" + inAnResultsNameQ;
+  string inAnResultsArgQ  = dataDir + "/old/" + inAnResultsNameQ;
 
   string inAnResultsNameR = "AnalysisResults_18q.root";
-  string inAnResultsArgR  = dataDir + "/" + inAnResultsNameR;
+  string inAnResultsArgR  = dataDir + "/old/" + inAnResultsNameR;
 
   string outFileName = "DataTable.root";
   string outFileArg  = tableDir + "/" + outFileName;
