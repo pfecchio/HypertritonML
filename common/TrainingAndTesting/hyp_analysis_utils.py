@@ -53,12 +53,40 @@ def expo(x, tau):
     return np.exp(-x / (tau * 0.029979245800))
 
 
-def h2_rawcounts(ptbin, ctbin, name='RawCounts'):
-    th2 = TH2D(name, ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Raw counts', len(ptbin)-1,
-               np.array(ptbin, 'double'), len(ctbin) - 1, np.array(ctbin, 'double'))
+def h2_preselection_efficiency(ptbins, ctbins, name='PreselEff'):
+    th2 = TH2D(name, ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Preselection efficiency',
+               len(ptbins) - 1, np.array(ptbins, 'double'), len(ctbins) - 1, np.array(ctbins, 'double'))
+    th2.SetDirectory(0)
 
     return th2
 
+
+def h2_generated(ptbins, ctbins, name='Generated'):
+    th2 = TH2D(name, ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm); Generated', len(ptbins)-1,
+               np.array(ptbins, 'double'), len(ctbins) - 1, np.array(ctbins, 'double'))
+    th2.SetDirectory(0)
+
+    return th2
+
+
+def h2_rawcounts(ptbins, ctbins, name='RawCounts'):
+    th2 = TH2D(name, ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Raw counts', len(ptbins)-1,
+               np.array(ptbins, 'double'), len(ctbins) - 1, np.array(ctbins, 'double'))
+    th2.SetDirectory(0)
+
+    return th2
+
+
+def h1_invmass(counts, cent_class, pt_range, ct_range, bins=45, name=''):
+    th1 = TH1D(f'ct{ct_range[0]}{ct_range[1]}_pT{pt_range[0]}{pt_range[1]}_cen{cent_class[0]}{cent_class[1]}_{name}', '', bins, 2.96, 3.05)
+
+    for index in range(0, len(counts)):
+        th1.SetBinContent(index+1, counts[index])
+        th1.SetBinError(index + 1, math.sqrt(counts[index]))
+
+    th1.SetDirectory(0)
+
+    return th1
 
 
 def fit(
@@ -81,7 +109,8 @@ def fit(
         histo.SetBinError(index + 1, math.sqrt(counts[index]))
 
     return fit_hist(
-        histo, ct_range, pt_range, cent_class, tdirectory, nsigma, signif, errsignif, model, fixsigma, sigma_limits, mode)
+        histo, ct_range, pt_range, cent_class, tdirectory, nsigma, signif, errsignif, model, fixsigma, sigma_limits,
+        mode)
 
 
 def fit_hist(
@@ -146,7 +175,8 @@ def fit_hist(
     if mode == 2:
         ax_titles = ';m (^{3}He + #pi) (GeV/#it{c})^{2};Counts' + ' / {} MeV'.format(round(1000 * histo.GetBinWidth(1), 2))
     if mode == 3:
-        ax_titles = ';m (d + p + #pi) (GeV/#it{c})^{2};Counts' + ' / {} MeV'.format(round(1000 * histo.GetBinWidth(1), 2))
+        ax_titles = ';m (d + p + #pi) (GeV/#it{c})^{2};Counts' + \
+            ' / {} MeV'.format(round(1000 * histo.GetBinWidth(1), 2))
 
     # invariant mass distribution histo and fit
     histo.UseCurrentStyle()
@@ -237,11 +267,8 @@ def fit_hist(
         st.SetY2NDC(0.90)
         st.SetOptStat(0)
 
-    
     tdirectory.cd()
     histo.Write()
     cv.Write()
 
     return (signal, errsignal, signif, errsignif, sigma, sigmaErr)
-
-

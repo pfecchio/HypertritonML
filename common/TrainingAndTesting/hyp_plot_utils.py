@@ -58,7 +58,7 @@ def plot_significance_scan(
     raw_yield = expected_signal[max_index]
     max_score = score_list[max_index]
 
-    selected_bkg = bkg_df.query('Score>@max_score')
+    selected_bkg = bkg_df.query('score>@max_score')
 
     signal_counts_norm = norm.pdf(bin_cent, loc=2.992, scale=0.0025)
     signal_counts = raw_yield * signal_counts_norm / sum(signal_counts_norm)
@@ -172,7 +172,7 @@ def plot_confusion_matrix(y_true, df, mode, score,
             title = 'Confusion matrix, without normalization'
 
     # if the score is closer to max then to min it's recognised as signal
-    y_pred = [1 if i > score else 0 for i in df['Score']]
+    y_pred = [1 if i > score else 0 for i in df['score']]
 
     # Compute confusion matrix
     cm = confusion_matrix(y_true, y_pred)
