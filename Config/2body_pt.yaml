@@ -25,9 +25,10 @@ XGBOOST_PARAMS:
   random_state: 42
   eval_metric: auc
   tree_method: hist
+  
 
+SIGMA_MC: True
 
-FIXED_SIGMA_FIT: True
 
 
 HYPERPARAMS:

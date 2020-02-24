@@ -28,7 +28,7 @@ XGBOOST_PARAMS:
   tree_method: hist
 
 
-FIXED_SIGMA_FIT: True
+SIGMA_MC: True
 
 
 HYPERPARAMS:
