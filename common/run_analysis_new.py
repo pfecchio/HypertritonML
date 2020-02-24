@@ -13,6 +13,7 @@ import xgboost as xgb
 from ROOT import TFile, gROOT
 import hyp_analysis_utils as hau
 
+# avoid pandas warning
 warnings.simplefilter(action='ignore', category=FutureWarning)
 gROOT.SetBatch()
 
@@ -34,7 +35,6 @@ with open(os.path.expandvars(args.config), 'r') as stream:
     except yaml.YAMLError as exc:
         print(exc)
 ###############################################################################
-
 
 ###############################################################################
 # define analysis global variables
@@ -62,6 +62,11 @@ OPTIMIZE = args.optimize
 APPLICATION = args.application
 SIGNIFICANCE_SCAN = args.significance
 
+if SPLIT_MODE:
+    SPLIT_LIST = ['_matter', '_antimatter']
+else:
+    SPLIT_LIST = ['']
+
 ###############################################################################
 # define paths for loading data
 signal_path = os.path.expandvars(params['MC_PATH'])
@@ -70,17 +75,10 @@ data_path = os.path.expandvars(params['DATA_PATH'])
 results_dir = os.environ['HYPERML_RESULTS_{}'.format(N_BODY)]
 
 ###############################################################################
-if SPLIT_MODE:
-    split_list = ['_matter', '_antimatter']
-else:
-    split_list = ['']
-
-
-###############################################################################
 start_time = time.time()                          # for performances evaluation
 
 if TRAIN:
-    for split in split_list:
+    for split in SPLIT_LIST:
         ml_analysis = TrainingAnalysis(N_BODY, signal_path, bkg_path, split)
 
         for cclass in CENT_CLASSES:
@@ -121,10 +119,10 @@ if TRAIN:
                         ml_analysis.MC_sigma_array(data, fixed_eff_array, cclass, ptbin, ctbin, split)
 
                     ml_analysis.save_ML_analysis(model_handler, fixed_eff_array, cent_class=cclass,
-                                                 pt_range=ptbin, ct_range=ctbin, split_string=split)
+                                                 pt_range=ptbin, ct_range=ctbin, split=split)
                     ml_analysis.save_ML_plots(
                         model_handler, data, [eff, tsd],
-                        cent_class=cclass, pt_range=ptbin, ct_range=ctbin, split_string=split)
+                        cent_class=cclass, pt_range=ptbin, ct_range=ctbin, split=split)
 
         del ml_analysis
 
@@ -136,17 +134,17 @@ if APPLICATION:
     application_columns = ['score', 'InvMass', 'ct', 'HypCandPt', 'centrality']
 
     # create output file
-    file_name = results_dir + '/' + FILE_PREFIX + '_results.root'
+    file_name = results_dir + f'/{FILE_PREFIX}_results.root'
     results_file = TFile(file_name, 'recreate')
 
-    for split in split_list:
+    for split in SPLIT_LIST:
         ml_application = ModelApplication(N_BODY, data_path, CENT_CLASSES, split)
 
         for cclass in CENT_CLASSES:
             # create output structure
             cent_dir = results_file.mkdir(f'{cclass[0]}-{cclass[1]}{split}')
 
-            ml_application.load_preselection_efficiency(cclass, split)
+            th2_efficiency = ml_application.load_preselection_efficiency(cclass, split)
 
             for ptbin in zip(PT_BINS[:-1], PT_BINS[1:]):
                 ptbin_index = ml_application.presel_histo.GetXaxis().FindBin(0.5 * (ptbin[0] + ptbin[1]))
@@ -170,7 +168,7 @@ if APPLICATION:
 
                     if SIGNIFICANCE_SCAN:
                         sigscan_eff, sigscan_tsd = ml_application.significance_scan(
-                            df_applied, presel_eff, eff_score_array, cclass, ctbin, ptbin)
+                            df_applied, presel_eff, eff_score_array, cclass, ptbin, ctbin)
                         eff_score_array = np.append(eff_score_array, [[sigscan_eff], [sigscan_tsd]], axis=1)
 
                     # define subdir for saving invariant mass histograms
@@ -183,10 +181,13 @@ if APPLICATION:
                         mass_array = np.array(df_applied.query('score>@tsd')['InvMass'].values, dtype=np.float64)
                         counts, _ = np.histogram(mass_array, bins=mass_bins, range=[2.96, 3.05])
 
-                        h1_minv = hau.h1_invmass(counts, ctbin, ptbin, cclass, bins=mass_bins, name=f'eff{eff:.2f}')
+                        h1_minv = hau.h1_invmass(counts, cclass, ptbin, ctbin, bins=mass_bins, name=f'eff{eff:.2f}')
                         h1_minv.Write()
 
                     print('Application and signal extraction: Done!\n')
+
+            cent_dir.cd()
+            th2_efficiency.Write()
 
     print(f'--- ML application time: {((time.time() - app_time) / 60):.2f} minutes ---')
     results_file.Close()
