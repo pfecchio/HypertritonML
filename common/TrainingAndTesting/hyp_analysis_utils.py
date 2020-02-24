@@ -2,19 +2,18 @@ import io
 import math
 import os
 from contextlib import redirect_stdout
+from math import floor, log10
 
 import numpy as np
-from sklearn.model_selection import cross_val_score
-import yaml
+
 import xgboost as xgb
 from ROOT import ROOT as RR
 from ROOT import (TF1, TH1D, TH2D, TH3D, TCanvas, TFile, TPaveStats, TPaveText,
                   gDirectory, gStyle)
-import hyp_analysis_utils as au
 
 
 # nevents assumed to be the number of events in 1% bins
-def expected_signal_counts(bw, pt_range, eff, cent_range, nevents, n_body=2):
+def expected_signal_counts(bw, cent_range, pt_range, eff, nevents, n_body=2):
     correction = 0.4  # Very optimistic, considering it constant with centrality
 
     if n_body == 2:
@@ -69,8 +68,16 @@ def h2_generated(ptbins, ctbins, name='Generated'):
     return th2
 
 
-def h2_rawcounts(ptbins, ctbins, name='RawCounts'):
-    th2 = TH2D(name, ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Raw counts', len(ptbins)-1,
+def h2_rawcounts(ptbins, ctbins, name='RawCounts', suffix=''):
+    th2 = TH2D(f'{name}{suffix}', ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Raw counts', len(ptbins)-1,
+               np.array(ptbins, 'double'), len(ctbins) - 1, np.array(ctbins, 'double'))
+    th2.SetDirectory(0)
+
+    return th2
+
+
+def h2_significance(ptbins, ctbins, name='Significance', suffix=''):
+    th2 = TH2D(f'{name}{suffix}', ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Significance', len(ptbins)-1,
                np.array(ptbins, 'double'), len(ctbins) - 1, np.array(ctbins, 'double'))
     th2.SetDirectory(0)
 
@@ -89,37 +96,22 @@ def h1_invmass(counts, cent_class, pt_range, ct_range, bins=45, name=''):
     return th1
 
 
-def fit(
-        counts, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, signif=0, errsignif=0, name='', bins=45,
-        model="expo", fixsigma=-1, sigma_limits=None, mode=2):
-    histo = TH1D(
-        "ct{}{}_pT{}{}_cen{}{}_{}_{}".format(
-            ct_range[0],
-            ct_range[1],
-            pt_range[0],
-            pt_range[1],
-            cent_class[0],
-            cent_class[1],
-            name,
-            model),
-        "", bins, 2.96, 3.05)
+def round_to_error(x, error):
+    return round(x, -int(floor(log10(abs(error)))))
 
-    for index in range(0, len(counts)):
-        histo.SetBinContent(index+1, counts[index])
-        histo.SetBinError(index + 1, math.sqrt(counts[index]))
 
-    return fit_hist(
-        histo, ct_range, pt_range, cent_class, tdirectory, nsigma, signif, errsignif, model, fixsigma, sigma_limits,
-        mode)
+def get_ptbin_index(th2, ptbin):
+    return th2.GetXaxis().FindBin(0.5 * (ptbin[0] + ptbin[1]))
+
+
+def get_ctbin_index(th2, ctbin):
+    return th2.GetYaxis().FindBin(0.5 * (ctbin[0] + ctbin[1]))
 
 
 def fit_hist(
-        histo, ct_range, pt_range, cent_class, tdirectory=None, nsigma=3, signif=0, errsignif=0, model="expo",
-        fixsigma=-1, sigma_limits=None, mode=3):
-    if tdirectory:
-        tdirectory.cd()
+        histo, cent_class, pt_range, ct_range, nsigma=3, model="pol2", fixsigma=-1, sigma_limits=None, mode=3):
     # canvas for plotting the invariant mass distribution
-    cv = TCanvas("cv_{}".format(histo.GetName()))
+    cv = TCanvas(f'cv_{histo.GetName()}')
 
     # define the number of parameters depending on the bkg model
     if 'pol' in str(model):
@@ -127,31 +119,34 @@ def fit_hist(
     elif 'expo' in str(model):
         n_bkgpars = 2
     else:
-        print("Unsupported model {}".format(model))
+        print(f'Unsupported model {model}')
 
     # define the fit function bkg_model + gauss
-    fit_tpl = TF1("fitTpl", "{}(0)+gausn({})".format(model, n_bkgpars), 0, 5)
+    fit_tpl = TF1('fitTpl', f'{model}(0)+gausn({n_bkgpars})', 0, 5)
 
     # redefine parameter names for the bkg_model
-    for i in range(0, n_bkgpars):
-        fit_tpl.SetParName(i, 'B_{}'.format(i))
+    for i in range(n_bkgpars):
+        fit_tpl.SetParName(i, f'B_{i}')
+
     # define parameter names for the signal fit
-    fit_tpl.SetParName(n_bkgpars, "N_{sig}")
-    fit_tpl.SetParName(n_bkgpars + 1, "#mu")
-    fit_tpl.SetParName(n_bkgpars + 2, "#sigma")
+    fit_tpl.SetParName(n_bkgpars, 'N_{sig}')
+    fit_tpl.SetParName(n_bkgpars + 1, '#mu')
+    fit_tpl.SetParName(n_bkgpars + 2, '#sigma')
     # define parameter values and limits
     fit_tpl.SetParameter(n_bkgpars, 40)
     fit_tpl.SetParLimits(n_bkgpars, 0.001, 10000)
     fit_tpl.SetParameter(n_bkgpars + 1, 2.991)
     fit_tpl.SetParLimits(n_bkgpars + 1, 2.986, 3)
 
+    # define signal and bkg_model TF1 separately
+    sigTpl = TF1('fitTpl', 'gausn(0)', 0, 5)
+    bkg_tpl = TF1('fitTpl', f'{model}(0)', 0, 5)
+
+    # plotting stuff for fit_tpl
     fit_tpl.SetNpx(300)
     fit_tpl.SetLineWidth(2)
     fit_tpl.SetLineColor(2)
-    # define signal and bkg_model TF1 separately
-    sigTpl = TF1("fitTpl", "gausn(0)", 0, 5)
-    bkg_tpl = TF1("fitTpl", "{}(0)".format(model), 0, 5)
-
+    # plotting stuff for bkg model
     bkg_tpl.SetNpx(300)
     bkg_tpl.SetLineWidth(2)
     bkg_tpl.SetLineStyle(2)
@@ -171,12 +166,10 @@ def fit_hist(
 
     ########################################
     # plotting the fits
-    ax_titles = ''
     if mode == 2:
-        ax_titles = ';m (^{3}He + #pi) (GeV/#it{c})^{2};Counts' + ' / {} MeV'.format(round(1000 * histo.GetBinWidth(1), 2))
+        ax_titles = ';m (^{3}He + #pi) (GeV/#it{c})^{2};Counts' + f' / {round(1000 * histo.GetBinWidth(1), 2)} MeV'
     if mode == 3:
-        ax_titles = ';m (d + p + #pi) (GeV/#it{c})^{2};Counts' + \
-            ' / {} MeV'.format(round(1000 * histo.GetBinWidth(1), 2))
+        ax_titles = ';m (d + p + #pi) (GeV/#it{c})^{2};Counts' + f' / {round(1000 * histo.GetBinWidth(1), 2)} MeV'
 
     # invariant mass distribution histo and fit
     histo.UseCurrentStyle()
@@ -220,7 +213,6 @@ def fit_hist(
         deriv_bkg = -signal/(2*(math.pow(signal+bkg, 1.5)))
         errsignif = math.sqrt((errsignal*deriv_sig)**2+(errbkg*deriv_bkg)**2)
     else:
-        print('sig+bkg<0')
         signif = 0
         errsignif = 0
 
@@ -231,10 +223,9 @@ def fit_hist(
     pinfo2.SetTextAlign(30+3)
     pinfo2.SetTextFont(42)
 
-    string = 'ALICE Internal, Pb-Pb 2018 {}-{}%'.format(cent_class[0], cent_class[1])
+    string = f'ALICE Internal, Pb-Pb 2018 {cent_class[0]}-{cent_class[1]}%'
     pinfo2.AddText(string)
 
-    string = ''
     if mode == 2:
         string = '{}^{3}_{#Lambda}H#rightarrow ^{3}He#pi + c.c., %i #leq #it{ct} < %i cm %i #leq #it{p}_{T} < %i GeV/#it{c} ' % (
             ct_range[0], ct_range[1], pt_range[0], pt_range[1])
@@ -243,17 +234,18 @@ def fit_hist(
             ct_range[0], ct_range[1], pt_range[0], pt_range[1])
     pinfo2.AddText(string)
 
-    string = 'Significance ({:.0f}#sigma) {:.1f} #pm {:.1f} '.format(nsigma, signif, errsignif)
+    string = f'Significance ({nsigma:.0f}#sigma) {signif:.1f} #pm {errsignif:.1f} '
     pinfo2.AddText(string)
 
-    string = 'S ({:.0f}#sigma) {:.0f} #pm {:.0f} '.format(nsigma, signal, errsignal)
+    string = f'S ({nsigma:.0f}#sigma) {signal:.0f} #pm {errsignal:.0f}'
     pinfo2.AddText(string)
-    string = 'B ({:.0f}#sigma) {:.0f} #pm {:.0f}'.format(nsigma, bkg, errbkg)
+
+    string = f'B ({nsigma:.0f}#sigma) {bkg:.0f} #pm {errbkg:.0f}'
     pinfo2.AddText(string)
 
     if bkg > 0:
         ratio = signal/bkg
-        string = 'S/B ({:.0f}#sigma) {:.4f} '.format(nsigma, ratio)
+        string = f'S/B ({nsigma:.0f}#sigma) {ratio:.4f}'
 
     pinfo2.AddText(string)
     pinfo2.Draw()
@@ -267,7 +259,6 @@ def fit_hist(
         st.SetY2NDC(0.90)
         st.SetOptStat(0)
 
-    tdirectory.cd()
     histo.Write()
     cv.Write()
 

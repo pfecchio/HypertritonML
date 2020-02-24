@@ -96,9 +96,9 @@ class TrainingAnalysis:
 
         return eff_score_array
 
-    def MC_sigma_array(self, data, eff_score_array, cent_class, pt_range, ct_range, split_string=''):
+    def MC_sigma_array(self, data, eff_score_array, cent_class, pt_range, ct_range, split=''):
         inv_mass_array = np.array(np.arange(2.97, 3.04225, 0.00225))
-        info_string = f'_{cent_class[0]}{cent_class[1]}_{pt_range[0]}{pt_range[1]}_{ct_range[0]}{ct_range[1]}{split_string}'
+        info_string = f'_{cent_class[0]}{cent_class[1]}_{pt_range[0]}{pt_range[1]}_{ct_range[0]}{ct_range[1]}{split}'
 
         sigma_path = os.environ['HYPERML_UTILS_{}'.format(self.mode)] + '/FixedSigma'
 
@@ -106,31 +106,33 @@ class TrainingAnalysis:
             os.makedirs(sigma_path)
 
         filename_sigma = sigma_path + '/sigma_array' + info_string + '.npy'
-        sigma_list = []
+        sigma_dict = {}
 
         data[2]['score'] = data[2]['score'].astype(float)
 
         mass_bins = 40 if ct_range[1] < 16 else 36
 
-        for cut in eff_score_array[1]:
+        for eff, cut in zip(eff_score_array[0], eff_score_array[1]):
             counts = data[2][data[3].astype(bool)].query('score>@cut')['InvMass']
 
             histo_minv = hau.h1_invmass(inv_mass_array, cent_class, pt_range, ct_range, bins=mass_bins)
             fill_hist(histo_minv, counts)
 
             histo_minv.Fit('gaus', 'Q')
+
             sigma = histo_minv.GetFunction('gaus').GetParameter(2)
+            sigma_error = histo_minv.GetFunction('gaus').GetParError(2)
+            sigma = hau.round_to_error(sigma, sigma_error)
+
             del histo_minv
 
-            sigma_list.append(sigma)
+            sigma_dict[f'{eff:.2f}'] = sigma
 
-        print(sigma_list)
-
-        np.save(filename_sigma, np.array(sigma_list))
+        np.save(filename_sigma, np.array(sigma_dict))
 
     def save_ML_analysis(
-            self, model_handler, eff_score_array, cent_class, pt_range, ct_range, split_string=''):
-        info_string = f'_{cent_class[0]}{cent_class[1]}_{pt_range[0]}{pt_range[1]}_{ct_range[0]}{ct_range[1]}{split_string}'
+            self, model_handler, eff_score_array, cent_class, pt_range, ct_range, split=''):
+        info_string = f'_{cent_class[0]}{cent_class[1]}_{pt_range[0]}{pt_range[1]}_{ct_range[0]}{ct_range[1]}{split}'
 
         models_path = os.environ['HYPERML_MODELS_{}'.format(self.mode)]+'/models'
         handlers_path = os.environ['HYPERML_MODELS_{}'.format(self.mode)]+'/handlers'
@@ -143,7 +145,7 @@ class TrainingAnalysis:
 
         filename_handler = handlers_path + '/model_handler' + info_string + '.pkl'
         filename_model = models_path + '/BDT' + info_string + '.model'
-        filename_efficiencies = efficiencies_path + '/Eff_Score'+info_string+'.npy'
+        filename_efficiencies = efficiencies_path + '/Eff_Score' + info_string + '.npy'
 
         model_handler.dump_model_handler(filename_handler)
         model_handler.dump_original_model(filename_model, xgb_format=True)
@@ -153,9 +155,9 @@ class TrainingAnalysis:
         print('ML analysis results saved.\n')
 
     def save_ML_plots(
-            self, model_handler, data, eff_score_array, cent_class, pt_range, ct_range, split_string=''):
+            self, model_handler, data, eff_score_array, cent_class, pt_range, ct_range, split=''):
         fig_path = os.environ['HYPERML_FIGURES_{}'.format(self.mode)]
-        info_string = f'_{cent_class[0]}{cent_class[1]}_{pt_range[0]}{pt_range[1]}_{ct_range[0]}{ct_range[1]}{split_string}'
+        info_string = f'_{cent_class[0]}{cent_class[1]}_{pt_range[0]}{pt_range[1]}_{ct_range[0]}{ct_range[1]}{split}'
 
         bdt_score_path = fig_path + '/TrainTest'
         bdt_eff_path = fig_path + '/Efficiency'
@@ -223,9 +225,11 @@ class ModelApplication:
         self.presel_histo = tfile.Get("PreselEff")
         self.presel_histo.SetDirectory(0)
 
-    def load_ML_analysis(self, cent_class, pt_range, ct_range, split_string=''):
+        return self.presel_histo
 
-        info_string = f'_{cent_class[0]}{cent_class[1]}_{pt_range[0]}{pt_range[1]}_{ct_range[0]}{ct_range[1]}{split_string}'
+    def load_ML_analysis(self, cent_class, pt_range, ct_range, split=''):
+
+        info_string = f'_{cent_class[0]}{cent_class[1]}_{pt_range[0]}{pt_range[1]}_{ct_range[0]}{ct_range[1]}{split}'
 
         handlers_path = os.environ['HYPERML_MODELS_{}'.format(self.mode)] + '/handlers'
         efficiencies_path = os.environ['HYPERML_EFFICIENCIES_{}'.format(self.mode)]
@@ -243,10 +247,10 @@ class ModelApplication:
     def get_preselection_efficiency(self, ptbin_index, ctbin_index):
         return self.presel_histo.GetBinContent(ptbin_index, ctbin_index)
 
-    def load_sigma_array(self, cent_class, pt_range, ct_range, split_string=''):
+    def load_sigma_array(self, cent_class, pt_range, ct_range, split=''):
 
         info_string = '_{}{}_{}{}_{}{}{}'.format(cent_class[0], cent_class[1], pt_range[0],
-                                                 pt_range[1], ct_range[0], ct_range[1], split_string)
+                                                 pt_range[1], ct_range[0], ct_range[1], split)
         sigma_path = os.environ['HYPERML_UTILS_{}'.format(
             self.mode)]+'/FixedSigma'
         filename_sigma = sigma_path + "/sigma_array" + info_string + '.npy'
@@ -271,7 +275,7 @@ class ModelApplication:
         return self.df_data.query(data_range)[application_columns]
 
     def significance_scan(
-            self, df_bkg, pre_selection_efficiency, eff_score_array, cent_class, ct_range, pt_range, split_string=''):
+            self, df_bkg, pre_selection_efficiency, eff_score_array, cent_class, pt_range, ct_range, split=''):
         print('\nSignificance scan: ...')
 
         bdt_efficiency = eff_score_array[0]
@@ -304,10 +308,10 @@ class ModelApplication:
             y = np.polyval(h, bins_side)
 
             exp_signal_ctint = hau.expected_signal_counts(
-                bw, pt_range, pre_selection_efficiency * bdt_efficiency[index],
-                cent_class, self.hist_centrality)
+                bw, cent_class, pt_range, pre_selection_efficiency * bdt_efficiency[index],
+                self.hist_centrality)
 
-            if split_string is not '':
+            if split is not '':
                 exp_signal_ctint = 0.5 * exp_signal_ctint
 
             ctrange_correction = hau.expo(ct_range[0], hyp_lifetime)-hau.expo(ct_range[1], hyp_lifetime)
@@ -340,7 +344,7 @@ class ModelApplication:
         data_range_array = [ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1]]
         hpu.plot_significance_scan(
             max_index, significance_custom, significance_custom_error, expected_signal, df_bkg, threshold_space,
-            data_range_array, bin_centers, nevents, self.mode, split_string=split_string)
+            data_range_array, bin_centers, nevents, self.mode, split=split)
 
         bdt_eff_max_score = bdt_efficiency[max_index]
 
@@ -348,3 +352,12 @@ class ModelApplication:
 
         # return max_score, bdt_eff_max_score, max_significance
         return bdt_eff_max_score, max_score
+
+
+def load_mcsigma(cent_class, pt_range, ct_range, mode, split=''):
+    info_string = f'_{cent_class[0]}{cent_class[1]}_{pt_range[0]}{pt_range[1]}_{ct_range[0]}{ct_range[1]}{split}'
+    sigma_path = os.environ['HYPERML_UTILS_{}'.format(mode)] + '/FixedSigma'
+
+    file_name = f'{sigma_path}/sigma_array{info_string}.npy'
+
+    return np.load(file_name)

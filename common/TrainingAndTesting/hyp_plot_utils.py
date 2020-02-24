@@ -51,7 +51,7 @@ def plot_efficiency_significance(mode, tsd, significance, efficiency, data_range
 
 def plot_significance_scan(
         max_index, significance, significance_error, expected_signal, bkg_df, score_list, data_range_array, bin_cent,
-        n_ev, mode, split_string=''):
+        n_ev, mode, split=''):
 
     label = 'Significance x Efficiency'
 
@@ -146,7 +146,7 @@ def plot_significance_scan(
         data_range_array[3],
         data_range_array[4],
         data_range_array[5],
-        split_string)
+        split)
 
     fig_sig_path = os.environ['HYPERML_FIGURES_{}'.format(
         mode)]+'/Significance'
