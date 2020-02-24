@@ -38,7 +38,8 @@ args = parser.parse_args()
 
 gROOT.SetBatch()
 
-expo = TF1("myexpo", "[0]*exp(-x/([1]*0.029979245800))/([1]*0.029979245800)", 0, 35)
+expo = TF1(
+    "myexpo", "[0]*exp(-x/([1]*0.029979245800))/([1]*0.029979245800)", 0, 35)
 expo.SetParLimits(1, 100, 350)
 
 with open(os.path.expandvars(args.config), 'r') as stream:
@@ -52,19 +53,16 @@ resultsSysDir = os.environ['HYPERML_RESULTS_{}'.format(params['NBODY'])]
 var = '#it{ct}'
 unit = 'cm'
 
-rangesFile = resultsSysDir + '/' + params['FILE_PREFIX'] + '_effranges.yaml'
-with open(os.path.expandvars(rangesFile), 'r') as stream:
-    try:
-        ranges = yaml.full_load(stream)
-    except yaml.YAMLError as exc:
-        print(exc)
 
 file_name = resultsSysDir + '/' + params['FILE_PREFIX'] + '_dist.root'
 distribution = TFile(file_name, 'recreate')
 
-file_name = resultsSysDir + '/' + params['FILE_PREFIX'] + '_results_fit.root'
-# file_name = resultsSysDir + '/3b.root' 
+file_name = resultsSysDir + '/' + params['FILE_PREFIX'] + '_results.root'
+# file_name = resultsSysDir + '/3b.root'
 results_file = TFile(file_name, 'read')
+
+
+
 
 # file_name = '~/HypertritonML/3body/PreselectionEfficiency/PreselectionEfficiencyHist.root'
 # eff_file = TFile(file_name, 'read')
@@ -73,12 +71,23 @@ bkgModels = params['BKG_MODELS'] if 'BKG_MODELS' in params else ['expo']
 
 for cclass in params['CENTRALITY_CLASS']:
     inDirName = f"{cclass[0]}-{cclass[1]}"
+
+    h2BDTEff = results_file.Get(f'{inDirName}/BDTeff')
+    h1BDTEff = h2BDTEff.ProjectionY("bdteff", 1, 1)
+    best_sig = np.round(np.array(h1BDTEff)[1:-1], 2)
+    sig_ranges = []
+    for i in best_sig:
+        sig_ranges.append([i-0.1, i+0.1, 0.01])
+        ranges = {
+            'BEST': best_sig,
+            'SCAN': sig_ranges
+        }
     results_file.cd(inDirName)
     out_dir = distribution.mkdir(inDirName)
     cvDir = out_dir.mkdir("canvas")
 
-    h2PreselEff = results_file.Get(f'{inDirName}/SelEff')
-    h1PreselEff = h2PreselEff.ProjectionY()
+    h2PreselEff = results_file.Get(f'{inDirName}/PreselEff')
+    h1PreselEff = h2PreselEff.ProjectionY("preseleff", 1, 1)
 
     # h1PreselEff = eff_file.Get('fHistEfficiencyVsCt')
 
@@ -104,7 +113,7 @@ for cclass in params['CENTRALITY_CLASS']:
         # h2Significance.ProjectionY().Write(f'significance_ct_{model}')
 
         for iBin in range(1, h1RawCounts.GetNbinsX()):
-            h2RawCounts = results_file.Get(f'{inDirName}/RawCounts{ranges["BEST"][iBin-1]:.2f}_{model}')
+            h2RawCounts = results_file.Get(f'{inDirName}/RawCounts_{ranges["BEST"][iBin-1]:.2f}_{model}')
             h1RawCounts.SetBinContent(iBin, h2RawCounts.GetBinContent(
                 1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin))
             h1RawCounts.SetBinError(iBin, h2RawCounts.GetBinError(
@@ -130,7 +139,8 @@ for cclass in params['CENTRALITY_CLASS']:
         cvDir.cd()
         myCv = TCanvas(f"ctSpectraCv_{model}")
         myCv.SetLogy()
-        frame = gPad.DrawFrame(0., 3, 36, 2000, ";#it{c}t (cm);d#it{N}/d(#it{c}t) [(cm)^{-1}]")
+        frame = gPad.DrawFrame(
+            0., 3, 36, 2000, ";#it{c}t (cm);d#it{N}/d(#it{c}t) [(cm)^{-1}]")
         pinfo2 = TPaveText(0.5, 0.65, 0.88, 0.86, "NDC")
         pinfo2.SetBorderSize(0)
         pinfo2.SetFillStyle(0)
@@ -141,10 +151,12 @@ for cclass in params['CENTRALITY_CLASS']:
         string2 = 'Pb-Pb  #sqrt{#it{s}_{NN}} = 5.02 TeV,  0-90%'
         pinfo2.AddText(string1)
         pinfo2.AddText(string2)
-        string='#tau = {:.0f} #pm {:.0f} ps '.format(expo.GetParameter(1),expo.GetParError(1))
+        string = '#tau = {:.0f} #pm {:.0f} ps '.format(
+            expo.GetParameter(1), expo.GetParError(1))
         pinfo2.AddText(string)
         if expo.GetNDF()is not 0:
-          string='#chi^{{2}} / NDF = {}'.format(expo.GetChisquare() / (expo.GetNDF()))
+            string = '#chi^{{2}} / NDF = {}'.format(
+                expo.GetChisquare() / (expo.GetNDF()))
         pinfo2.AddText(string)
         fit_function.Draw("same")
         h1RawCounts.Draw("ex0same")

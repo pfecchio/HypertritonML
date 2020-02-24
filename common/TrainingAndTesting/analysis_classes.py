@@ -161,6 +161,7 @@ class TrainingAnalysis:
 
         bdt_score_path = fig_path + '/TrainTest'
         bdt_eff_path = fig_path + '/Efficiency'
+<<<<<<< HEAD
         feat_imp_path = fig_path + '/FeatureImp'
 
         bdt_score_plot = plot_utils.plot_output_train_test(model_handler, data, bins=100)
@@ -172,6 +173,9 @@ class TrainingAnalysis:
             for ax in axlist:
                 ax.set_yscale('log')
             fig.savefig(bdt_score_path + '/BDT_Score' + info_string + '.pdf')
+=======
+        feat_imp_path = fig_path + '/FeatureImportance'
+>>>>>>> 7a9daf69e46c18c337e2ada2d4211d64a7259164
 
         bdt_eff_plot = plot_utils.plot_bdt_eff(eff_score_array[1], eff_score_array[0])
         if not os.path.exists(bdt_eff_path):

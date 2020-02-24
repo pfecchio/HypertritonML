@@ -72,7 +72,7 @@ for cclass in params['CENTRALITY_CLASS']:
             'expo']
         resultFile.cd(inDirName)
         h2BDTEff = resultFile.Get(f'{inDirName}/BDTeff')
-        h1BDTEff = h2BDTEff.ProjectionX()
+        h1BDTEff = h2BDTEff.ProjectionX("bdteff", 1 , 1)
 
         best_sig = np.round(np.array(h1BDTEff)[1:-1],2)
         sig_ranges=[]
@@ -88,8 +88,8 @@ for cclass in params['CENTRALITY_CLASS']:
         n_events = sum(hist_centrality[cclass[0]+1:cclass[1]])
         
         resultFile.cd(inDirName)
-        h2PreselEff = resultFile.Get(f'{inDirName}/SelEff')
-        h1PreselEff = h2PreselEff.ProjectionX()
+        h2PreselEff = resultFile.Get(f'{inDirName}/PreselEff')
+        h1PreselEff = h2PreselEff.ProjectionX("preseleff", 1, 1)
         for i in range(1, h1PreselEff.GetNbinsX()+1):
             h1PreselEff.SetBinError(i, 0)
 
@@ -107,9 +107,8 @@ for cclass in params['CENTRALITY_CLASS']:
 
 
             for iBin in range(1, h1RawCounts.GetNbinsX()+1):
-
                 h2RawCounts = resultFile.Get(
-                    f'{inDirName}/RawCounts{ranges["BEST"][iBin-1]}_{model}')
+                    f'{inDirName}/RawCounts_{ranges["BEST"][iBin-1]:.2f}_{model}')
                 h1RawCounts.SetBinContent(iBin, h2RawCounts.GetBinContent(
                     iBin, 1) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin))
                 h1RawCounts.SetBinError(iBin, h2RawCounts.GetBinError(
@@ -118,15 +117,12 @@ for cclass in params['CENTRALITY_CLASS']:
                 errs.append([])
                 for eff in np.arange(ranges['SCAN'][iBin-1][0], ranges['SCAN'][iBin-1][1], ranges['SCAN'][iBin-1][2]):
                     h2RawCounts = resultFile.Get(
-                        f'{inDirName}/RawCounts{eff:g}_{model}')
+                        f'{inDirName}/RawCounts_{eff:.2f}_{model}')
                     val = h2RawCounts.GetBinContent(iBin,1) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/n_events/0.25
                     raws[iBin-1].append(val)
                     errs[iBin-1].append(h2RawCounts.GetBinError(iBin,
                                                                 1) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/n_events/0.25)
-                    # if(split_string=='_matter' and iBin==1 and val == 1.1343769943680133e-07):
-                    #     print('raws:' ,raws[iBin-1])
-                    #     print('model: ',model)
-                    #     print('eff: ', eff)
+
 
         # h1PreselEff.Scale(0.5)  ##rapidity cut correction
         h1RawCounts.UseCurrentStyle()
