@@ -56,7 +56,7 @@ suffix = '19d2'
 input_file_path = os.environ['HYPERML_DATA_3']
 
 # open input file and tree
-input_file_name = f'HyperTritonTree_{suffix}.root'
+input_file_name = f'newMC/HyperTritonTree_{suffix}.root'
 
 input_file = TFile(f'{input_file_path}/{input_file_name}', 'read')
 
@@ -132,10 +132,6 @@ counter = 0
 
 # main loop over the events
 for ev in tree:
-    # counter += 1
-    # if counter == 1000:
-    #     break
-
     if ev.REvent.fCent > 90.:
         continue
 
@@ -163,14 +159,16 @@ for ev in tree:
         p = hyp.P()
 
         t = m * dl
+        if hyp.Gamma() == 0 or hyp.Beta() == 0:
+            continue
         ct = dl / (hyp.Gamma() * hyp.Beta())
 
-        if hyp.Pt() >= 1. or hyp.Pt() <= 10.:
-            hist_ctsim.Fill(ct)
-            hist_ptsim.Fill(hyp.Pt())
-            hist_psim.Fill(hyp.P())
-            hist_etasim.Fill(hyp.Eta())
-            hist_phisim.Fill(hyp.Phi())
+        # if hyp.Pt() >= 1. or hyp.Pt() <= 10.:
+        hist_ctsim.Fill(ct)
+        hist_ptsim.Fill(hyp.Pt())
+        hist_psim.Fill(hyp.P())
+        hist_etasim.Fill(hyp.Eta())
+        hist_phisim.Fill(hyp.Phi())
 
         # rec - sim diff
         if sim.fRecoIndex >= 0:
@@ -227,14 +225,17 @@ for ev in tree:
         p = hyp.P()
 
         t = m * dl
+
+        if hyp.Gamma() == 0 or hyp.Beta() == 0:
+            continue
         ct = dl / (hyp.Gamma() * hyp.Beta())
 
-        if hyp.Pt() >= 1. or hyp.Pt() <= 10.:
-            hist_ctrec.Fill(ct)
-            hist_ptrec.Fill(hyp.Pt())
-            hist_prec.Fill(hyp.P())
-            hist_etarec.Fill(hyp.Eta())
-            hist_phirec.Fill(hyp.Phi())
+        # if hyp.Pt() >= 1. or hyp.Pt() <= 10.:
+        hist_ctrec.Fill(ct)
+        hist_ptrec.Fill(hyp.Pt())
+        hist_prec.Fill(hyp.P())
+        hist_etarec.Fill(hyp.Eta())
+        hist_phirec.Fill(hyp.Phi())
 
     analyzed_events += 1
     update_progress(analyzed_events/n_events)
@@ -244,7 +245,7 @@ input_file.Close()
 # create output file
 home_path = os.environ['HOME']
 output_file_path = home_path + '/3body_workspace/preseleff_study'
-output_file_name = f'PreselEff_{suffix}.root'
+output_file_name = f'PreselEff_{suffix}_newMC.root'
 
 output_file = TFile(f'{output_file_path}/{output_file_name}', 'recreate')
 
