@@ -53,6 +53,7 @@ else:
     SPLIT_LIST = ['']
 
 LABELS = [f'{x:.2f}_{y}' for x in FIX_EFF_ARRAY for y in BKG_MODELS]
+LABELS = LABELS + ["_sigscan_" + x for x in BKG_MODELS]
 
 ###############################################################################
 # define paths for loading results
@@ -81,6 +82,7 @@ for split in SPLIT_LIST:
         cent_dir.cd()
 
         h2_eff = input_file.Get(cent_dir_name + '/PreselEff')
+        h2_BDT_eff = hau.h2_rawcounts(PT_BINS, CT_BINS, name = "BDTeff")
 
         for lab in LABELS:
             h2_rawcounts_dict[lab] = hau.h2_rawcounts(PT_BINS, CT_BINS, suffix=lab)
@@ -128,9 +130,19 @@ for split in SPLIT_LIST:
                         significance_dict[dict_key].SetBinContent(ptbin_index, ctbin_index, significance)
                         significance_dict[dict_key].SetBinError(ptbin_index, ctbin_index, err_significance)
 
+                        if key == input_subdir.GetListOfKeys()[0]:
+                            dict_key_sig = f'_sigscan_{bkgmodel}'
+                            h2_rawcounts_dict[dict_key_sig].SetBinContent(ptbin_index, ctbin_index, rawcounts)
+                            h2_rawcounts_dict[dict_key_sig].SetBinError(ptbin_index, ctbin_index, err_rawcounts)
+
+                            significance_dict[dict_key_sig].SetBinContent(ptbin_index, ctbin_index, significance)
+                            significance_dict[dict_key_sig].SetBinError(ptbin_index, ctbin_index, err_significance)
+
+                            h2_BDT_eff.SetBinContent(ptbin_index, ctbin_index, float(keff))                           
+
         cent_dir.cd()
         h2_eff.Write()
-        
+        h2_BDT_eff.Write()
         for lab in LABELS:
             h2_rawcounts_dict[lab].Write()
 
