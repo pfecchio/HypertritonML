@@ -161,7 +161,7 @@ if APPLICATION:
 
                     if N_BODY == 2:
                         df_applied = ml_application.apply_BDT_to_data(
-                            model_handler, cclass, ptbin, ctbin, model_handler.get_training_columns())
+                            model_handler, cclass, ptbin, ctbin, model_handler.get_training_columns(), application_columns)
 
                     if N_BODY == 3:
                         df_applied = ml_application.get_data_slice(cclass, ptbin, ctbin, application_columns)
@@ -174,14 +174,15 @@ if APPLICATION:
                     # define subdir for saving invariant mass histograms
                     sub_dir = cent_dir.mkdir(f'ct_{ctbin[0]}{ctbin[1]}') if 'ct' in FILE_PREFIX else cent_dir.mkdir(f'pt_{ptbin[0]}{ptbin[1]}')
                     sub_dir.cd()
-
-                    for eff, tsd in zip(reversed(eff_score_array[0]), reversed(eff_score_array[1])):
+                    for eff, tsd in zip(pd.unique(eff_score_array[0][::-1]), pd.unique(eff_score_array[1][::-1])):
                         mass_bins = 40 if ctbin[1] < 16 else 36
 
                         mass_array = np.array(df_applied.query('score>@tsd')['InvMass'].values, dtype=np.float64)
                         counts, _ = np.histogram(mass_array, bins=mass_bins, range=[2.96, 3.05])
 
-                        h1_minv = hau.h1_invmass(counts, cclass, ptbin, ctbin, bins=mass_bins, name=f'eff{eff:.2f}')
+                        histo_name = f'eff{eff:.2f}'
+                        
+                        h1_minv = hau.h1_invmass(counts, cclass, ptbin, ctbin, bins=mass_bins, name=histo_name)
                         h1_minv.Write()
 
                     print('Application and signal extraction: Done!\n')

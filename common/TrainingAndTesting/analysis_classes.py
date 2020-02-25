@@ -161,7 +161,6 @@ class TrainingAnalysis:
 
         bdt_score_path = fig_path + '/TrainTest'
         bdt_eff_path = fig_path + '/Efficiency'
-<<<<<<< HEAD
         feat_imp_path = fig_path + '/FeatureImp'
 
         bdt_score_plot = plot_utils.plot_output_train_test(model_handler, data, bins=100)
@@ -173,9 +172,6 @@ class TrainingAnalysis:
             for ax in axlist:
                 ax.set_yscale('log')
             fig.savefig(bdt_score_path + '/BDT_Score' + info_string + '.pdf')
-=======
-        feat_imp_path = fig_path + '/FeatureImportance'
->>>>>>> 7a9daf69e46c18c337e2ada2d4211d64a7259164
 
         bdt_eff_plot = plot_utils.plot_bdt_eff(eff_score_array[1], eff_score_array[0])
         if not os.path.exists(bdt_eff_path):
@@ -263,7 +259,7 @@ class ModelApplication:
     def apply_BDT_to_data(self, model_handler, cent_class, pt_range, ct_range, training_columns, application_columns):
         print('\nApplying BDT to data: ...')
 
-        data_range = f'{ct_range[0]}<ct<{ct_range[1]} and {pt_range[0]}<HypCandPt<{pt_bins[1]} and {cent_class[0]}<centrality<{cent_class[1]}'
+        data_range = f'{ct_range[0]}<ct<{ct_range[1]} and {pt_range[0]}<HypCandPt<{pt_range[1]} and {cent_class[0]}<centrality<{cent_class[1]}'
         df_applied = self.df_data.query(data_range)
 
         df_applied.insert(0, 'score', model_handler.predict(df_applied[training_columns]))

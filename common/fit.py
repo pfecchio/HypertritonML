@@ -65,7 +65,7 @@ output_file_name = results_dir + f'/{FILE_PREFIX}_results_fit.root'
 output_file = TFile(output_file_name, 'recreate')
 
 ###############################################################################
-# define dictionaries for storing row counts and significance
+# define dictionaries for storing raw counts and significance
 h2_rawcounts_dict = {}
 significance_dict = {}
 
@@ -80,7 +80,7 @@ for split in SPLIT_LIST:
         cent_dir = output_file.mkdir(cent_dir_name)
         cent_dir.cd()
 
-        h2_eff = input_file.Get(f'{cclass[0]}-{cclass[1]}/PreselEff')
+        h2_eff = input_file.Get(cent_dir_name + '/PreselEff')
 
         for lab in LABELS:
             h2_rawcounts_dict[lab] = hau.h2_rawcounts(PT_BINS, CT_BINS, suffix=lab)
@@ -101,7 +101,7 @@ for split in SPLIT_LIST:
                 output_subdir.cd()
 
                 if SIGMA_MC:
-                    sigma_dict = load_mcsigma(cclass, ptbin, ctbin, N_BODY)
+                    sigma_dict = load_mcsigma(cclass, ptbin, ctbin, N_BODY, split)
 
                 for bkgmodel in BKG_MODELS:
                     # create dirs for models
@@ -111,6 +111,7 @@ for split in SPLIT_LIST:
                     # loop over all the histo in the dir
                     for key in input_subdir.GetListOfKeys():
                         keff = key.GetName()[-4:]
+                       
 
                         hist = TH1D(key.ReadObj())
                         hist.SetDirectory(0)
@@ -122,6 +123,7 @@ for split in SPLIT_LIST:
 
                         dict_key = f'{keff}_{bkgmodel}'
 
+
                         h2_rawcounts_dict[dict_key].SetBinContent(ptbin_index, ctbin_index, rawcounts)
                         h2_rawcounts_dict[dict_key].SetBinError(ptbin_index, ctbin_index, err_rawcounts)
 
@@ -130,7 +132,6 @@ for split in SPLIT_LIST:
 
         cent_dir.cd()
         h2_eff.Write()
-
         for lab in LABELS:
             h2_rawcounts_dict[lab].Write()
 
