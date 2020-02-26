@@ -53,7 +53,6 @@ else:
     SPLIT_LIST = ['']
 
 LABELS = [f'{x:.2f}_{y}' for x in FIX_EFF_ARRAY for y in BKG_MODELS]
-LABELS = LABELS + ["_sigscan_" + x for x in BKG_MODELS]
 
 ###############################################################################
 # define paths for loading results
@@ -131,13 +130,6 @@ for split in SPLIT_LIST:
                         significance_dict[dict_key].SetBinError(ptbin_index, ctbin_index, err_significance)
 
                         if key == input_subdir.GetListOfKeys()[0]:
-                            dict_key_sig = f'_sigscan_{bkgmodel}'
-                            h2_rawcounts_dict[dict_key_sig].SetBinContent(ptbin_index, ctbin_index, rawcounts)
-                            h2_rawcounts_dict[dict_key_sig].SetBinError(ptbin_index, ctbin_index, err_rawcounts)
-
-                            significance_dict[dict_key_sig].SetBinContent(ptbin_index, ctbin_index, significance)
-                            significance_dict[dict_key_sig].SetBinError(ptbin_index, ctbin_index, err_significance)
-
                             h2_BDT_eff.SetBinContent(ptbin_index, ctbin_index, float(keff))                           
 
         cent_dir.cd()

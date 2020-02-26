@@ -57,7 +57,7 @@ unit = 'cm'
 file_name = resultsSysDir + '/' + params['FILE_PREFIX'] + '_dist.root'
 distribution = TFile(file_name, 'recreate')
 
-file_name = resultsSysDir + '/' + params['FILE_PREFIX'] + '_results.root'
+file_name = resultsSysDir + '/' + params['FILE_PREFIX'] + '_results_fit.root'
 # file_name = resultsSysDir + '/3b.root'
 results_file = TFile(file_name, 'read')
 
@@ -112,8 +112,8 @@ for cclass in params['CENTRALITY_CLASS']:
         out_dir.cd()
         # h2Significance.ProjectionY().Write(f'significance_ct_{model}')
 
-        for iBin in range(1, h1RawCounts.GetNbinsX()):
-            h2RawCounts = results_file.Get(f'{inDirName}/RawCounts_{ranges["BEST"][iBin-1]:.2f}_{model}')
+        for iBin in range(1, h1RawCounts.GetNbinsX()+1):
+            h2RawCounts = results_file.Get(f'{inDirName}/RawCounts{ranges["BEST"][iBin-1]:.2f}_{model}')
             h1RawCounts.SetBinContent(iBin, h2RawCounts.GetBinContent(
                 1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin))
             h1RawCounts.SetBinError(iBin, h2RawCounts.GetBinError(
@@ -121,12 +121,12 @@ for cclass in params['CENTRALITY_CLASS']:
             raws.append([])
             errs.append([])
 
-            # for eff in np.arange(ranges['SCAN'][iBin-1][0], ranges['SCAN'][iBin-1][1], ranges['SCAN'][iBin-1][2]):
-            #     h2RawCounts = results_file.Get(f'{inDirName}/RawCounts{eff:.2f}_{model}')
-            #     raws[iBin-1].append(h2RawCounts.GetBinContent(1,
-            #                                                   iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin))
-            #     errs[iBin-1].append(h2RawCounts.GetBinError(1,
-            #                                                 iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin))
+            for eff in np.arange(ranges['SCAN'][iBin-1][0], ranges['SCAN'][iBin-1][1], ranges['SCAN'][iBin-1][2]):
+                h2RawCounts = results_file.Get(f'{inDirName}/RawCounts{eff:.2f}_{model}')
+                raws[iBin-1].append(h2RawCounts.GetBinContent(1,
+                                                              iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin))
+                errs[iBin-1].append(h2RawCounts.GetBinError(1,
+                                                            iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin))
 
         out_dir.cd()
         h1RawCounts.UseCurrentStyle()
@@ -155,8 +155,7 @@ for cclass in params['CENTRALITY_CLASS']:
             expo.GetParameter(1), expo.GetParError(1))
         pinfo2.AddText(string)
         if expo.GetNDF()is not 0:
-            string = '#chi^{{2}} / NDF = {}'.format(
-                expo.GetChisquare() / (expo.GetNDF()))
+            string = f'#chi^{{2}} / NDF = {(expo.GetChisquare() / expo.GetNDF()):.2f}'
         pinfo2.AddText(string)
         fit_function.Draw("same")
         h1RawCounts.Draw("ex0same")
@@ -179,9 +178,10 @@ for cclass in params['CENTRALITY_CLASS']:
         tmpSyst.SetMaximum(1000)
         corSyst.SetFillStyle(3345)
         for iBin in range(1, h1RawCounts.GetNbinsX() + 1):
-            val = tmpSyst.GetBinContent(iBin)
-            tmpSyst.SetBinError(iBin, 0.099 * val)
-            corSyst.SetBinError(iBin, 0.086 * val)
+            print(iBin)
+            print(len(raws))
+            tmpSyst.SetBinError(iBin, np.std(raws[iBin - 1]))
+            # corSyst.SetBinError(iBin, 0.086 * val)
         tmpSyst.SetLineColor(kBlueC)
         tmpSyst.SetMarkerColor(kBlueC)
         tmpSyst.Draw("e2same")
@@ -196,72 +196,40 @@ for cclass in params['CENTRALITY_CLASS']:
 
     out_dir.cd()
 
-    # syst = TH1D("syst", ";#tau (ps);Entries", 300, 100, 400)
-    # prob = TH1D("prob", ";Lifetime fit probability;Entries", 100, 0, 1)
-    # pars = TH2D("pars", ";#tau (ps);Normalisation;Entries", 300, 100, 400, 4000, 2500, 6500)
-    # tmpCt = hRawCounts[0].Clone("tmpCt")
+    syst = TH1D("syst", ";#tau (ps);Entries", 300, 100, 400)
+    prob = TH1D("prob", ";Lifetime fit probability;Entries", 100, 0, 1)
+    pars = TH2D("pars", ";#tau (ps);Normalisation;Entries", 300, 100, 400, 4000, 2500, 6500)
+    tmpCt = hRawCounts[0].Clone("tmpCt")
 
-    # combinations = set()
-    # size = 100
+    combinations = set()
+    size = 10000
 
-    # for _ in range(size):
-    #     tmpCt.Reset()
-    #     comboList = []
+    for _ in range(size):
+        tmpCt.Reset()
+        comboList = []
 
-    #     for iBin in range(1, tmpCt.GetNbinsX()):
-    #         index = random.randint(0, len(raws[iBin-1])-1)
-    #         comboList.append(index)
-    #         tmpCt.SetBinContent(iBin, raws[iBin-1][index])
-    #         tmpCt.SetBinError(iBin, errs[iBin-1][index])
+        for iBin in range(1, tmpCt.GetNbinsX()):
+            index = random.randint(0, len(raws[iBin-1])-1)
+            comboList.append(index)
+            tmpCt.SetBinContent(iBin, raws[iBin-1][index])
+            tmpCt.SetBinError(iBin, errs[iBin-1][index])
 
-    #     combo = (x for x in comboList)
-    #     if combo in combinations:
-    #         continue
+        combo = (x for x in comboList)
+        if combo in combinations:
+            continue
 
-    #     combinations.add(combo)
-    #     tmpCt.Fit(expo, "MI")
-    #     prob.Fill(expo.GetProb())
-    #     if expo.GetChisquare() < 3 * expo.GetNDF():
-    #         syst.Fill(expo.GetParameter(1))
-    #         pars.Fill(expo.GetParameter(1), expo.GetParameter(0))
+        combinations.add(combo)
+        tmpCt.Fit(expo, "MI")
+        prob.Fill(expo.GetProb())
+        if expo.GetChisquare() < 3 * expo.GetNDF():
+            syst.Fill(expo.GetParameter(1))
+            pars.Fill(expo.GetParameter(1), expo.GetParameter(0))
 
-    # syst.SetFillColor(600)
-    # syst.SetFillStyle(3345)
-    # syst.Scale(1./syst.Integral())
-    # syst.Write()
-    # prob.Write()
-    # pars.Write()
-
-    # myCv = TCanvas("ctSpectraCv")
-    # pinfo2= TPaveText(0.5,0.6,0.91,0.9,"NDC")
-    # pinfo2.SetBorderSize(0)
-    # pinfo2.SetFillStyle(0)
-    # pinfo2.SetTextAlign(30+3)
-    # pinfo2.SetTextFont(42)
-    # string ='ALICE Internal, Pb-Pb 2018 {}-{}%'.format(0,90)
-    # pinfo2.AddText(string)
-    # expo7 = hRawCounts[7].GetFunction('myexpo')
-    # string='#tau = {:.0f} #pm {:.0f} ps '.format(expo7.GetParameter(1),expo7.GetParError(1))
-    # pinfo2.AddText(string)
-    # if expo7.GetNDF()is not 0:
-    #   string='#chi^{{2}} / NDF = {}'.format(expo7.GetChisquare() / (expo7.GetNDF()))
-    # pinfo2.AddText(string)
-    # hRawCounts[7].Draw()
-    # hRawCounts[7].SetMarkerStyle(20)
-    # hRawCounts[7].SetMarkerColor(600)
-    # hRawCounts[7].SetLineColor(600)
-    # pinfo2.Draw("x0")
-    # tmpSyst = hRawCounts[7].Clone("hSyst")
-    # corSyst = hRawCounts[7].Clone("hCorr")
-    # tmpSyst.SetFillStyle(0)
-    # corSyst.SetFillStyle(3345)
-    # for iBin in range(1, hRawCounts[7].GetNbinsX() + 1):
-    #   val = tmpSyst.GetBinContent(iBin)
-    #   tmpSyst.SetBinError(iBin, np.std(raws[iBin - 1]))
-    #   corSyst.SetBinError(iBin, 0.086 * val)
-    # tmpSyst.Draw("e2same")
-    # corSyst.Draw("e2same")
-    # out_dir.cd()
-    # myCv.Write()
+    syst.SetFillColor(600)
+    syst.SetFillStyle(3345)
+    syst.Scale(1./syst.Integral())
+    syst.Write()
+    prob.Write()
+    pars.Write()
 
 results_file.Close()
