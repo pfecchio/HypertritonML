@@ -14,11 +14,11 @@ using namespace std;
 #include "../../common/GenerateTable/Common.h"
 #include "../../common/GenerateTable/Table2.h"
 
-void GenerateTableFromData(bool likeSign = false, bool kInt7 = false)
+void GenerateTableFromData(bool likeSign = false, bool kInt7 = false, string dataDir = "" , string tableDir = "")
 {
 
-  string dataDir = getenv("HYPERML_DATA_2");
-  string tableDir = getenv("HYPERML_TABLES_2");
+  if (dataDir=="") dataDir = getenv("HYPERML_DATA_2");
+  if (tableDir=="") tableDir = getenv("HYPERML_TABLES_2");
 
   string kintstring = kInt7 ? "KINT7" : "";
   string lsString = likeSign ? "LS.root" : ".root";

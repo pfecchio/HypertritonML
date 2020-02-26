@@ -17,11 +17,11 @@
 #include "../../common/GenerateTable/GenTable2.h"
 #include "../../common/GenerateTable/Table2.h"
 
-void GenerateTableFromMC(bool reject = true) {
+void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypTableDir = "" ) {
   gRandom->SetSeed(1989);
 
-  string hypDataDir  = getenv("HYPERML_DATA_2");
-  string hypTableDir = getenv("HYPERML_TABLES_2");
+  if (hypDataDir=="") hypDataDir  = getenv("HYPERML_DATA_2");
+  if (hypTableDir=="") hypTableDir = getenv("HYPERML_TABLES_2");
   string hypUtilsDir = getenv("HYPERML_UTILS");
 
   string inFileName = "HyperTritonTree_19d2.root";

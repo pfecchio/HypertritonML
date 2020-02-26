@@ -178,8 +178,6 @@ for cclass in params['CENTRALITY_CLASS']:
         tmpSyst.SetMaximum(1000)
         corSyst.SetFillStyle(3345)
         for iBin in range(1, h1RawCounts.GetNbinsX() + 1):
-            print(iBin)
-            print(len(raws))
             tmpSyst.SetBinError(iBin, np.std(raws[iBin - 1]))
             # corSyst.SetBinError(iBin, 0.086 * val)
         tmpSyst.SetLineColor(kBlueC)
@@ -202,7 +200,7 @@ for cclass in params['CENTRALITY_CLASS']:
     tmpCt = hRawCounts[0].Clone("tmpCt")
 
     combinations = set()
-    size = 10000
+    size = 1
 
     for _ in range(size):
         tmpCt.Reset()
