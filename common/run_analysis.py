@@ -113,7 +113,8 @@ if TRAIN:
                     data[2].insert(0, 'score', y_pred)
 
                     eff, tsd = analysis_utils.bdt_efficiency_array(data[3], y_pred, n_points=1000)
-                    fixed_eff_array = analysis_utils.score_from_efficiency_array(data[3], y_pred, FIX_EFF_ARRAY)
+                    score_from_eff_array = analysis_utils.score_from_efficiency_array(data[3], y_pred, FIX_EFF_ARRAY)
+                    fixed_eff_array = np.vstack((FIX_EFF_ARRAY, score_from_eff_array))
 
                     if SIGMA_MC:
                         ml_analysis.MC_sigma_array(data, fixed_eff_array, cclass, ptbin, ctbin, split)
