@@ -81,6 +81,8 @@ void GenerateMCTable(bool reject = true) {
 
   std::cout << "\n\nGenerating derived tables from MC tree..." << std::endl;
 
+  int counter[10]{0};
+
   while (fReader.Next()) {
     // get centrality for pt rejection
     auto cent = rEv->fCent;
@@ -126,6 +128,11 @@ void GenerateMCTable(bool reject = true) {
       int ind = sHyp3.fRecoIndex;
       if (ind >= 0) {
         auto &rHyp3 = rHyp3Vec[ind];
+
+        // reject candidates without deu and p tof
+        if (std::abs(rHyp3.fNSigmaTOFDeu) < 3.5) continue;
+        if (std::abs(rHyp3.fNSigmaTOFP) < 3.5) continue;
+
         table.Fill(rHyp3, *rEv);
       }
     }

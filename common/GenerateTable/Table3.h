@@ -35,6 +35,8 @@ private:
   float nClsITSDeu;
   float nClsITSP;
   float nClsITSPi;
+  bool fHasTOFDeu;
+  bool fHasTOFP;
   float fNSigmaTPCDeu;
   float fNSigmaTPCP;
   float fNSigmaTPCPi;
@@ -86,6 +88,8 @@ Table3::Table3(std::string name, std::string title) {
   // tree->Branch("nClsITSDeu", &nClsITSDeu);
   // tree->Branch("nClsITSP", &nClsITSP);
   // tree->Branch("nClsITSPi", &nClsITSPi);
+  tree->Branch("hasTOFDeu", &fHasTOFDeu);
+  tree->Branch("hasTOFP", &fHasTOFP);
   tree->Branch("nSigmaTPCDeu", &fNSigmaTPCDeu);
   tree->Branch("nSigmaTPCP", &fNSigmaTPCP);
   tree->Branch("nSigmaTPCPi", &fNSigmaTPCPi);
@@ -139,6 +143,8 @@ void Table3::Fill(const RHypertriton3 &rHyp3, const REvent &rEv) {
   nClsITSPi  = GetNClsITS(rHyp3.fITSClusterMapPi);
 
   // PID with TPC and TOF
+  fHasTOFDeu    = rHyp3.fHasTOFDeu;
+  fHasTOFP      = rHyp3.fHasTOFP;
   fNSigmaTPCDeu = rHyp3.fNSigmaTPCDeu;
   fNSigmaTPCP   = rHyp3.fNSigmaTPCP;
   fNSigmaTPCPi  = rHyp3.fNSigmaTPCPi;
