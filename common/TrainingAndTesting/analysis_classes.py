@@ -86,16 +86,6 @@ class TrainingAnalysis:
 
         return [train_set, y_train, test_set, y_test]
 
-    def bdt_fixed_efficiency_threshold(self, efficiency, threshold, fixed_efficiency):
-        index_list = []
-
-        for eff_par in fixed_efficiency:
-            index_list.append(np.argmin(np.abs(efficiency - eff_par)))
-
-        eff_score_array = np.vstack((np.round(efficiency[index_list], 2), threshold[index_list]))
-
-        return eff_score_array
-
     def MC_sigma_array(self, data, eff_score_array, cent_class, pt_range, ct_range, split=''):
         inv_mass_array = np.array(np.arange(2.97, 3.04225, 0.00225))
         info_string = f'_{cent_class[0]}{cent_class[1]}_{pt_range[0]}{pt_range[1]}_{ct_range[0]}{ct_range[1]}{split}'
