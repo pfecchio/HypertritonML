@@ -48,14 +48,8 @@ class TrainingAnalysis:
         self.df_signal['y'] = 1
         self.df_bkg['y'] = 0
 
-    def preselection_efficiency(self, cent_class, ct_bins, pt_bins, split_type):
+    def preselection_efficiency(self, cent_class, ct_bins, pt_bins, split_type, save=True):
         cent_cut = f'{cent_class[0]}<=centrality<={cent_class[1]}'
-        path = os.environ['HYPERML_EFFICIENCIES_{}'.format(
-            self.mode)]
-
-        filename = path + f'/PreselEff_cent{cent_class[0]}{cent_class[1]}{split_type}.root'
-
-        t_file = TFile(filename, "recreate")
 
         pres_histo = hau.h2_preselection_efficiency(pt_bins, ct_bins)
         gen_histo = hau.h2_generated(pt_bins, ct_bins)
@@ -64,9 +58,15 @@ class TrainingAnalysis:
         fill_hist(gen_histo, self.df_generated.query(cent_cut)[['pT', 'ct']])
 
         pres_histo.Divide(gen_histo)
-        pres_histo.Write()
 
-        t_file.Close()
+        if save:
+            path = os.environ['HYPERML_EFFICIENCIES_{}'.format(self.mode)]
+
+            filename = path + f'/PreselEff_cent{cent_class[0]}{cent_class[1]}{split_type}.root'
+            t_file = TFile(filename, "recreate")
+            
+            pres_histo.Write()
+            t_file.Close()
 
         return pres_histo
 
