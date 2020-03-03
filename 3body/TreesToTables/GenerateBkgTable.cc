@@ -73,8 +73,8 @@ void GenerateBkgTable() {
       if (ct > 1. && ct <= 2.) {
         if (gRandom->Rndm() < 0.005) {
           table.Fill(rHyp3, *rEv);
+          counter[0]++;
         }
-        // counter[0]++;
       } else {
         table.Fill(rHyp3, *rEv);
       }
