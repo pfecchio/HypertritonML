@@ -50,13 +50,12 @@ hyp_mass = 2.99131
 suffix = '19d2'
 
 # import environment
-# input_file_path = '~/run_nitty/reference'
+input_file_path = '~/run_nitty/mc/merge'
 # input_file_path = '~/run_nitty/latest'
 # input_file_path = '~/3body_workspace/preseleff_study/trees/'
-input_file_path = os.environ['HYPERML_DATA_3']
 
 # open input file and tree
-input_file_name = f'newMC/HyperTritonTree_{suffix}.root'
+input_file_name = 'HyperTritonTree_dcasoft.root'
 
 input_file = TFile(f'{input_file_path}/{input_file_name}', 'read')
 
@@ -153,17 +152,16 @@ for ev in tree:
         hyp = deu + p + pi
 
         decay_lenght = TVector3(sim.fDecayVtxX, sim.fDecayVtxY, sim.fDecayVtxZ)
-
-        m = hyp_mass
         dl = decay_lenght.Mag()
-        p = hyp.P()
 
-        t = m * dl
         if hyp.Gamma() == 0 or hyp.Beta() == 0:
             continue
+
         ct = dl / (hyp.Gamma() * hyp.Beta())
 
-        # if hyp.Pt() >= 1. or hyp.Pt() <= 10.:
+        if hyp.Pt() < 1. or hyp.Pt() > 10.:
+            continue
+
         hist_ctsim.Fill(ct)
         hist_ptsim.Fill(hyp.Pt())
         hist_psim.Fill(hyp.P())
@@ -171,33 +169,33 @@ for ev in tree:
         hist_phisim.Fill(hyp.Phi())
 
         # rec - sim diff
-        if sim.fRecoIndex >= 0:
-            r = ev.RHypertriton[sim.fRecoIndex]
+        # if sim.fRecoIndex >= 0:
+        #     r = ev.RHypertriton[sim.fRecoIndex]
 
-            hyp_rec = TLorentzVector()
-            deu_rec = TLorentzVector()
-            p_rec = TLorentzVector()
-            pi_rec = TLorentzVector()
+        #     hyp_rec = TLorentzVector()
+        #     deu_rec = TLorentzVector()
+        #     p_rec = TLorentzVector()
+        #     pi_rec = TLorentzVector()
 
-            deu_rec.SetXYZM(r.fPxDeu, r.fPyDeu, r.fPzDeu, AliPID.ParticleMass(AliPID.kDeuteron))
-            p_rec.SetXYZM(r.fPxP, r.fPyP, r.fPzP, AliPID.ParticleMass(AliPID.kProton))
-            pi_rec.SetXYZM(r.fPxPi, r.fPyPi, r.fPzPi, AliPID.ParticleMass(AliPID.kPion))
+        #     deu_rec.SetXYZM(r.fPxDeu, r.fPyDeu, r.fPzDeu, AliPID.ParticleMass(AliPID.kDeuteron))
+        #     p_rec.SetXYZM(r.fPxP, r.fPyP, r.fPzP, AliPID.ParticleMass(AliPID.kProton))
+        #     pi_rec.SetXYZM(r.fPxPi, r.fPyPi, r.fPzPi, AliPID.ParticleMass(AliPID.kPion))
 
-            hyp_rec = deu_rec + p_rec + pi_rec
+        #     hyp_rec = deu_rec + p_rec + pi_rec
 
-            p_rec = hyp_rec.P()
-            decay_lenght_rec = TVector3(r.fDecayVtxX, r.fDecayVtxY, r.fDecayVtxZ)
+        #     p_rec = hyp_rec.P()
+        #     decay_lenght_rec = TVector3(r.fDecayVtxX, r.fDecayVtxY, r.fDecayVtxZ)
 
-            delta_l = decay_lenght.Mag() - decay_lenght_rec.Mag()
-            delta_p = hyp.P() - hyp_rec.P()
-            delta_eta = hyp.Eta() - hyp_rec.Eta()
+        #     delta_l = decay_lenght.Mag() - decay_lenght_rec.Mag()
+        #     delta_p = hyp.P() - hyp_rec.P()
+        #     delta_eta = hyp.Eta() - hyp_rec.Eta()
 
-            delta_ct = ct - (hyp_mass * decay_lenght_rec.Mag() / hyp_rec.P())
+        #     delta_ct = ct - (hyp_mass * decay_lenght_rec.Mag() / hyp_rec.P())
 
-            hist_deltal.Fill(delta_l)
-            hist_deltap.Fill(delta_p)
-            hist_deltaeta.Fill(delta_eta)
-            hist_deltact.Fill(delta_ct)
+        #     hist_deltal.Fill(delta_l)
+        #     hist_deltap.Fill(delta_p)
+        #     hist_deltaeta.Fill(delta_eta)
+        #     hist_deltact.Fill(delta_ct)
 
     # loop over the reconstructed hypertritons
     for rec in ev.RHypertriton:
@@ -220,17 +218,16 @@ for ev in tree:
         decay_lenght = TVector3(rec.fDecayVtxX - ev.REvent.fX,
                                 rec.fDecayVtxY - ev.REvent.fY, rec.fDecayVtxZ - ev.REvent.fZ)
 
-        m = hyp_mass
         dl = decay_lenght.Mag()
-        p = hyp.P()
-
-        t = m * dl
 
         if hyp.Gamma() == 0 or hyp.Beta() == 0:
             continue
+
         ct = dl / (hyp.Gamma() * hyp.Beta())
 
-        # if hyp.Pt() >= 1. or hyp.Pt() <= 10.:
+        if hyp.Pt() < 1. or hyp.Pt() > 10.:
+            continue
+
         hist_ctrec.Fill(ct)
         hist_ptrec.Fill(hyp.Pt())
         hist_prec.Fill(hyp.P())
@@ -245,7 +242,7 @@ input_file.Close()
 # create output file
 home_path = os.environ['HOME']
 output_file_path = home_path + '/3body_workspace/preseleff_study'
-output_file_name = f'PreselEff_{suffix}_newMC.root'
+output_file_name = f'PreselEff_dcasoft.root'
 
 output_file = TFile(f'{output_file_path}/{output_file_name}', 'recreate')
 
