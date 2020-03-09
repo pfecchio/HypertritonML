@@ -11,7 +11,7 @@ import yaml
 from scipy import stats
 
 from ROOT import (TF1, TH1D, TH2D, TAxis, TCanvas, TColor, TFile, TFrame, TIter, TKey,
-                  TPaveText, gDirectory, gROOT, gStyle, gPad)
+                  TPaveText, gDirectory, gROOT, gStyle, gPad, kBlue, kRed)
 
 kBlueC = TColor.GetColor('#1f78b4')
 kBlueCT = TColor.GetColorTransparent(kBlueC, 0.5)
@@ -34,7 +34,13 @@ random.seed(1989)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("config", help="Path to the YAML configuration file")
+parser.add_argument('-split', '--split', help='Run with matter and anti-matter splitted', action='store_true')
 args = parser.parse_args()
+
+if args.split:
+    SPLIT_LIST = ['_matter', '_antimatter']
+else:
+    SPLIT_LIST = ['']
 
 gROOT.SetBatch()
 
@@ -62,172 +68,203 @@ file_name = resultsSysDir + '/' + params['FILE_PREFIX'] + '_results_fit.root'
 results_file = TFile(file_name, 'read')
 
 
-
-
 # file_name = '~/HypertritonML/3body/PreselectionEfficiency/PreselectionEfficiencyHist.root'
 # eff_file = TFile(file_name, 'read')
 
 bkgModels = params['BKG_MODELS'] if 'BKG_MODELS' in params else ['expo']
+hist_list=[]
+for split in SPLIT_LIST:
+    for cclass in params['CENTRALITY_CLASS']:
+        inDirName = f"{cclass[0]}-{cclass[1]}"+split
 
-for cclass in params['CENTRALITY_CLASS']:
-    inDirName = f"{cclass[0]}-{cclass[1]}"
-
-    h2BDTEff = results_file.Get(f'{inDirName}/BDTeff')
-    h1BDTEff = h2BDTEff.ProjectionY("bdteff", 1, 1)
-    best_sig = np.round(np.array(h1BDTEff)[1:-1], 2)
-    sig_ranges = []
-    for i in best_sig:
-        sig_ranges.append([i-0.1, i+0.1, 0.01])
+        h2BDTEff = results_file.Get(f'{inDirName}/BDTeff')
+        h1BDTEff = h2BDTEff.ProjectionY("bdteff", 1, 1)
+        best_sig = np.round(np.array(h1BDTEff)[1:-1], 2)
+        sig_ranges = []
+        for i in best_sig:
+            if i== best_sig[0]:
+                sig_ranges.append([i-0.03, i+0.03, 0.01])
+            else:
+                sig_ranges.append([i-0.1, i+0.1, 0.01])
         ranges = {
-            'BEST': best_sig,
-            'SCAN': sig_ranges
+                'BEST': best_sig,
+                'SCAN': sig_ranges
         }
-    results_file.cd(inDirName)
-    out_dir = distribution.mkdir(inDirName)
-    cvDir = out_dir.mkdir("canvas")
+        results_file.cd(inDirName)
+        out_dir = distribution.mkdir(inDirName)
+        cvDir = out_dir.mkdir("canvas")
 
-    h2PreselEff = results_file.Get(f'{inDirName}/PreselEff')
-    h1PreselEff = h2PreselEff.ProjectionY("preseleff", 1, 1)
+        h2PreselEff = results_file.Get(f'{inDirName}/PreselEff')
+        h1PreselEff = h2PreselEff.ProjectionY("preseleff", 1, 1)
 
-    # h1PreselEff = eff_file.Get('fHistEfficiencyVsCt')
+        # h1PreselEff = eff_file.Get('fHistEfficiencyVsCt')
 
-    for i in range(1, h1PreselEff.GetNbinsX() + 1):
-        h1PreselEff.SetBinError(i, 0)
+        for i in range(1, h1PreselEff.GetNbinsX() + 1):
+            h1PreselEff.SetBinError(i, 0)
 
-    h1PreselEff.SetTitle(f';{var} ({unit}); Preselection efficiency')
-    h1PreselEff.UseCurrentStyle()
-    h1PreselEff.SetMinimum(0)
-    out_dir.cd()
-    h1PreselEff.Write("h1PreselEff")
-
-    hRawCounts = []
-    raws = []
-    errs = []
-
-    for model in bkgModels:
-        h1RawCounts = h1PreselEff.Clone(f"best_{model}")
-        h1RawCounts.Reset()
-
-        # h2Significance = results_file.Get(f'{inDirName}/significance_{model}')
+        h1PreselEff.SetTitle(f';{var} ({unit}); Preselection efficiency')
+        h1PreselEff.UseCurrentStyle()
+        h1PreselEff.SetMinimum(0)
         out_dir.cd()
-        # h2Significance.ProjectionY().Write(f'significance_ct_{model}')
+        h1PreselEff.Write("h1PreselEff"+split)
 
-        for iBin in range(1, h1RawCounts.GetNbinsX()+1):
-            h2RawCounts = results_file.Get(f'{inDirName}/RawCounts{ranges["BEST"][iBin-1]:.2f}_{model}')
-            h1RawCounts.SetBinContent(iBin, h2RawCounts.GetBinContent(
-                1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin))
-            h1RawCounts.SetBinError(iBin, h2RawCounts.GetBinError(
-                1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin))
-            raws.append([])
-            errs.append([])
+        hRawCounts = []
+        raws = []
+        errs = []
 
-            for eff in np.arange(ranges['SCAN'][iBin-1][0], ranges['SCAN'][iBin-1][1], ranges['SCAN'][iBin-1][2]):
-                h2RawCounts = results_file.Get(f'{inDirName}/RawCounts{eff:.2f}_{model}')
-                raws[iBin-1].append(h2RawCounts.GetBinContent(1,
-                                                              iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin))
-                errs[iBin-1].append(h2RawCounts.GetBinError(1,
-                                                            iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin))
+        for model in bkgModels:
+            h1RawCounts = h1PreselEff.Clone(f"best_{model}")
+            h1RawCounts.Reset()
+
+            # h2Significance = results_file.Get(f'{inDirName}/significance_{model}')
+            out_dir.cd()
+            # h2Significance.ProjectionY().Write(f'significance_ct_{model}')
+
+            for iBin in range(1, h1RawCounts.GetNbinsX()+1):
+                h2RawCounts = results_file.Get(f'{inDirName}/RawCounts{ranges["BEST"][iBin-1]:.2f}_{model}')
+                h1RawCounts.SetBinContent(iBin, h2RawCounts.GetBinContent(
+                    1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin))
+                h1RawCounts.SetBinError(iBin, h2RawCounts.GetBinError(
+                    1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin))
+                raws.append([])
+                errs.append([])
+
+                for eff in np.arange(ranges['SCAN'][iBin-1][0], ranges['SCAN'][iBin-1][1], ranges['SCAN'][iBin-1][2]):
+                    h2RawCounts = results_file.Get(f'{inDirName}/RawCounts{eff:.2f}_{model}')
+                    raws[iBin-1].append(h2RawCounts.GetBinContent(1,
+                                                                iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin))
+                    errs[iBin-1].append(h2RawCounts.GetBinError(1,
+                                                                iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin))
+
+
+
+            out_dir.cd()
+            h1RawCounts.UseCurrentStyle()
+            if(split!=""):
+                if(model=="pol2"):
+                    hist_list.append(h1RawCounts.Clone("hist"+split))
+            h1RawCounts.Fit(expo, "I", "",1,23)
+            fit_function = h1RawCounts.GetFunction("myexpo")
+            fit_function.SetLineColor(kOrangeC)
+            h1RawCounts.Write()
+            hRawCounts.append(h1RawCounts)
+
+            cvDir.cd()
+            myCv = TCanvas(f"ctSpectraCv_{model}{split}")
+            myCv.SetLogy()
+            frame = gPad.DrawFrame(
+                0., 3, 36, 2000, ";#it{c}t (cm);d#it{N}/d(#it{c}t) [(cm)^{-1}]")
+            pinfo2 = TPaveText(0.5, 0.65, 0.88, 0.86, "NDC")
+            pinfo2.SetBorderSize(0)
+            pinfo2.SetFillStyle(0)
+            pinfo2.SetTextAlign(22)
+            pinfo2.SetTextFont(43)
+            pinfo2.SetTextSize(22)
+            string1 = '#bf{ALICE Internal}'
+            string2 = 'Pb-Pb  #sqrt{#it{s}_{NN}} = 5.02 TeV,  0-90%'
+            pinfo2.AddText(string1)
+            pinfo2.AddText(string2)
+            string = '#tau = {:.0f} #pm {:.0f} ps '.format(
+                expo.GetParameter(1), expo.GetParError(1))
+            pinfo2.AddText(string)
+            if expo.GetNDF()is not 0:
+                string = f'#chi^{{2}} / NDF = {(expo.GetChisquare() / expo.GetNDF()):.2f}'
+            pinfo2.AddText(string)
+            fit_function.Draw("same")
+            h1RawCounts.Draw("ex0same")
+            h1RawCounts.SetMarkerStyle(20)
+            h1RawCounts.SetMarkerColor(kBlueC)
+            h1RawCounts.SetLineColor(kBlueC)
+            h1RawCounts.SetMinimum(0.001)
+            h1RawCounts.SetMaximum(1000)
+            frame.GetYaxis().SetTitleSize(26)
+            frame.GetYaxis().SetLabelSize(22)
+            frame.GetXaxis().SetTitleSize(26)
+            frame.GetXaxis().SetLabelSize(22)
+            h1RawCounts.SetStats(0)
+
+            pinfo2.Draw("x0same")
+            tmpSyst = h1RawCounts.Clone("hSyst")
+            corSyst = h1RawCounts.Clone("hCorr")
+            tmpSyst.SetFillStyle(0)
+            tmpSyst.SetMinimum(0.001)
+            tmpSyst.SetMaximum(1000)
+            corSyst.SetFillStyle(3345)
+            for iBin in range(1, h1RawCounts.GetNbinsX() + 1):
+                val = h1RawCounts.GetBinContent(iBin)
+                tmpSyst.SetBinError(iBin, val*0.099)
+                # corSyst.SetBinError(iBin, 0.086 * val)
+            tmpSyst.SetLineColor(kBlueC)
+            tmpSyst.SetMarkerColor(kBlueC)
+            tmpSyst.Draw("e2same")
+            # corSyst.Draw("e2same")
+            out_dir.cd()
+            myCv.Write()
+
+            h1RawCounts.Draw("ex0same")
+            pinfo2.Draw()
+            cvDir.cd()
+            myCv.Write()
 
         out_dir.cd()
-        h1RawCounts.UseCurrentStyle()
-        h1RawCounts.Fit(expo, "MI0+")
-        fit_function = h1RawCounts.GetFunction("myexpo")
-        fit_function.SetLineColor(kOrangeC)
-        h1RawCounts.Write()
-        hRawCounts.append(h1RawCounts)
 
-        cvDir.cd()
-        myCv = TCanvas(f"ctSpectraCv_{model}")
-        myCv.SetLogy()
-        frame = gPad.DrawFrame(
-            0., 3, 36, 2000, ";#it{c}t (cm);d#it{N}/d(#it{c}t) [(cm)^{-1}]")
-        pinfo2 = TPaveText(0.5, 0.65, 0.88, 0.86, "NDC")
-        pinfo2.SetBorderSize(0)
-        pinfo2.SetFillStyle(0)
-        pinfo2.SetTextAlign(22)
-        pinfo2.SetTextFont(43)
-        pinfo2.SetTextSize(22)
-        string1 = '#bf{ALICE Preliminary}'
-        string2 = 'Pb-Pb  #sqrt{#it{s}_{NN}} = 5.02 TeV,  0-90%'
-        pinfo2.AddText(string1)
-        pinfo2.AddText(string2)
-        string = '#tau = {:.0f} #pm {:.0f} ps '.format(
-            expo.GetParameter(1), expo.GetParError(1))
-        pinfo2.AddText(string)
-        if expo.GetNDF()is not 0:
-            string = f'#chi^{{2}} / NDF = {(expo.GetChisquare() / expo.GetNDF()):.2f}'
-        pinfo2.AddText(string)
-        fit_function.Draw("same")
-        h1RawCounts.Draw("ex0same")
-        h1RawCounts.SetMarkerStyle(20)
-        h1RawCounts.SetMarkerColor(kBlueC)
-        h1RawCounts.SetLineColor(kBlueC)
-        h1RawCounts.SetMinimum(0.001)
-        h1RawCounts.SetMaximum(1000)
-        frame.GetYaxis().SetTitleSize(26)
-        frame.GetYaxis().SetLabelSize(22)
-        frame.GetXaxis().SetTitleSize(26)
-        frame.GetXaxis().SetLabelSize(22)
-        h1RawCounts.SetStats(0)
+        syst = TH1D("syst", ";#tau (ps);Entries", 300, 100, 400)
+        prob = TH1D("prob", ";Lifetime fit probability;Entries", 100, 0, 1)
+        pars = TH2D("pars", ";#tau (ps);Normalisation;Entries", 300, 100, 400, 4000, 2500, 6500)
+        tmpCt = hRawCounts[0].Clone("tmpCt")
 
-        pinfo2.Draw("x0same")
-        tmpSyst = h1RawCounts.Clone("hSyst")
-        corSyst = h1RawCounts.Clone("hCorr")
-        tmpSyst.SetFillStyle(0)
-        tmpSyst.SetMinimum(0.001)
-        tmpSyst.SetMaximum(1000)
-        corSyst.SetFillStyle(3345)
-        for iBin in range(1, h1RawCounts.GetNbinsX() + 1):
-            tmpSyst.SetBinError(iBin, np.std(raws[iBin - 1]))
-            # corSyst.SetBinError(iBin, 0.086 * val)
-        tmpSyst.SetLineColor(kBlueC)
-        tmpSyst.SetMarkerColor(kBlueC)
-        tmpSyst.Draw("e2same")
-        # corSyst.Draw("e2same")
-        out_dir.cd()
-        myCv.Write()
+        combinations = set()
+        size = 1
+        count=0
+        for _ in range(size):
+            tmpCt.Reset()
+            comboList = []
 
-        h1RawCounts.Draw("ex0same")
-        pinfo2.Draw()
-        cvDir.cd()
-        myCv.Write()
+            for iBin in range(1, tmpCt.GetNbinsX()+1):
+                index = random.randint(0, len(raws[iBin-1])-1)
+                comboList.append(index)
+                tmpCt.SetBinContent(iBin, raws[iBin-1][index])
+                tmpCt.SetBinError(iBin, errs[iBin-1][index])
 
-    out_dir.cd()
+            combo = (x for x in comboList)
+            if combo in combinations:
+                continue
 
-    syst = TH1D("syst", ";#tau (ps);Entries", 300, 100, 400)
-    prob = TH1D("prob", ";Lifetime fit probability;Entries", 100, 0, 1)
-    pars = TH2D("pars", ";#tau (ps);Normalisation;Entries", 300, 100, 400, 4000, 2500, 6500)
-    tmpCt = hRawCounts[0].Clone("tmpCt")
+            combinations.add(combo)
+            tmpCt.Fit(expo, "MI")
+            prob.Fill(expo.GetProb())
+            if expo.GetChisquare() < 3 * expo.GetNDF():
+                if(expo.GetParameter(1))>270 and count==0:
+                    tmpCt.Write()
+                    count=1
+                syst.Fill(expo.GetParameter(1))
+                pars.Fill(expo.GetParameter(1), expo.GetParameter(0))
 
-    combinations = set()
-    size = 1
+        syst.SetFillColor(600)
+        syst.SetFillStyle(3345)
+        syst.Scale(1./syst.Integral())
+        syst.Write()
+        prob.Write()
+        pars.Write()
+        h1PreselEff.Write()
 
-    for _ in range(size):
-        tmpCt.Reset()
-        comboList = []
 
-        for iBin in range(1, tmpCt.GetNbinsX()):
-            index = random.randint(0, len(raws[iBin-1])-1)
-            comboList.append(index)
-            tmpCt.SetBinContent(iBin, raws[iBin-1][index])
-            tmpCt.SetBinError(iBin, errs[iBin-1][index])
-
-        combo = (x for x in comboList)
-        if combo in combinations:
-            continue
-
-        combinations.add(combo)
-        tmpCt.Fit(expo, "MI")
-        prob.Fill(expo.GetProb())
-        if expo.GetChisquare() < 3 * expo.GetNDF():
-            syst.Fill(expo.GetParameter(1))
-            pars.Fill(expo.GetParameter(1), expo.GetParameter(0))
-
-    syst.SetFillColor(600)
-    syst.SetFillStyle(3345)
-    syst.Scale(1./syst.Integral())
-    syst.Write()
-    prob.Write()
-    pars.Write()
+##-----------------Fill ratio histo -------------------------------------------------
+if(split!=""):
+    myCv_ratio = TCanvas("ratio")
+    myCv_ratio.cd()
+    hist_list[1].Divide(hist_list[0])   
+    hist_list[1].Fit("pol0","M0+","",1,23)
+    hist_list[1].SetTitle(";#it{c}t (cm); {}^{3}_{#bar{#Lambda}} #bar{H} / ^{3}_{#Lambda} H")
+    fit_function = hist_list[1].GetFunction("pol0")
+    fit_function.SetLineColor(kOrangeC)
+    hist_list[1].Draw()
+    fit_function.Draw("same")
+    hist_list[1].SetMarkerColor(kBlue)
+    hist_list[1].SetLineColor(kBlue)
+    hist_list[1].SetMarkerStyle(20)
+    myCv_ratio.Write()
+    myCv_ratio.Close()
+##-----------------------------------------------------------------------------------
 
 results_file.Close()
