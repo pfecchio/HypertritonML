@@ -149,31 +149,31 @@ class TrainingAnalysis:
         fig_path = os.environ['HYPERML_FIGURES_{}'.format(self.mode)]
         info_string = f'_{cent_class[0]}{cent_class[1]}_{pt_range[0]}{pt_range[1]}_{ct_range[0]}{ct_range[1]}{split}'
 
-        bdt_score_path = fig_path + '/TrainTest'
-        bdt_eff_path = fig_path + '/Efficiency'
-        feat_imp_path = fig_path + '/FeatureImp'
+        bdt_score_dir = fig_path + '/TrainTest'
+        bdt_eff_dir = fig_path + '/Efficiency'
+        feat_imp_dir = fig_path + '/FeatureImp'
 
         bdt_score_plot = plot_utils.plot_output_train_test(model_handler, data, bins=100)
-        if not os.path.exists(bdt_score_path):
-            os.makedirs(bdt_score_path)
+        if not os.path.exists(bdt_score_dir):
+            os.makedirs(bdt_score_dir)
 
         for fig in bdt_score_plot:
             axlist = fig.get_axes()
             for ax in axlist:
                 ax.set_yscale('log')
-            fig.savefig(bdt_score_path + '/BDT_Score' + info_string + '.pdf')
+            fig.savefig(bdt_score_dir + '/BDT_Score' + info_string + '.pdf')
 
         bdt_eff_plot = plot_utils.plot_bdt_eff(eff_score_array[1], eff_score_array[0])
-        if not os.path.exists(bdt_eff_path):
-            os.makedirs(bdt_eff_path)
+        if not os.path.exists(bdt_eff_dir):
+            os.makedirs(bdt_eff_dir)
 
-        bdt_eff_plot.savefig(bdt_eff_path + '/BDT_Eff' + info_string + '.pdf')
+        bdt_eff_plot.savefig(bdt_eff_dir + '/BDT_Eff' + info_string + '.pdf')
 
         # FEATURES_IMPORTANCE = plot_utils.plot_feature_imp(data[2], data[3], model_handler)
-        # if not os.path.exists(feat_imp_path):
-        #     os.makedirs(feat_imp_path)
+        # if not os.path.exists(feat_imp_dir):
+        #     os.makedirs(feat_imp_dir)
 
-        # plt.savefig(feat_imp_path + '/FeatImp' + info_string + '.pdf')
+        # plt.savefig(feat_imp_dir + '/FeatImp' + info_string + '.pdf')
 
         print('ML plots saved.\n')
 
