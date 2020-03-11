@@ -3,19 +3,19 @@ FILE_PREFIX: 'ct_analysis'
 
 CENTRALITY_CLASS:
   - [0, 90]
-CT_BINS: [1, 2, 4, 6, 8, 10, 14, 18, 23, 35]
+CT_BINS: [0,1, 2, 4, 6, 8, 10, 14, 18, 23, 35]
 PT_BINS: [2, 10]
 
 BKG_MODELS: ['expo', 'pol1', 'pol2']
 
-BDT_EFFICIENCY: [0.40, 1., 0.01] ##min, max ,step
+BDT_EFFICIENCY: [0.20, 1., 0.01] ##min, max ,step
 
 DEDICATED_BACKGROUND: 0
 
 
-MC_PATH: $HYPERML_TABLES_2/SignalTable.root
-BKG_PATH: $HYPERML_TABLES_2/DataTableLS.root
-DATA_PATH: $HYPERML_TABLES_2/DataTable_18.root
+MC_PATH: $HYPERML_TABLES_2/splines_tables/SignalTable.root
+BKG_PATH: $HYPERML_TABLES_2/splines_tables/DataTable_18LS.root
+DATA_PATH: $HYPERML_TABLES_2/splines_tables/DataTable_18.root
 
 XGBOOST_PARAMS:
   # general parameters
