@@ -70,7 +70,7 @@ class TrainingAnalysis:
 
         return pres_histo
 
-    def prepare_dataframe(self, training_columns, cent_class, pt_range, ct_range):
+    def prepare_dataframe(self, training_columns, cent_class, pt_range, ct_range, test_size=0.5):
         data_range = f'{ct_range[0]}<ct<{ct_range[1]} and {pt_range[0]}<HypCandPt<{pt_range[1]} and {cent_class[0]}<centrality<{cent_class[1]}'
 
         sig = self.df_signal.query(data_range)
@@ -82,7 +82,7 @@ class TrainingAnalysis:
         df = pd.concat([self.df_signal.query(data_range), self.df_bkg.query(data_range)])
 
         train_set, test_set, y_train, y_test = train_test_split(
-            df[training_columns + ['InvMass']], df['y'], test_size=0.5, random_state=42)
+            df[training_columns + ['InvMass']], df['y'], test_size=test_size, random_state=42)
 
         return [train_set, y_train, test_set, y_test]
 
