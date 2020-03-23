@@ -160,7 +160,8 @@ if APPLICATION:
                     print('Application and signal extraction ...', end='\r')
 
                     presel_eff = ml_application.get_preselection_efficiency(ptbin_index, ctbin_index)
-                    eff_score_array, model_handler = ml_application.load_ML_analysis(cclass, ptbin, ctbin, split)
+                    eff_score_array, model_handler = ml_application.load_ML_analysis(cclass, ptbin, ctbin, split, mass_bins)
+                    mass_bins = 40 if ctbin[1] < 16 else 36
 
                     if N_BODY == 2:
                         df_applied = ml_application.apply_BDT_to_data(
@@ -171,14 +172,12 @@ if APPLICATION:
 
                     if SIGNIFICANCE_SCAN:
                         sigscan_eff, sigscan_tsd = ml_application.significance_scan(
-                            df_applied, presel_eff, eff_score_array, cclass, ptbin, ctbin)
+                            df_applied, presel_eff, eff_score_array, cclass, ptbin, ctbin, split, )
                         eff_score_array = np.append(eff_score_array, [[sigscan_eff], [sigscan_tsd]], axis=1)
-
                     # define subdir for saving invariant mass histograms
                     sub_dir = cent_dir.mkdir(f'ct_{ctbin[0]}{ctbin[1]}') if 'ct' in FILE_PREFIX else cent_dir.mkdir(f'pt_{ptbin[0]}{ptbin[1]}')
                     sub_dir.cd()
                     for eff, tsd in zip(pd.unique(eff_score_array[0][::-1]), pd.unique(eff_score_array[1][::-1])):
-                        mass_bins = 40 if ctbin[1] < 16 else 36
 
                         mass_array = np.array(df_applied.query('score>@tsd')['InvMass'].values, dtype=np.float64)
                         counts, _ = np.histogram(mass_array, bins=mass_bins, range=[2.96, 3.05])

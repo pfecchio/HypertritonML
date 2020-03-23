@@ -67,6 +67,10 @@ file_name = resultsSysDir + '/' + params['FILE_PREFIX'] + '_results_fit.root'
 # file_name = resultsSysDir + '/3b.root'
 results_file = TFile(file_name, 'read')
 
+abs_file_name = os.environ['HYPERML_UTILS_{}'.format(params['NBODY'])] + '/recCtHe3.root'
+absorp_file = TFile(abs_file_name)
+absorp_hist = absorp_file.Get('Reconstructed ct spectrum')
+
 
 # file_name = '~/HypertritonML/3body/PreselectionEfficiency/PreselectionEfficiencyHist.root'
 # eff_file = TFile(file_name, 'read')
@@ -123,27 +127,31 @@ for split in SPLIT_LIST:
             for iBin in range(1, h1RawCounts.GetNbinsX()+1):
                 h2RawCounts = results_file.Get(f'{inDirName}/RawCounts{ranges["BEST"][iBin-1]:.2f}_{model}')
                 h1RawCounts.SetBinContent(iBin, h2RawCounts.GetBinContent(
-                    1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin))
+                    1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin)/(1-absorp_hist.GetBinContent(iBin)))
                 h1RawCounts.SetBinError(iBin, h2RawCounts.GetBinError(
-                    1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin))
+                    1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin)/1-absorp_hist.GetBinContent(iBin))
                 raws.append([])
                 errs.append([])
 
                 for eff in np.arange(ranges['SCAN'][iBin-1][0], ranges['SCAN'][iBin-1][1], ranges['SCAN'][iBin-1][2]):
                     h2RawCounts = results_file.Get(f'{inDirName}/RawCounts{eff:.2f}_{model}')
                     raws[iBin-1].append(h2RawCounts.GetBinContent(1,
-                                                                iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin))
+                                                                iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/1-absorp_hist.GetBinContent(iBin))
                     errs[iBin-1].append(h2RawCounts.GetBinError(1,
-                                                                iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin))
+                                                                iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/1-absorp_hist.GetBinContent(iBin))
 
 
-
+            # h1RawCounts.Divide(absorp_hist)
+            # for iBin in range(1, h1RawCounts.GetNbinsX() + 1):
+            #     val = h1RawCounts.GetBinContent(iBin)
+            #     corr = c
+            #     h1RawCounts.SetBinContent(iBin,val/corr)
             out_dir.cd()
             h1RawCounts.UseCurrentStyle()
             if(split!=""):
                 if(model=="pol2"):
                     hist_list.append(h1RawCounts.Clone("hist"+split))
-            h1RawCounts.Fit(expo, "I", "",1,23)
+            h1RawCounts.Fit(expo, "MI0+", "",0,35)
             fit_function = h1RawCounts.GetFunction("myexpo")
             fit_function.SetLineColor(kOrangeC)
             h1RawCounts.Write()
@@ -231,7 +239,7 @@ for split in SPLIT_LIST:
                 continue
 
             combinations.add(combo)
-            tmpCt.Fit(expo, "MI")
+            tmpCt.Fit(expo, "MI0+")
             prob.Fill(expo.GetProb())
             if expo.GetChisquare() < 3 * expo.GetNDF():
                 if(expo.GetParameter(1))>270 and count==0:
@@ -254,7 +262,7 @@ if(split!=""):
     myCv_ratio = TCanvas("ratio")
     myCv_ratio.cd()
     hist_list[1].Divide(hist_list[0])   
-    hist_list[1].Fit("pol0","M0+","",1,23)
+    hist_list[1].Fit("pol0","MI+","",0,35)
     hist_list[1].SetTitle(";#it{c}t (cm); {}^{3}_{#bar{#Lambda}} #bar{H} / ^{3}_{#Lambda} H")
     fit_function = hist_list[1].GetFunction("pol0")
     fit_function.SetLineColor(kOrangeC)

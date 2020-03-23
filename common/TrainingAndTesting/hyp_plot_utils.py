@@ -51,7 +51,7 @@ def plot_efficiency_significance(mode, tsd, significance, efficiency, data_range
 
 def plot_significance_scan(
         max_index, significance, significance_error, expected_signal, bkg_df, score_list, data_range_array, bin_cent,
-        n_ev, mode, split=''):
+        n_ev, mode, split='', mass_bins=40):
 
     label = 'Significance x Efficiency'
 
@@ -64,7 +64,7 @@ def plot_significance_scan(
     signal_counts = raw_yield * signal_counts_norm / sum(signal_counts_norm)
 
     bkg_counts, bins = np.histogram(
-        selected_bkg['InvMass'], bins=45, range=[2.96, 3.05])
+        selected_bkg['InvMass'], bins=mass_bins, range=[2.96, 3.05])
 
     bin_centers = 0.5 * (bins[1:] + bins[:-1])
     side_map = (bin_centers < 2.98) + (bin_centers > 3.005)
@@ -117,7 +117,7 @@ def plot_significance_scan(
     axs[1].plot(x, gauss_signal_counts, 'y', color='orange',
                 label='Signal model (Gauss)')
     axs[1].set_xlabel(r'$m_{\ ^{3}He+\pi^{-}}$')
-    axs[1].set_ylabel(r'Events /  $3.6\ \rm{MeV}/c^{2}$')
+    axs[1].set_ylabel(r'Events /  ${}\ \rm{{MeV}}/c^{{2}}$'.format(mass_bins))
     axs[1].tick_params(axis='x', direction='in')
     axs[1].tick_params(axis='y', direction='in')
     axs[1].legend(loc='best', frameon=False)

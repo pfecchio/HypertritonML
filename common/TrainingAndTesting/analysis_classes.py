@@ -265,7 +265,7 @@ class ModelApplication:
         return self.df_data.query(data_range)[application_columns]
 
     def significance_scan(
-            self, df_bkg, pre_selection_efficiency, eff_score_array, cent_class, pt_range, ct_range, split=''):
+            self, df_bkg, pre_selection_efficiency, eff_score_array, cent_class, pt_range, ct_range, split='', mass_bins=40):
         print('\nSignificance scan: ...')
 
         bdt_efficiency = eff_score_array[0]
@@ -286,7 +286,7 @@ class ModelApplication:
         for index, tsd in enumerate(threshold_space):
             df_selected = df_bkg.query('score>@tsd')
 
-            counts, bins = np.histogram(df_selected['InvMass'], bins=45, range=[2.96, 3.05])
+            counts, bins = np.histogram(df_selected['InvMass'], bins=mass_bins, range=[2.96, 3.04])
             bin_centers = 0.5 * (bins[1:] + bins[:-1])
 
             side_map = (bin_centers < 2.98) + (bin_centers > 3.005)
@@ -334,7 +334,7 @@ class ModelApplication:
         data_range_array = [ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1]]
         hpu.plot_significance_scan(
             max_index, significance_custom, significance_custom_error, expected_signal, df_bkg, threshold_space,
-            data_range_array, bin_centers, nevents, self.mode, split=split)
+            data_range_array, bin_centers, nevents, self.mode, split, mass_bins)
 
         bdt_eff_max_score = bdt_efficiency[max_index]
 
