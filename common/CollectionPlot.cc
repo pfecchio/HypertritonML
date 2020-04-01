@@ -12,9 +12,9 @@
 #include <TROOT.h>
 #include <TStyle.h>
 
-constexpr double kPreliminaryTau{249};
-constexpr double kPreliminaryTauStat[2]{15,15}; // first + then -
-constexpr double kPreliminaryTauSyst[2]{10,10}; // first + then -
+constexpr double kPreliminaryTau{253};
+constexpr double kPreliminaryTauStat[2]{11,11}; // first + then -
+constexpr double kPreliminaryTauSyst[2]{6.5,6.5}; // first + then -
 
 void CollectionPlot(){
 
@@ -223,6 +223,6 @@ void CollectionPlot(){
   leg1->Draw();
   leg2->Draw();
 
-  cv->SaveAs("Collection.eps");
-  cv->SaveAs("Collection.pdf");
+  cv->SaveAs("../Results/2Body/Collection.eps");
+  cv->SaveAs("../Results/2Body/Collection.pdf");
 }
