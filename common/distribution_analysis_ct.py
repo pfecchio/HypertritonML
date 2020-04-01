@@ -67,7 +67,7 @@ file_name = resultsSysDir + '/' + params['FILE_PREFIX'] + '_results_fit.root'
 # file_name = resultsSysDir + '/3b.root'
 results_file = TFile(file_name, 'read')
 
-abs_file_name = os.environ['HYPERML_UTILS_{}'.format(params['NBODY'])] + '/recCtHe3.root'
+abs_file_name = os.environ['HYPERML_UTILS_{}'.format(params['NBODY'])] + '/he3abs/recCtHe3.root'
 absorp_file = TFile(abs_file_name)
 absorp_hist = absorp_file.Get('Reconstructed ct spectrum')
 
@@ -129,16 +129,16 @@ for split in SPLIT_LIST:
                 h1RawCounts.SetBinContent(iBin, h2RawCounts.GetBinContent(
                     1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin)/(1-absorp_hist.GetBinContent(iBin)))
                 h1RawCounts.SetBinError(iBin, h2RawCounts.GetBinError(
-                    1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin)/1-absorp_hist.GetBinContent(iBin))
+                    1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin)/(1-absorp_hist.GetBinContent(iBin)))
                 raws.append([])
                 errs.append([])
 
                 for eff in np.arange(ranges['SCAN'][iBin-1][0], ranges['SCAN'][iBin-1][1], ranges['SCAN'][iBin-1][2]):
                     h2RawCounts = results_file.Get(f'{inDirName}/RawCounts{eff:.2f}_{model}')
                     raws[iBin-1].append(h2RawCounts.GetBinContent(1,
-                                                                iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/1-absorp_hist.GetBinContent(iBin))
+                                                                iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/(1-absorp_hist.GetBinContent(iBin)))
                     errs[iBin-1].append(h2RawCounts.GetBinError(1,
-                                                                iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/1-absorp_hist.GetBinContent(iBin))
+                                                                iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/(1-absorp_hist.GetBinContent(iBin)))
 
 
             # h1RawCounts.Divide(absorp_hist)
@@ -200,11 +200,11 @@ for split in SPLIT_LIST:
             corSyst.SetFillStyle(3345)
             for iBin in range(1, h1RawCounts.GetNbinsX() + 1):
                 val = h1RawCounts.GetBinContent(iBin)
-                tmpSyst.SetBinError(iBin, val*0.099)
-                # corSyst.SetBinError(iBin, 0.086 * val)
-            tmpSyst.SetLineColor(kBlueC)
-            tmpSyst.SetMarkerColor(kBlueC)
-            tmpSyst.Draw("e2same")
+                # tmpSyst.SetBinError(iBin, val*0.099)
+            #     # corSyst.SetBinError(iBin, 0.086 * val)
+            # tmpSyst.SetLineColor(kBlueC)
+            # tmpSyst.SetMarkerColor(kBlueC)
+            # tmpSyst.Draw("e2same")
             # corSyst.Draw("e2same")
             out_dir.cd()
             myCv.Write()
@@ -222,7 +222,7 @@ for split in SPLIT_LIST:
         tmpCt = hRawCounts[0].Clone("tmpCt")
 
         combinations = set()
-        size = 1
+        size = 100000
         count=0
         for _ in range(size):
             tmpCt.Reset()
