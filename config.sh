@@ -79,7 +79,7 @@ if [ $BODY_3 -eq 1 ]; then
       # [ ! -f "$HYPERML_DATA_3/HyperTritonTreeData_18r.root"  ] && alien_cp /alice/cern.ch/user/a/alitrain/PWGLF/LF_PbPb/1219_20200122-1031/merge/HyperTritonTree.root  file://$HYPERML_DATA_3/HyperTritonTreeData_18r.root
       # [ ! -f "$HYPERML_DATA_3/AnalysisResults_18q.root"  ] && alien_cp /alice/cern.ch/user/a/alitrain/PWGLF/LF_PbPb/1218_20200122-1031/merge/HyperTritonTree.root  file://$HYPERML_DATA_3/AnalysisResults_18q.root
       # [ ! -f "$HYPERML_DATA_3/AnalysisResults_18r.root"  ] && alien_cp /alice/cern.ch/user/a/alitrain/PWGLF/LF_PbPb/1219_20200122-1031/merge/HyperTritonTree.root  file://$HYPERML_DATA_3/AnalysisResults_18r.root
-      [ ! -f "$HYPERML_DATA_3/HyperTritonTree_19d2a.root" ] && alien_cp /alice/cern.ch/user/a/alitrain/PWGLF/LF_PbPb_MC/1473_20200122-1025_child_1/merge/HyperTritonTree.root file://$HYPERML_DATA_3/HyperTritonTree_19d2a.root
-      [ ! -f "$HYPERML_DATA_3/HyperTritonTree_19d2b.root" ] && alien_cp /alice/cern.ch/user/a/alitrain/PWGLF/LF_PbPb_MC/1473_20200122-1025_child_2/merge/HyperTritonTree.root file://$HYPERML_DATA_3/HyperTritonTree_19d2b.root
-      [ ! -f "$HYPERML_DATA_3/HyperTritonTree_19d2c.root" ] && alien_cp /alice/cern.ch/user/a/alitrain/PWGLF/LF_PbPb_MC/1473_20200122-1025_child_3/merge/HyperTritonTree.root file://$HYPERML_DATA_3/HyperTritonTree_19d2c.root
+      [ ! -f "$HYPERML_DATA_3/HyperTritonTree_19d2a.root" ] && alien_cp /alice/cern.ch/user/a/alitrain/PWGLF/LF_PbPb_MC/1494_20200331-2313_child_1/merge/HyperTritonTree.root file://$HYPERML_DATA_3/HyperTritonTree_19d2a.root
+      [ ! -f "$HYPERML_DATA_3/HyperTritonTree_19d2b.root" ] && alien_cp /alice/cern.ch/user/a/alitrain/PWGLF/LF_PbPb_MC/1494_20200331-2313_child_2/merge/HyperTritonTree.root file://$HYPERML_DATA_3/HyperTritonTree_19d2b.root
+      [ ! -f "$HYPERML_DATA_3/HyperTritonTree_19d2c.root" ] && alien_cp /alice/cern.ch/user/a/alitrain/PWGLF/LF_PbPb_MC/1494_20200331-2313_child_3/merge/HyperTritonTree.root file://$HYPERML_DATA_3/HyperTritonTree_19d2c.root
 fi
