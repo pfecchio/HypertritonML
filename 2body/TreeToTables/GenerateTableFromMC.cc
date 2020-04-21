@@ -17,41 +17,63 @@
 #include "../../common/GenerateTable/GenTable2.h"
 #include "../../common/GenerateTable/Table2.h"
 
-void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypTableDir = "" ) {
+void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypTableDir = "", string ptShape = "bw")
+{
   gRandom->SetSeed(1989);
 
-  if (hypDataDir=="") hypDataDir  = getenv("HYPERML_DATA_2");
-  if (hypTableDir=="") hypTableDir = getenv("HYPERML_TABLES_2");
+  if (hypDataDir == "")
+    hypDataDir = getenv("HYPERML_DATA_2");
+  if (hypTableDir == "")
+    hypTableDir = getenv("HYPERML_TABLES_2");
   string hypUtilsDir = getenv("HYPERML_UTILS");
 
   string inFileName = "HyperTritonTree_19d2.root";
-  string inFileArg  = hypDataDir + "/" + inFileName;
+  string inFileArg = hypDataDir + "/" + inFileName;
 
   string outFileName = "SignalTable.root";
-  string outFileArg  = hypTableDir + "/" + outFileName;
+  string outFileArg = hypTableDir + "/" + outFileName;
 
   string absFileName = "absorption.root";
-  string absFileArg  = hypUtilsDir + "/" + absFileName;
+  string absFileArg = hypUtilsDir + "/" + absFileName;
 
   string bwFileName = "BlastWaveFits.root";
-  string bwFileArg  = hypUtilsDir + "/" + bwFileName;
-  
+  string bwFileArg = hypUtilsDir + "/" + bwFileName;
+
   TFile absFile(absFileArg.data());
-  TH1* hCorrM = (TH1*)absFile.Get("hCorrectionHyp");
-  TH1* hCorrA = (TH1*)absFile.Get("hCorrectionAntiHyp");
+  TH1 *hCorrM = (TH1 *)absFile.Get("hCorrectionHyp");
+  TH1 *hCorrA = (TH1 *)absFile.Get("hCorrectionAntiHyp");
 
   // get the bw functions for the pt rejection
   TFile bwFile(bwFileArg.data());
 
-  TF1 *BlastWave{nullptr};
-  TF1 *BlastWave0{(TF1 *)bwFile.Get("BlastWave/BlastWave0")};
-  TF1 *BlastWave1{(TF1 *)bwFile.Get("BlastWave/BlastWave1")};
-  TF1 *BlastWave2{(TF1 *)bwFile.Get("BlastWave/BlastWave2")};
+  TF1 *hypPtShape{nullptr}; TF1 *hypPtShape0; TF1 *hypPtShape1; TF1 *hypPtShape2;
+  if (ptShape == "bw")
+    {
+      hypPtShape0 = (TF1 *)bwFile.Get("BlastWave/BlastWave0");
+      hypPtShape1 = (TF1 *)bwFile.Get("BlastWave/BlastWave1");
+      hypPtShape2 = (TF1 *)bwFile.Get("BlastWave/BlastWave2");
+    }
 
-  float max  = 0.0;
-  float max0 = BlastWave0->GetMaximum();
-  float max1 = BlastWave1->GetMaximum();
-  float max2 = BlastWave2->GetMaximum();
+  else if (ptShape == "bol")
+  {
+    hypPtShape0 = (TF1 *)bwFile.Get("Boltzmann/Boltzmann0");
+    hypPtShape1 = (TF1 *)bwFile.Get("Boltzmann/Boltzmann1");
+    hypPtShape2 = (TF1 *)bwFile.Get("Boltzmann/Boltzmann2");
+  }
+
+    else if (ptShape == "mtexp")
+  {
+    hypPtShape0 = (TF1 *)bwFile.Get("Mt-exp/Mt-exp0");
+    hypPtShape1 = (TF1 *)bwFile.Get("Mt-exp/Mt-exp1");
+    hypPtShape2 = (TF1 *)bwFile.Get("Mt-exp/Mt-exp2");
+  }
+
+
+
+  float max = 0.0;
+  float max0 = hypPtShape0->GetMaximum();
+  float max1 = hypPtShape1->GetMaximum();
+  float max2 = hypPtShape2->GetMaximum();
 
   // read the tree
   TFile *inFile = new TFile(inFileArg.data(), "READ");
@@ -59,7 +81,7 @@ void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypT
   TTreeReader fReader("_default/fTreeV0", inFile);
   TTreeReaderArray<RHyperTritonHe3pi> RHyperVec = {fReader, "RHyperTriton"};
   TTreeReaderArray<SHyperTritonHe3pi> SHyperVec = {fReader, "SHyperTriton"};
-  TTreeReaderValue<RCollision> RColl            = {fReader, "RCollision"};
+  TTreeReaderValue<RCollision> RColl = {fReader, "RCollision"};
 
   TH2D *hNSigmaTPCVsPtHe3 =
       new TH2D("nSigmaTPCvsPTHe3", ";#it{p}_{T} (GeV/#it{c});n#sigma_{TPC}", 32, 2, 10, 128, -8, 8);
@@ -69,39 +91,47 @@ void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypT
   Table2 table("SignalTable", "Signal Table");
   GenTable2 genTable("GenTable", "Generated particle table");
 
-  TH1D genHA("genA", ";ct (cm)",50,0,40);
-  TH1D absHA("absA", ";ct (cm)",50,0,40);
+  TH1D genHA("genA", ";ct (cm)", 50, 0, 40);
+  TH1D absHA("absA", ";ct (cm)", 50, 0, 40);
 
-  TH1D genHM("genM", ";ct (cm)",50,0,40);
-  TH1D absHM("absM", ";ct (cm)",50,0,40);
-  
-  while (fReader.Next()) {
+  TH1D genHM("genM", ";ct (cm)", 50, 0, 40);
+  TH1D absHM("absM", ";ct (cm)", 50, 0, 40);
+
+  while (fReader.Next())
+  {
     auto cent = RColl->fCent;
 
-    if (cent <= 10) {
-      BlastWave = BlastWave0;
-      max       = max0;
+    if (cent <= 10)
+    {
+      hypPtShape = hypPtShape0;
+      max = max0;
     }
-    if (cent > 10. && cent <= 40.) {
-      BlastWave = BlastWave1;
-      max       = max1;
-    } else {
-      BlastWave = BlastWave2;
-      max       = max2;
+    if (cent > 10. && cent <= 40.)
+    {
+      hypPtShape = hypPtShape1;
+      max = max1;
     }
-    for (auto &SHyper : SHyperVec) {
+    else
+    {
+      hypPtShape = hypPtShape2;
+      max = max2;
+    }
+    for (auto &SHyper : SHyperVec)
+    {
 
       bool matter = SHyper.fPdgCode > 0;
 
       double pt = std::hypot(SHyper.fPxHe3 + SHyper.fPxPi, SHyper.fPyHe3 + SHyper.fPyPi);
 
-      float BlastWaveNum = BlastWave->Eval(pt) / max;
-      if (reject) {
-        if (BlastWaveNum < gRandom->Rndm()) continue;
+      float hypPtShapeNum = hypPtShape->Eval(pt) / max;
+      if (reject)
+      {
+        if (hypPtShapeNum < gRandom->Rndm())
+          continue;
       }
       genTable.Fill(SHyper, *RColl);
       int ind = SHyper.fRecoIndex;
-      
+
       (genTable.IsMatter() ? genHM : genHA).Fill(genTable.GetCt());
       float protonPt = pt / 3.;
       float corrBin = hCorrA->FindBin(protonPt);
@@ -109,7 +139,8 @@ void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypT
       if (gRandom->Rndm() < threshold)
         (genTable.IsMatter() ? absHM : absHA).Fill(genTable.GetCt());
 
-      if (ind >= 0) {
+      if (ind >= 0)
+      {
         auto &RHyper = RHyperVec[ind];
         table.Fill(RHyper, *RColl);
         double recpt = std::hypot(RHyper.fPxHe3 + RHyper.fPxPi, RHyper.fPyHe3 + RHyper.fPyPi);
@@ -133,5 +164,6 @@ void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypT
   absHA.Write();
   outFile.Close();
 
-  std::cout << "\nDerived tables from MC generated!\n" << std::endl;
+  std::cout << "\nDerived tables from MC generated!\n"
+            << std::endl;
 }
