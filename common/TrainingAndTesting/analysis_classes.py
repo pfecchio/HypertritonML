@@ -16,6 +16,9 @@ from ROOT import TF1, TH1D, TH2D, TFile, gDirectory
 from root_numpy import fill_hist
 from sklearn.model_selection import train_test_split
 
+from concurrent.futures import ThreadPoolExecutor
+
+from copy import deepcopy
 
 class TrainingAnalysis:
 
@@ -54,7 +57,7 @@ class TrainingAnalysis:
         pres_histo = hau.h2_preselection_efficiency(pt_bins, ct_bins)
         gen_histo = hau.h2_generated(pt_bins, ct_bins)
 
-        fill_hist(pres_histo, self.df_signal.query(cent_cut)[['HypCandPt', 'ct']])
+        fill_hist(pres_histo, self.df_signal.query(cent_cut)[['pt', 'ct']])
         fill_hist(gen_histo, self.df_generated.query(cent_cut)[['pT', 'ct']])
 
         pres_histo.Divide(gen_histo)
@@ -71,7 +74,7 @@ class TrainingAnalysis:
         return pres_histo
 
     def prepare_dataframe(self, training_columns, cent_class, pt_range, ct_range, test_size=0.5):
-        data_range = f'{ct_range[0]}<ct<{ct_range[1]} and {pt_range[0]}<HypCandPt<{pt_range[1]} and {cent_class[0]}<centrality<{cent_class[1]}'
+        data_range = f'{ct_range[0]}<ct<{ct_range[1]} and {pt_range[0]}<pt<{pt_range[1]} and {cent_class[0]}<centrality<{cent_class[1]}'
 
         sig = self.df_signal.query(data_range)
         bkg = self.df_bkg.query(data_range)
@@ -82,7 +85,7 @@ class TrainingAnalysis:
         df = pd.concat([self.df_signal.query(data_range), self.df_bkg.query(data_range)])
 
         train_set, test_set, y_train, y_test = train_test_split(
-            df[training_columns + ['InvMass']], df['y'], test_size=test_size, random_state=42)
+            df[training_columns + ['m']], df['y'], test_size=test_size, random_state=42)
 
         return [train_set, y_train, test_set, y_test]
 
@@ -103,7 +106,7 @@ class TrainingAnalysis:
         mass_bins = 40 if ct_range[1] < 16 else 36
 
         for eff, cut in zip(eff_score_array[0], eff_score_array[1]):
-            counts = data[2][data[3].astype(bool)].query('score>@cut')['InvMass']
+            counts = data[2][data[3].astype(bool)].query('score>@cut')['m']
 
             histo_minv = hau.h1_invmass(inv_mass_array, cent_class, pt_range, ct_range, bins=mass_bins)
             fill_hist(histo_minv, counts)
@@ -180,17 +183,19 @@ class TrainingAnalysis:
 
 class ModelApplication:
 
-    def __init__(self, mode, data_filename, cent_classes, split):
+    def __init__(self, mode, data_filename, cent_classes, split, skimmed_data=0):
 
         print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
         print('\nStarting BDT appplication and signal extraction')
 
         self.mode = mode
         self.n_events = []
+        if isinstance(skimmed_data, pd.DataFrame):
+            self.df_data = skimmed_data
+        if skimmed_data is 0:
+            self.df_data = uproot.open(data_filename)['DataTable'].pandas.df()
 
-        self.df_data = uproot.open(data_filename)['DataTable'].pandas.df()
         self.hist_centrality = uproot.open(data_filename)['EventCounter']
-
         for cent in cent_classes:
             self.n_events.append(sum(self.hist_centrality[cent[0] + 1:cent[1]]))
 
@@ -249,7 +254,7 @@ class ModelApplication:
     def apply_BDT_to_data(self, model_handler, cent_class, pt_range, ct_range, training_columns, application_columns):
         print('\nApplying BDT to data: ...')
 
-        data_range = f'{ct_range[0]}<ct<{ct_range[1]} and {pt_range[0]}<HypCandPt<{pt_range[1]} and {cent_class[0]}<centrality<{cent_class[1]}'
+        data_range = f'{ct_range[0]}<ct<{ct_range[1]} and {pt_range[0]}<pt<{pt_range[1]} and {cent_class[0]}<centrality<{cent_class[1]}'
         df_applied = self.df_data.query(data_range)
 
         df_applied.insert(0, 'score', model_handler.predict(df_applied[training_columns]))
@@ -260,7 +265,7 @@ class ModelApplication:
         return df_applied
 
     def get_data_slice(self, cent_class, pt_range, ct_range, application_columns):
-        data_range = f'{ct_range[0]}<ct<{ct_range[1]} and {pt_range[0]}<HypCandPt<{pt_range[1]} and {cent_class[0]}<centrality<{cent_class[1]}'
+        data_range = f'{ct_range[0]}<ct<{ct_range[1]} and {pt_range[0]}<pt<{pt_range[1]} and {cent_class[0]}<centrality<{cent_class[1]}'
 
         return self.df_data.query(data_range)[application_columns]
 
@@ -286,7 +291,7 @@ class ModelApplication:
         for index, tsd in enumerate(threshold_space):
             df_selected = df_bkg.query('score>@tsd')
 
-            counts, bins = np.histogram(df_selected['InvMass'], bins=mass_bins, range=[2.96, 3.04])
+            counts, bins = np.histogram(df_selected['m'], bins=mass_bins, range=[2.96, 3.04])
             bin_centers = 0.5 * (bins[1:] + bins[:-1])
 
             side_map = (bin_centers < 2.98) + (bin_centers > 3.005)
@@ -351,3 +356,57 @@ def load_mcsigma(cent_class, pt_range, ct_range, mode, split=''):
     file_name = f'{sigma_path}/sigma_array{info_string}.npy'
 
     return np.load(file_name)
+
+
+def get_skimmed_large_data(data_path, cent_classes, pt_bins, ct_bins, training_columns, application_columns):
+    print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
+    print ('\nStarting BDT appplication on large data')
+
+    executor = ThreadPoolExecutor(8)
+
+    tree = uproot.open(data_path)['Table']
+
+    df_applied_list = []
+    iterator = uproot.pandas.iterate('~/HypertritonML/Tables/3Body/KFP/chain/DataTable*.root', 'Table', executor=executor)
+
+    counter = 0 
+    for data in iterator:
+
+        if counter == 10:
+            df_applied = pd.concat(df_applied_list)
+            return df_applied
+
+        counter += 1
+
+        for cclass in cent_classes:
+            for ptbin in zip(pt_bins[:-1], pt_bins[1:]):
+                for ctbin in zip(ct_bins[:-1], ct_bins[1:]):
+
+                    info_string = '_{}{}_{}{}_{}{}'.format(cclass[0], cclass[1], ptbin[0], ptbin[1], ctbin[0], ctbin[1])
+                    handlers_path = os.environ['HYPERML_MODELS_3'] + '/handlers'
+                    efficiencies_path = os.environ['HYPERML_EFFICIENCIES_3']
+
+                    filename_handler = handlers_path + '/model_handler' + info_string + '.pkl'
+                    filename_efficiencies = efficiencies_path + '/Eff_Score' + info_string + '.npy'
+
+                    model_handler = ModelHandler()
+                    model_handler.load_model_handler(filename_handler)
+
+                    eff_score_array = np.load(filename_efficiencies)
+                    tsd = eff_score_array[1][-1]
+
+                    data_range = f'{ctbin[0]}<ct<{ctbin[1]} and {ptbin[0]}<pt<{ptbin[1]} and {cclass[0]}<centrality<{cclass[1]}'
+
+                    df_tmp = data.query(data_range)
+                    df_tmp.insert(0, 'score', model_handler.predict(df_tmp[training_columns]))
+
+                    df_tmp = df_tmp.query('score>@tsd')
+                    df_tmp = df_tmp.loc[:, application_columns]
+
+                    df_applied_list.append(df_tmp)
+
+    df_applied = pd.concat(df_applied_list)
+    return df_applied
+                    
+
+        

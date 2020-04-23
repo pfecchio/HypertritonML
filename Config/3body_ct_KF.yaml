@@ -1,12 +1,12 @@
 NBODY: 3
-FILE_PREFIX: "ct_analysis"
+FILE_PREFIX: "ct_analysis_kf"
+
+LARGE_DATA: True
+LOAD_LARGE_DATA: False
 
 CENTRALITY_CLASS:
   - [0, 90]
-# CT_BINS: [1, 2, 4, 6, 8, 10, 14, 18, 23, 35, 50]
 CT_BINS: [2, 35]
-# CT_BINS: [0, 1000]
-# PT_BINS: [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10]
 PT_BINS: [1, 10]
 
 BKG_MODELS: ["expo", "pol1", "pol2"]
@@ -15,8 +15,7 @@ BDT_EFFICIENCY: [0.40, 1., 0.01] # min, max ,step
 
 MC_PATH: $HYPERML_TABLES_3/KFP/SignalTable.root
 BKG_PATH: $HYPERML_TABLES_3/KFP/TableLS.root
-# DATA_PATH: $HYPERML_TABLES_3/KFP/DataTable.root
-DATA_PATH: ~/hyper3data/data/LHC18r/Table.parquet.gzip
+DATA_PATH: $HYPERML_TABLES_3/KFP/chain/DataTableSmall.root
 # DATA_PATH: ~/hyper3data/data/LHC18r/012/Table.root
 
 XGBOOST_PARAMS:
@@ -30,8 +29,6 @@ XGBOOST_PARAMS:
   tree_method: hist
 
 SIGMA_MC: False
-
-IS_DASK: True
 
 HYPERPARAMS:
   max_depth: 7

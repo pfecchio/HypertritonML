@@ -10,7 +10,8 @@ import yaml
 import hyp_analysis_utils as hau
 import pandas as pd
 import xgboost as xgb
-from analysis_classes import ModelApplication, TrainingAnalysis
+from analysis_classes import (ModelApplication, TrainingAnalysis,
+                              get_skimmed_large_data)
 from hipe4ml import analysis_utils, plot_utils
 from hipe4ml.model_handler import ModelHandler
 from ROOT import TFile, gROOT
@@ -42,6 +43,8 @@ with open(os.path.expandvars(args.config), 'r') as stream:
 # define analysis global variables
 N_BODY = params['NBODY']
 FILE_PREFIX = params['FILE_PREFIX']
+LARGE_DATA = params['LARGE_DATA']
+LOAD_LARGE_DATA = params['LOAD_LARGE_DATA']
 
 CENT_CLASSES = params['CENTRALITY_CLASS']
 PT_BINS = params['PT_BINS']
@@ -134,14 +137,25 @@ if TRAIN:
 
 if APPLICATION:
     app_time = time.time()
-    application_columns = ['score', 'InvMass', 'ct', 'HypCandPt', 'centrality']
+    application_columns = ['score', 'm', 'ct', 'pt', 'centrality']
 
     # create output file
     file_name = results_dir + f'/{FILE_PREFIX}_results.root'
     results_file = TFile(file_name, 'recreate')
 
     for split in SPLIT_LIST:
-        ml_application = ModelApplication(N_BODY, data_path, CENT_CLASSES, split)
+        if LARGE_DATA:
+            if LOAD_LARGE_DATA:
+                df_skimmed_name = os.path.dirname(data_path) + '/skimmed_df.pkl'
+                df_skimmed = pd.read_pickle(os.path.dirname(data_path) + '/skimmed_df.pkl')
+            else:
+                df_skimmed = get_skimmed_large_data(data_path, CENT_CLASSES, PT_BINS, CT_BINS, COLUMNS, application_columns)
+                df_skimmed.to_pickle(os.path.dirname(data_path) + '/skimmed_df.pkl')
+
+            ml_application = ModelApplication(N_BODY, data_path, CENT_CLASSES, split, df_skimmed)
+
+        else:
+            ml_application = ModelApplication(N_BODY, data_path, CENT_CLASSES, split)
 
         for cclass in CENT_CLASSES:
             # create output structure
@@ -158,10 +172,10 @@ if APPLICATION:
                     print('\n==================================================')
                     print('centrality:', cclass, ' ct:', ctbin, ' pT:', ptbin, split)
                     print('Application and signal extraction ...', end='\r')
+                    mass_bins = 40 if ctbin[1] < 16 else 36
 
                     presel_eff = ml_application.get_preselection_efficiency(ptbin_index, ctbin_index)
-                    eff_score_array, model_handler = ml_application.load_ML_analysis(cclass, ptbin, ctbin, split, mass_bins)
-                    mass_bins = 40 if ctbin[1] < 16 else 36
+                    eff_score_array, model_handler = ml_application.load_ML_analysis(cclass, ptbin, ctbin, split)
 
                     if N_BODY == 2:
                         df_applied = ml_application.apply_BDT_to_data(
@@ -179,7 +193,7 @@ if APPLICATION:
                     sub_dir.cd()
                     for eff, tsd in zip(pd.unique(eff_score_array[0][::-1]), pd.unique(eff_score_array[1][::-1])):
 
-                        mass_array = np.array(df_applied.query('score>@tsd')['InvMass'].values, dtype=np.float64)
+                        mass_array = np.array(df_applied.query('score>@tsd')['m'].values, dtype=np.float64)
                         counts, _ = np.histogram(mass_array, bins=mass_bins, range=[2.96, 3.05])
 
                         histo_name = f'eff{eff:.2f}'
