@@ -1,0 +1,82 @@
+NBODY: 3
+FILE_PREFIX: "ct_analysis"
+
+CENTRALITY_CLASS:
+  - [0, 90]
+# CT_BINS: [1, 2, 4, 6, 8, 10, 14, 18, 23, 35, 50]
+CT_BINS: [2, 35]
+# CT_BINS: [0, 1000]
+# PT_BINS: [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10]
+PT_BINS: [1, 10]
+
+BKG_MODELS: ["expo", "pol1", "pol2"]
+
+BDT_EFFICIENCY: [0.40, 1., 0.01] # min, max ,step
+
+MC_PATH: $HYPERML_TABLES_3/KFP/SignalTable.root
+BKG_PATH: $HYPERML_TABLES_3/KFP/TableLS.root
+# DATA_PATH: $HYPERML_TABLES_3/KFP/DataTable.root
+DATA_PATH: ~/hyper3data/data/LHC18r/Table.parquet.gzip
+# DATA_PATH: ~/hyper3data/data/LHC18r/012/Table.root
+
+XGBOOST_PARAMS:
+  # general parameters
+  silent: 1 # print message (useful to understand whats happening)
+  n_jobs: 8 # number of available threads
+  # learning task parameters
+  objective: binary:logistic
+  random_state: 42
+  eval_metric: auc
+  tree_method: hist
+
+SIGMA_MC: False
+
+IS_DASK: True
+
+HYPERPARAMS:
+  max_depth: 7
+  learning_rate: 0.1862
+  n_estimators: 477
+  gamma: 0.3372
+  min_child_weight: 1.716
+  subsample: 0.8863
+  colsample_bytree: 0.737
+  seed: 42
+
+HYPERPARAMS_RANGE: #TODO: check if it works without tuples
+  # booster parameters
+  max_depth: !!python/tuple [5, 20] # defines the maximum depth of a single tree (regularization)
+  learning_rate: !!python/tuple [0.01, 0.3] # learning rate
+  n_estimators: !!python/tuple [50, 500] # number of boosting trees
+  gamma: !!python/tuple [0.3, 1.1] # specifies the minimum loss reduction required to make a split
+  min_child_weight: !!python/tuple [1, 12]
+  subsample: !!python/tuple [0.5, 0.9] # denotes the fraction of observations to be randomly samples for each tree
+  colsample_bytree: !!python/tuple [0.5, 0.9] # denotes the fraction of columns to be randomly samples for each tree
+  # # lambda: (0,10]  # L2 regularization term on weights
+  # # alpha: (0,10]  # L1 regularization term on weight
+
+TRAINING_COLUMNS:
+  - cosPA
+  - pt
+  - tpcClus_de
+  - tpcClus_pr
+  - tpcClus_pi
+  - tpcNsig_de
+  - tpcNsig_pr
+  - tpcNsig_pi
+  - tofNsig_de
+  - tofNsig_pr
+  - tofNsig_pi
+  - hasTOF_de
+  - hasTOF_pr
+  - hasTOF_pi
+  - dca_de
+  - dca_pr
+  - dca_pi
+  - dca_de_pr
+  - dca_de_pi
+  - dca_pr_pi
+  - chi2_deuprot
+  - chi2_3prongs
+  - chi2_topology
+
