@@ -30,9 +30,9 @@ class TrainingAnalysis:
         print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
 
         if self.mode == 3:
-            self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df()
-            self.df_generated = uproot.open(mc_file_name)['GenerateTable'].pandas.df()
-            self.df_bkg = uproot.open(bkg_file_name)['BackgroundTable'].pandas.df()
+            self.df_signal = uproot.open(mc_file_name)['Table'].pandas.df().drop(columns=['y'], axis=1)
+            self.df_generated = uproot.open(mc_file_name)['GenTable'].pandas.df().drop(columns=['y'], axis=1)
+            self.df_bkg = uproot.open(bkg_file_name)['Table'].pandas.df(entrystop=24000000).drop(columns=['y'], axis=1)
 
         if self.mode == 2:
             self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df()
@@ -58,7 +58,7 @@ class TrainingAnalysis:
         gen_histo = hau.h2_generated(pt_bins, ct_bins)
 
         fill_hist(pres_histo, self.df_signal.query(cent_cut)[['pt', 'ct']])
-        fill_hist(gen_histo, self.df_generated.query(cent_cut)[['pT', 'ct']])
+        fill_hist(gen_histo, self.df_generated.query(cent_cut)[['pt', 'ct']])
 
         pres_histo.Divide(gen_histo)
 
@@ -74,7 +74,7 @@ class TrainingAnalysis:
         return pres_histo
 
     def prepare_dataframe(self, training_columns, cent_class, pt_range, ct_range, test_size=0.5):
-        data_range = f'{ct_range[0]}<ct<{ct_range[1]} and {pt_range[0]}<pt<{pt_range[1]} and {cent_class[0]}<centrality<{cent_class[1]}'
+        data_range = f'{ct_range[0]}<ct<{ct_range[1]} and {pt_range[0]}<pt<{pt_range[1]}'
 
         sig = self.df_signal.query(data_range)
         bkg = self.df_bkg.query(data_range)
@@ -183,7 +183,7 @@ class TrainingAnalysis:
 
 class ModelApplication:
 
-    def __init__(self, mode, data_filename, cent_classes, split, skimmed_data=0):
+    def __init__(self, mode, data_filename, cent_classes, split, skimmed_data=0, hist_centrality=0):
 
         print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
         print('\nStarting BDT appplication and signal extraction')
@@ -195,11 +195,12 @@ class ModelApplication:
         if skimmed_data is 0:
             self.df_data = uproot.open(data_filename)['DataTable'].pandas.df()
 
-        self.hist_centrality = uproot.open(data_filename)['EventCounter']
-        for cent in cent_classes:
-            self.n_events.append(sum(self.hist_centrality[cent[0] + 1:cent[1]]))
+        # if hist_centrality is not 0:
+        #     self.hist_centrality = uproot.open(data_filename)['EventCounter']
+        #     for cent in cent_classes:
+        #         self.n_events.append(sum(self.hist_centrality[cent[0] + 1:cent[1]]))
 
-        print('\nNumber of events: ', int(sum(self.hist_centrality[:])))
+            # print('\nNumber of events: ', int(sum(self.hist_centrality[:])))
 
         if split == '_antimatter':
             self.df_data = self.df_data.query('ArmenterosAlpha < 0')
@@ -363,21 +364,11 @@ def get_skimmed_large_data(data_path, cent_classes, pt_bins, ct_bins, training_c
     print ('\nStarting BDT appplication on large data')
 
     executor = ThreadPoolExecutor(8)
+    iterator = uproot.pandas.iterate(data_path, 'Table', executor=executor)
 
-    tree = uproot.open(data_path)['Table']
+    df_applied = None
 
-    df_applied_list = []
-    iterator = uproot.pandas.iterate('~/HypertritonML/Tables/3Body/KFP/chain/DataTable*.root', 'Table', executor=executor)
-
-    counter = 0 
     for data in iterator:
-
-        if counter == 10:
-            df_applied = pd.concat(df_applied_list)
-            return df_applied
-
-        counter += 1
-
         for cclass in cent_classes:
             for ptbin in zip(pt_bins[:-1], pt_bins[1:]):
                 for ctbin in zip(ct_bins[:-1], ct_bins[1:]):
@@ -395,7 +386,7 @@ def get_skimmed_large_data(data_path, cent_classes, pt_bins, ct_bins, training_c
                     eff_score_array = np.load(filename_efficiencies)
                     tsd = eff_score_array[1][-1]
 
-                    data_range = f'{ctbin[0]}<ct<{ctbin[1]} and {ptbin[0]}<pt<{ptbin[1]} and {cclass[0]}<centrality<{cclass[1]}'
+                    data_range = f'{ctbin[0]}<ct<{ctbin[1]} and {ptbin[0]}<pt<{ptbin[1]}'
 
                     df_tmp = data.query(data_range)
                     df_tmp.insert(0, 'score', model_handler.predict(df_tmp[training_columns]))
@@ -403,9 +394,11 @@ def get_skimmed_large_data(data_path, cent_classes, pt_bins, ct_bins, training_c
                     df_tmp = df_tmp.query('score>@tsd')
                     df_tmp = df_tmp.loc[:, application_columns]
 
-                    df_applied_list.append(df_tmp)
-
-    df_applied = pd.concat(df_applied_list)
+                    if df_applied is None:
+                        df_applied = df_tmp.copy()
+                    else:
+                        df_applied = df_applied.append(df_tmp, ignore_index=True, sort=False)
+    
     return df_applied
                     
 

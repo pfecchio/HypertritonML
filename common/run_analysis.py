@@ -97,13 +97,13 @@ if TRAIN:
                     part_time = time.time()
 
                     # data[0]=train_set, data[1]=y_train, data[2]=test_set, data[3]=y_test
-                    data = ml_analysis.prepare_dataframe(COLUMNS, cclass, ct_range=ctbin, pt_range=ptbin)
+                    data = ml_analysis.prepare_dataframe(COLUMNS, cent_class=cclass, ct_range=ctbin, pt_range=ptbin)
 
                     input_model = xgb.XGBClassifier()
                     model_handler = ModelHandler(input_model)
 
                     model_handler.set_model_params(MODEL_PARAMS)
-                    model_handler.set_model_params(HYPERPARAMS)
+                    # model_handler.set_model_params()
                     model_handler.set_training_columns(COLUMNS)
 
                     if OPTIMIZE:
@@ -146,11 +146,10 @@ if APPLICATION:
     for split in SPLIT_LIST:
         if LARGE_DATA:
             if LOAD_LARGE_DATA:
-                df_skimmed_name = os.path.dirname(data_path) + '/skimmed_df.pkl'
-                df_skimmed = pd.read_pickle(os.path.dirname(data_path) + '/skimmed_df.pkl')
+                df_skimmed = pd.read_parquet(os.path.dirname(data_path) + '/skimmed_df.parquet.gzip')
             else:
                 df_skimmed = get_skimmed_large_data(data_path, CENT_CLASSES, PT_BINS, CT_BINS, COLUMNS, application_columns)
-                df_skimmed.to_pickle(os.path.dirname(data_path) + '/skimmed_df.pkl')
+                df_skimmed.to_parquet(os.path.dirname(data_path) + '/skimmed_df.parquet.gzip', compression='gzip')
 
             ml_application = ModelApplication(N_BODY, data_path, CENT_CLASSES, split, df_skimmed)
 
