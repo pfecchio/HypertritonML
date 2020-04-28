@@ -2,20 +2,20 @@ NBODY: 3
 FILE_PREFIX: "ct_analysis_kf"
 
 LARGE_DATA: True
-LOAD_LARGE_DATA: False
+LOAD_LARGE_DATA: True
 
 CENTRALITY_CLASS:
   - [0, 90]
-CT_BINS: [0, 2, 4, 6, 8, 10, 14]
+CT_BINS: [0, 2, 4, 6, 8, 10, 14, 18, 23, 35]
 # CT_BINS: [0, 50]
-PT_BINS: [1, 10]
+PT_BINS: [2, 10]
 
 BKG_MODELS: ["expo", "pol1", "pol2"]
 
 BDT_EFFICIENCY: [0.40, 1., 0.01] # min, max ,step
 
 MC_PATH: $HYPERML_TABLES_3/KFP/SignalTable.root
-BKG_PATH: $HYPERML_TABLES_3/KFP/TableLS.root
+BKG_PATH: $HYPERML_TABLES_3/KFP/DataTableQ.root
 DATA_PATH: $HYPERML_TABLES_3/KFP/DataTable*.root
 
 XGBOOST_PARAMS:
@@ -31,13 +31,13 @@ XGBOOST_PARAMS:
 SIGMA_MC: False
 
 HYPERPARAMS:
-  max_depth: 7
-  learning_rate: 0.1862
-  n_estimators: 477
-  gamma: 0.3372
-  min_child_weight: 1.716
-  subsample: 0.8863
-  colsample_bytree: 0.737
+  max_depth: 12
+  learning_rate: 0.09823
+  n_estimators: 180
+  gamma: 0.4467
+  min_child_weight: 5.751
+  subsample: 0.585
+  colsample_bytree: 0.5727
   seed: 42
 
 HYPERPARAMS_RANGE: #TODO: check if it works without tuples
@@ -61,11 +61,11 @@ TRAINING_COLUMNS:
   - tpcNsig_de
   - tpcNsig_pr
   - tpcNsig_pi
-  # - tofNsig_de
-  # - tofNsig_pr
+  - tofNsig_de
+  - tofNsig_pr
   # - tofNsig_pi
-  # - hasTOF_de
-  # - hasTOF_pr
+  - hasTOF_de
+  - hasTOF_pr
   # - hasTOF_pi
   - dca_de
   - dca_pr

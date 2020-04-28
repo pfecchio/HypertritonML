@@ -85,6 +85,7 @@ start_time = time.time()                          # for performances evaluation
 if TRAIN:
     for split in SPLIT_LIST:
         ml_analysis = TrainingAnalysis(N_BODY, signal_path, bkg_path, split)
+        print(f'--- analysis initialized in {((time.time() - start_time) / 60):.2f} minutes ---\n')
 
         for cclass in CENT_CLASSES:
             ml_analysis.preselection_efficiency(cclass, CT_BINS, PT_BINS, split)
@@ -103,7 +104,7 @@ if TRAIN:
                     model_handler = ModelHandler(input_model)
 
                     model_handler.set_model_params(MODEL_PARAMS)
-                    # model_handler.set_model_params()
+                    model_handler.set_model_params(HYPERPARAMS)
                     model_handler.set_training_columns(COLUMNS)
 
                     if OPTIMIZE:
@@ -187,11 +188,12 @@ if APPLICATION:
                         sigscan_eff, sigscan_tsd = ml_application.significance_scan(
                             df_applied, presel_eff, eff_score_array, cclass, ptbin, ctbin, split, )
                         eff_score_array = np.append(eff_score_array, [[sigscan_eff], [sigscan_tsd]], axis=1)
+
                     # define subdir for saving invariant mass histograms
                     sub_dir = cent_dir.mkdir(f'ct_{ctbin[0]}{ctbin[1]}') if 'ct' in FILE_PREFIX else cent_dir.mkdir(f'pt_{ptbin[0]}{ptbin[1]}')
                     sub_dir.cd()
-                    for eff, tsd in zip(pd.unique(eff_score_array[0][::-1]), pd.unique(eff_score_array[1][::-1])):
 
+                    for eff, tsd in zip(pd.unique(eff_score_array[0][::-1]), pd.unique(eff_score_array[1][::-1])):
                         mass_array = np.array(df_applied.query('score>@tsd')['m'].values, dtype=np.float64)
                         counts, _ = np.histogram(mass_array, bins=mass_bins, range=[2.96, 3.05])
 

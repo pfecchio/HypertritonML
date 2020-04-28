@@ -1,6 +1,8 @@
 # this class has been created to generalize the training and to open the file.root just one time
 # to achive that alse analysis_utils.py and Significance_Test.py has been modified
 import os
+import sys
+from concurrent.futures import ThreadPoolExecutor
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,13 +14,10 @@ import uproot
 import xgboost as xgb
 from hipe4ml import analysis_utils, plot_utils
 from hipe4ml.model_handler import ModelHandler
-from ROOT import TF1, TH1D, TH2D, TFile, gDirectory
+from ROOT import TF1, TH1, TH1D, TH2D, TFile, gDirectory
 from root_numpy import fill_hist
 from sklearn.model_selection import train_test_split
 
-from concurrent.futures import ThreadPoolExecutor
-
-from copy import deepcopy
 
 class TrainingAnalysis:
 
@@ -29,10 +28,23 @@ class TrainingAnalysis:
         print('\nStarting BDT training and testing ')
         print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
 
+        signal_preselection = 'cosPA>0.99 and (0<chi2_deuprot<50) and (0<chi2_3prongs<50) and (0<chi2_topology<150)'
+        background_preselection = 'cosPA>0.99 and (0<chi2_deuprot<50) and (0<chi2_3prongs<50) and (0<chi2_topology<150) and not (2.975<m<3.030)'
+
         if self.mode == 3:
+            # self.df_signal = uproot.open(mc_file_name)['Table'].pandas.df().drop(columns=['y'], axis=1)
+            # self.df_generated = uproot.open(mc_file_name)['GenTable'].pandas.df().drop(columns=['y'], axis=1)
+            # self.df_bkg = uproot.open(bkg_file_name)['Table'].pandas.df(entrystop=200000000).drop(columns=['y'], axis=1)
             self.df_signal = uproot.open(mc_file_name)['Table'].pandas.df().drop(columns=['y'], axis=1)
             self.df_generated = uproot.open(mc_file_name)['GenTable'].pandas.df().drop(columns=['y'], axis=1)
-            self.df_bkg = uproot.open(bkg_file_name)['Table'].pandas.df(entrystop=24000000).drop(columns=['y'], axis=1)
+            self.df_bkg = uproot.open(bkg_file_name)['Table'].pandas.df(entrystop=200000000).drop(columns=['y'], axis=1)
+
+            self.df_signal['pt'] = abs(self.df_signal.pt)
+            self.df_generated['pt'] = abs(self.df_generated.pt)
+            self.df_bkg['pt'] = abs(self.df_bkg.pt)
+
+            self.df_signal = self.df_signal.query(signal_preselection)
+            self.df_bkg = self.df_bkg.query(background_preselection)
 
         if self.mode == 2:
             self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df()
@@ -52,7 +64,7 @@ class TrainingAnalysis:
         self.df_bkg['y'] = 0
 
     def preselection_efficiency(self, cent_class, ct_bins, pt_bins, split_type, save=True):
-        cent_cut = f'{cent_class[0]}<=centrality<={cent_class[1]}'
+        # cent_cut = f'{cent_class[0]}<=centrality<={cent_class[1]}'
 
         pres_histo = hau.h2_preselection_efficiency(pt_bins, ct_bins)
         gen_histo = hau.h2_generated(pt_bins, ct_bins)
@@ -160,11 +172,11 @@ class TrainingAnalysis:
         if not os.path.exists(bdt_score_dir):
             os.makedirs(bdt_score_dir)
 
-        for fig in bdt_score_plot:
-            axlist = fig.get_axes()
-            for ax in axlist:
-                ax.set_yscale('log')
-            fig.savefig(bdt_score_dir + '/BDT_Score' + info_string + '.pdf')
+        axlist = bdt_score_plot.get_axes()
+        for ax in axlist:
+            ax.set_yscale('log')
+
+        bdt_score_plot.savefig(bdt_score_dir + '/BDT_Score' + info_string + '.pdf')
 
         bdt_eff_plot = plot_utils.plot_bdt_eff(eff_score_array[1], eff_score_array[0])
         if not os.path.exists(bdt_eff_dir):
@@ -183,7 +195,7 @@ class TrainingAnalysis:
 
 class ModelApplication:
 
-    def __init__(self, mode, data_filename, cent_classes, split, skimmed_data=0, hist_centrality=0):
+    def __init__(self, mode, data_filename, cent_classes, split, skimmed_data=0):
 
         print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
         print('\nStarting BDT appplication and signal extraction')
@@ -195,12 +207,18 @@ class ModelApplication:
         if skimmed_data is 0:
             self.df_data = uproot.open(data_filename)['DataTable'].pandas.df()
 
-        # if hist_centrality is not 0:
-        #     self.hist_centrality = uproot.open(data_filename)['EventCounter']
-        #     for cent in cent_classes:
-        #         self.n_events.append(sum(self.hist_centrality[cent[0] + 1:cent[1]]))
+        file_q = TFile(os.path.dirname(data_filename) + '/DataTableQ.root', 'read')
+        file_r = TFile(os.path.dirname(data_filename) + '/DataTableR.root', 'read')
 
-            # print('\nNumber of events: ', int(sum(self.hist_centrality[:])))
+        self.hist_centrality = uproot.open(os.path.dirname(data_filename) + '/DataTableQ.root')['EventCounter']
+        _hist_cent_r = uproot.open(os.path.dirname(data_filename) + '/DataTableR.root')['EventCounter']
+
+        self.hist_centrality[:] = self.hist_centrality.values + _hist_cent_r.values
+
+        for cent in cent_classes:
+            self.n_events.append(sum(self.hist_centrality[cent[0] + 1:cent[1]]))
+
+        print('\nNumber of events: ', int(sum(self.hist_centrality[:])))
 
         if split == '_antimatter':
             self.df_data = self.df_data.query('ArmenterosAlpha < 0')
@@ -266,7 +284,7 @@ class ModelApplication:
         return df_applied
 
     def get_data_slice(self, cent_class, pt_range, ct_range, application_columns):
-        data_range = f'{ct_range[0]}<ct<{ct_range[1]} and {pt_range[0]}<pt<{pt_range[1]} and {cent_class[0]}<centrality<{cent_class[1]}'
+        data_range = f'{ct_range[0]}<ct<{ct_range[1]} and {pt_range[0]}<pt<{pt_range[1]}'
 
         return self.df_data.query(data_range)[application_columns]
 
@@ -305,7 +323,7 @@ class ModelApplication:
 
             exp_signal_ctint = hau.expected_signal_counts(
                 bw, cent_class, pt_range, pre_selection_efficiency * bdt_efficiency[index],
-                self.hist_centrality)
+                self.hist_centrality, self.mode)
 
             if split is not '':
                 exp_signal_ctint = 0.5 * exp_signal_ctint
@@ -366,9 +384,13 @@ def get_skimmed_large_data(data_path, cent_classes, pt_bins, ct_bins, training_c
     executor = ThreadPoolExecutor(8)
     iterator = uproot.pandas.iterate(data_path, 'Table', executor=executor)
 
-    df_applied = None
+    df_applied = pd.DataFrame()
 
+    counter = 0
     for data in iterator:
+        counter+=len(data)
+        data = data.query('cosPA>0.99 and (0<chi2_deuprot<50) and (0<chi2_3prongs<50) and (0<chi2_topology<150)')
+        data['pt'] = abs(data.pt)
         for cclass in cent_classes:
             for ptbin in zip(pt_bins[:-1], pt_bins[1:]):
                 for ctbin in zip(ct_bins[:-1], ct_bins[1:]):
@@ -384,7 +406,7 @@ def get_skimmed_large_data(data_path, cent_classes, pt_bins, ct_bins, training_c
                     model_handler.load_model_handler(filename_handler)
 
                     eff_score_array = np.load(filename_efficiencies)
-                    tsd = eff_score_array[1][-1]
+                    tsd = eff_score_array[1][-1] - 1
 
                     data_range = f'{ctbin[0]}<ct<{ctbin[1]} and {ptbin[0]}<pt<{ptbin[1]}'
 
@@ -394,12 +416,7 @@ def get_skimmed_large_data(data_path, cent_classes, pt_bins, ct_bins, training_c
                     df_tmp = df_tmp.query('score>@tsd')
                     df_tmp = df_tmp.loc[:, application_columns]
 
-                    if df_applied is None:
-                        df_applied = df_tmp.copy()
-                    else:
-                        df_applied = df_applied.append(df_tmp, ignore_index=True, sort=False)
+                    df_applied = df_applied.append(df_tmp, ignore_index=True, sort=False)
     
+    print(counter)
     return df_applied
-                    
-
-        
