@@ -149,7 +149,7 @@ if APPLICATION:
             if LOAD_LARGE_DATA:
                 df_skimmed = pd.read_parquet(os.path.dirname(data_path) + '/skimmed_df.parquet.gzip')
             else:
-                df_skimmed = get_skimmed_large_data(data_path, CENT_CLASSES, PT_BINS, CT_BINS, COLUMNS, application_columns)
+                df_skimmed = hau.get_skimmed_large_data(data_path, CENT_CLASSES, PT_BINS, CT_BINS, COLUMNS, application_columns)
                 df_skimmed.to_parquet(os.path.dirname(data_path) + '/skimmed_df.parquet.gzip', compression='gzip')
 
             ml_application = ModelApplication(N_BODY, data_path, CENT_CLASSES, split, df_skimmed)
@@ -178,8 +178,12 @@ if APPLICATION:
                     eff_score_array, model_handler = ml_application.load_ML_analysis(cclass, ptbin, ctbin, split)
 
                     if N_BODY == 2:
-                        df_applied = ml_application.apply_BDT_to_data(
-                            model_handler, cclass, ptbin, ctbin, model_handler.get_training_columns(), application_columns)
+                        if LARGE_DATA:
+                           df_applied = ml_application.get_data_slice(cclass, ptbin, ctbin, application_columns)
+                        else: 
+                            df_applied = ml_application.apply_BDT_to_data(
+                                model_handler, cclass, ptbin, ctbin, model_handler.get_training_columns(), application_columns)
+
 
                     if N_BODY == 3:
                         df_applied = ml_application.get_data_slice(cclass, ptbin, ctbin, application_columns)
