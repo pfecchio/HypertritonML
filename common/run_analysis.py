@@ -10,8 +10,7 @@ import yaml
 import hyp_analysis_utils as hau
 import pandas as pd
 import xgboost as xgb
-from analysis_classes import (ModelApplication, TrainingAnalysis,
-                              get_skimmed_large_data)
+from analysis_classes import (ModelApplication, TrainingAnalysis)
 from hipe4ml import analysis_utils, plot_utils
 from hipe4ml.model_handler import ModelHandler
 from ROOT import TFile, gROOT
@@ -149,7 +148,7 @@ if APPLICATION:
             if LOAD_LARGE_DATA:
                 df_skimmed = pd.read_parquet(os.path.dirname(data_path) + '/skimmed_df.parquet.gzip')
             else:
-                df_skimmed = hau.get_skimmed_large_data(data_path, CENT_CLASSES, PT_BINS, CT_BINS, COLUMNS, application_columns)
+                df_skimmed = hau.get_skimmed_large_data(data_path, CENT_CLASSES, PT_BINS, CT_BINS, COLUMNS, application_columns, N_BODY)
                 df_skimmed.to_parquet(os.path.dirname(data_path) + '/skimmed_df.parquet.gzip', compression='gzip')
 
             ml_application = ModelApplication(N_BODY, data_path, CENT_CLASSES, split, df_skimmed)

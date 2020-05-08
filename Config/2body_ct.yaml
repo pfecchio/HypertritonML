@@ -1,5 +1,5 @@
 NBODY: 2
-FILE_PREFIX: 'ct_analysis'
+FILE_PREFIX: 'ct_analysis_pass1_18q_old'
 
 CENTRALITY_CLASS:
   - [0, 90]
@@ -13,9 +13,9 @@ BDT_EFFICIENCY: [0.20, 1., 0.01] ##min, max ,step
 DEDICATED_BACKGROUND: 0
 
 
-MC_PATH: $HYPERML_TABLES_2/splines_tables/SignalTable.root
-BKG_PATH: $HYPERML_TABLES_2/splines_tables/DataTable_18LS.root
-DATA_PATH: $HYPERML_TABLES_2/splines_tables/DataTable_18.root
+MC_PATH: $HYPERML_TABLES_2/kf_tables/SignalTable.root
+BKG_PATH: $HYPERML_TABLES_2/kf_tables/DataTable_18LS.root
+DATA_PATH: $HYPERML_TABLES_2/pass1_tables_old/DataTable_18.root
 
 XGBOOST_PARAMS:
   # general parameters
@@ -29,7 +29,8 @@ XGBOOST_PARAMS:
 
 
 SIGMA_MC: True
-
+LARGE_DATA: True
+LOAD_LARGE_DATA: False
 
 HYPERPARAMS:
   max_depth: 13
@@ -55,7 +56,7 @@ HYPERPARAMS_RANGE: #TODO: check if it works without tuples
 
 TRAINING_COLUMNS: 
   - V0CosPA
-  - HypCandPt
+  - pt
   - ProngsDCA
   - PiProngPvDCAXY
   - He3ProngPvDCAXY
