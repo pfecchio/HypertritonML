@@ -296,6 +296,10 @@ class ModelApplication:
             self, df_bkg, pre_selection_efficiency, eff_score_array, cent_class, pt_range, ct_range, split='', mass_bins=40):
         print('\nSignificance scan: ...')
 
+        hyp_lifetime = 253
+        hist_range = [2.96, 3.04]
+
+
         bdt_efficiency = eff_score_array[0]
         threshold_space = eff_score_array[1]
 
@@ -305,8 +309,6 @@ class ModelApplication:
         significance_custom = []
         significance_custom_error = []
 
-        hyp_lifetime = 206
-
         bw_file = TFile(os.environ['HYPERML_UTILS'] + '/BlastWaveFits.root', 'read')
         bw = [bw_file.Get("BlastWave/BlastWave{}".format(i)) for i in [0, 1, 2]]
         bw_file.Close()
@@ -314,7 +316,7 @@ class ModelApplication:
         for index, tsd in enumerate(threshold_space):
             df_selected = df_bkg.query('score>@tsd')
 
-            counts, bins = np.histogram(df_selected['m'], bins=mass_bins, range=[2.96, 3.04])
+            counts, bins = np.histogram(df_selected['m'], bins=mass_bins, range=hist_range)
             bin_centers = 0.5 * (bins[1:] + bins[:-1])
 
             side_map = (bin_centers < 2.98) + (bin_centers > 3.005)
@@ -362,7 +364,7 @@ class ModelApplication:
         data_range_array = [ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1]]
         hpu.plot_significance_scan(
             max_index, significance_custom, significance_custom_error, expected_signal, df_bkg, threshold_space,
-            data_range_array, bin_centers, nevents, self.mode, split, mass_bins)
+            data_range_array, nevents, self.mode, split, mass_bins, hist_range)
 
         bdt_eff_max_score = bdt_efficiency[max_index]
 
