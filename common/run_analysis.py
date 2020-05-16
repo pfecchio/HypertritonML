@@ -74,6 +74,8 @@ else:
 signal_path = os.path.expandvars(params['MC_PATH'])
 bkg_path = os.path.expandvars(params['BKG_PATH'])
 data_path = os.path.expandvars(params['DATA_PATH'])
+analysis_res_path = os.path.expandvars(params['ANALYSIS_RESULTS_PATH'])
+
 results_dir = os.environ['HYPERML_RESULTS_{}'.format(N_BODY)]
 
 ###############################################################################
@@ -141,7 +143,7 @@ if APPLICATION:
     results_file = TFile(file_name, 'recreate')
 
     for split in SPLIT_LIST:
-        ml_application = ModelApplication(N_BODY, data_path, CENT_CLASSES, split)
+        ml_application = ModelApplication(N_BODY, data_path, analysis_res_path,CENT_CLASSES, split)
 
         for cclass in CENT_CLASSES:
             # create output structure
@@ -160,7 +162,7 @@ if APPLICATION:
                     print('Application and signal extraction ...', end='\r')
 
                     presel_eff = ml_application.get_preselection_efficiency(ptbin_index, ctbin_index)
-                    eff_score_array, model_handler = ml_application.load_ML_analysis(cclass, ptbin, ctbin, split, mass_bins)
+                    eff_score_array, model_handler = ml_application.load_ML_analysis(cclass, ptbin, ctbin, split)
                     mass_bins = 40 if ctbin[1] < 16 else 36
 
                     if N_BODY == 2:
@@ -172,7 +174,7 @@ if APPLICATION:
 
                     if SIGNIFICANCE_SCAN:
                         sigscan_eff, sigscan_tsd = ml_application.significance_scan(
-                            df_applied, presel_eff, eff_score_array, cclass, ptbin, ctbin, split, )
+                            df_applied, presel_eff, eff_score_array, cclass, ptbin, ctbin, split, mass_bins)
                         eff_score_array = np.append(eff_score_array, [[sigscan_eff], [sigscan_tsd]], axis=1)
                     # define subdir for saving invariant mass histograms
                     sub_dir = cent_dir.mkdir(f'ct_{ctbin[0]}{ctbin[1]}') if 'ct' in FILE_PREFIX else cent_dir.mkdir(f'pt_{ptbin[0]}{ptbin[1]}')

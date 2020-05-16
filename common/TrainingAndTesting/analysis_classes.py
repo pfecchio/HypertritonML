@@ -157,11 +157,11 @@ class TrainingAnalysis:
         if not os.path.exists(bdt_score_dir):
             os.makedirs(bdt_score_dir)
 
-        for fig in bdt_score_plot:
-            axlist = fig.get_axes()
-            for ax in axlist:
-                ax.set_yscale('log')
-            fig.savefig(bdt_score_dir + '/BDT_Score' + info_string + '.pdf')
+        # for fig in bdt_score_plot:
+        #     axlist = fig.get_axes()
+        #     for ax in axlist:
+        #         ax.set_yscale('log')
+        bdt_score_plot.savefig(bdt_score_dir + '/BDT_Score' + info_string + '.pdf')
 
         bdt_eff_plot = plot_utils.plot_bdt_eff(eff_score_array[1], eff_score_array[0])
         if not os.path.exists(bdt_eff_dir):
@@ -180,7 +180,7 @@ class TrainingAnalysis:
 
 class ModelApplication:
 
-    def __init__(self, mode, data_filename, cent_classes, split):
+    def __init__(self, mode, data_filename, analysis_res_filename,cent_classes, split):
 
         print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
         print('\nStarting BDT appplication and signal extraction')
@@ -189,7 +189,10 @@ class ModelApplication:
         self.n_events = []
 
         self.df_data = uproot.open(data_filename)['DataTable'].pandas.df()
-        self.hist_centrality = uproot.open(data_filename)['EventCounter']
+        if analysis_res_filename == data_filename:
+            self.hist_centrality = uproot.open(data_filename)['EventCounter']
+        else:
+            self.hist_centrality = uproot.open(analysis_res_filename)["AliAnalysisTaskHyperTriton2He3piML_custom_summary"][11] 
 
         for cent in cent_classes:
             self.n_events.append(sum(self.hist_centrality[cent[0] + 1:cent[1]]))
