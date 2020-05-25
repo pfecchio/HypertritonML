@@ -1,0 +1,84 @@
+NBODY: 3
+FILE_PREFIX: "ct_analysis_o2"
+
+LARGE_DATA: True
+LOAD_LARGE_DATA: False
+
+CENTRALITY_CLASS:
+  - [0, 90]
+CT_BINS: [2, 4, 6, 8, 10, 14, 18, 23, 35]
+PT_BINS: [2, 10]
+
+BKG_MODELS: ["expo", "pol1", "pol2"]
+
+BDT_EFFICIENCY: [0.50, 1., 0.01] # min, max ,step
+
+MC_PATH: $HYPERML_TABLES_3/O2/signal_reweighted_df.parquet.gzip
+BKG_PATH: $HYPERML_TABLES_3/O2/DataTableAll.root
+DATA_PATH: $HYPERML_TABLES_3/Table.root
+
+XGBOOST_PARAMS:
+  # general parameters
+  silent: 1 # print message (useful to understand whats happening)
+  n_jobs: 8 # number of available threads
+  # learning task parameters
+  objective: binary:logistic
+  random_state: 42
+  eval_metric: auc
+  tree_method: hist
+
+SIGMA_MC: True
+
+HYPERPARAMS:
+  max_depth: 5
+  learning_rate: 0.08045
+  n_estimators: 500
+  gamma: 0.8596
+  min_child_weight: 11.46
+  subsample: 0.6112
+  colsample_bytree: 0.7719
+  seed: 42
+
+HYPERPARAMS_RANGE: #TODO: check if it works without tuples
+  # booster parameters
+  max_depth: !!python/tuple [5, 20] # defines the maximum depth of a single tree (regularization)
+  learning_rate: !!python/tuple [0.01, 0.3] # learning rate
+  n_estimators: !!python/tuple [50, 500] # number of boosting trees
+  gamma: !!python/tuple [0.3, 1.1] # specifies the minimum loss reduction required to make a split
+  min_child_weight: !!python/tuple [1, 12]
+  subsample: !!python/tuple [0.5, 0.9] # denotes the fraction of observations to be randomly samples for each tree
+  colsample_bytree: !!python/tuple [0.5, 0.9] # denotes the fraction of columns to be randomly samples for each tree
+  # # lambda: (0,10]  # L2 regularization term on weights
+  # # alpha: (0,10]  # L1 regularization term on weight
+
+TRAINING_COLUMNS:
+- pt
+- cosPA
+# - cosPA_Lambda
+# - mppi_vert
+# - mppi
+# - dca_lambda_hyper
+- dca_de
+- dca_pr
+- dca_pi
+- tpcNsig_de
+- tpcNsig_pr
+- tpcNsig_pi
+- tofNsig_de
+- tofNsig_pr
+# - tofNsig_pi
+- dca_de_pr
+- dca_de_pi
+- dca_pr_pi
+- dca_de_sv
+- dca_pr_sv
+- dca_pi_sv
+- chi2
+- tpcClus_de
+- tpcClus_pr
+- tpcClus_pi
+- hasTOF_de
+- hasTOF_pr
+# - hasTOF_pi
+
+
