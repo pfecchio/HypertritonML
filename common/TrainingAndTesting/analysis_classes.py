@@ -96,7 +96,14 @@ class TrainingAnalysis:
             os.makedirs(sigma_path)
 
         filename_sigma = sigma_path + '/sigma_array' + info_string + '.npy'
+        filename_sigma_error = sigma_path + '/sigma_array_error' + info_string + '.npy'
+        filename_mean = sigma_path + '/mean_array' + info_string + '.npy'
+        filename_mean_error = sigma_path + '/mean_array_error' + info_string + '.npy'
+
+        mean_dict = {}
+        mean_error_dict ={}
         sigma_dict = {}
+        sigma_error_dict ={}
 
         data[2]['score'] = data[2]['score'].astype(float)
 
@@ -110,15 +117,23 @@ class TrainingAnalysis:
 
             histo_minv.Fit('gaus', 'Q')
 
+            mean = histo_minv.GetFunction('gaus').GetParameter(1)
+            mean_error = histo_minv.GetFunction('gaus').GetParError(1)
             sigma = histo_minv.GetFunction('gaus').GetParameter(2)
             sigma_error = histo_minv.GetFunction('gaus').GetParError(2)
-            sigma = hau.round_to_error(sigma, sigma_error)
+            # sigma = hau.round_to_error(sigma, sigma_error)
 
             del histo_minv
 
+            mean_dict[f'{eff:.2f}'] = mean
+            mean_error_dict[f'{eff:.2f}'] = mean_error
             sigma_dict[f'{eff:.2f}'] = sigma
-
+            sigma_error_dict[f'{eff:.2f}'] = sigma_error
+        
+        np.save(filename_mean, np.array(mean_dict))
+        np.save(filename_mean_error, np.array(mean_error_dict))
         np.save(filename_sigma, np.array(sigma_dict))
+        np.save(filename_sigma_error, np.array(sigma_error_dict))
 
     def save_ML_analysis(
             self, model_handler, eff_score_array, cent_class, pt_range, ct_range, split=''):

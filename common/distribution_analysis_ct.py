@@ -222,7 +222,7 @@ for split in SPLIT_LIST:
         tmpCt = hRawCounts[0].Clone("tmpCt")
 
         combinations = set()
-        size = 100000
+        size = 1
         count=0
         for _ in range(size):
             tmpCt.Reset()

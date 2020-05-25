@@ -69,6 +69,10 @@ output_file = TFile(output_file_name, 'recreate')
 h2_rawcounts_dict = {}
 significance_dict = {}
 
+mean_fit = []
+mean_fit_error = []
+sigma_fit = []
+sigma_fit_error = []
 # if not specified do not use MC sigma
 mcsigma = -1
 
@@ -119,7 +123,14 @@ for split in SPLIT_LIST:
                         if SIGMA_MC:
                             mcsigma = sigma_dict.item().get(keff)
 
-                        rawcounts, err_rawcounts, significance, err_significance, _, _ = hau.fit_hist(hist, cclass, ptbin, ctbin, model=bkgmodel, fixsigma=mcsigma , mode=N_BODY)
+                        if key == input_subdir.GetListOfKeys()[0] and bkgmodel=="pol2":
+                            rawcounts, err_rawcounts, significance, err_significance, mu, mu_err, sigma, sigma_err = hau.fit_hist(hist, cclass, ptbin, ctbin, model=bkgmodel, fixsigma=mcsigma , mode=N_BODY)
+                            mean_fit.append(mu)
+                            mean_fit_error.append(mu_err)
+                            sigma_fit.append(sigma)
+                            sigma_fit_error.append(sigma_err)
+                        else:
+                            rawcounts, err_rawcounts, significance, err_significance, _, _, _, _ = hau.fit_hist(hist, cclass, ptbin, ctbin, model=bkgmodel, fixsigma=mcsigma , mode=N_BODY)
 
                         dict_key = f'{keff}_{bkgmodel}'
 
@@ -137,5 +148,20 @@ for split in SPLIT_LIST:
         h2_BDT_eff.Write()
         for lab in LABELS:
             h2_rawcounts_dict[lab].Write()
+        
+        hist_mean = h2_eff.ProjectionY("Mean", 1, 1)
+        hist_mean.SetTitle("; #it{c}t (cm); #mu (GeV/#it{c}^{2})")
+        hist_sigma = h2_eff.ProjectionY("Sigma", 1, 1)
+        hist_sigma.SetTitle( "; #it{c}t (cm); #sigma (GeV/#it{c}^{2})")
+
+
+        for iBin in range(1, hist_mean.GetNbinsX()+1):
+            hist_mean.SetBinContent(iBin, mean_fit[iBin-1])
+            hist_mean.SetBinError(iBin, mean_fit_error[iBin-1])
+            hist_sigma.SetBinContent(iBin, sigma_fit[iBin-1])
+            hist_sigma.SetBinError(iBin, sigma_fit_error[iBin-1])
+        
+        hist_mean.Write()
+        hist_sigma.Write()
 
 output_file.Close()

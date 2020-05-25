@@ -86,7 +86,7 @@ if TRAIN:
         ml_analysis = TrainingAnalysis(N_BODY, signal_path, bkg_path, split)
 
         for cclass in CENT_CLASSES:
-            ml_analysis.preselection_efficiency(cclass, CT_BINS, PT_BINS, split)
+            ml_analysis.preselection_efficiency(cclass, CT_BINS, [0, 10], split)
 
             for ptbin in zip(PT_BINS[:-1], PT_BINS[1:]):
                 for ctbin in zip(CT_BINS[:-1], CT_BINS[1:]):

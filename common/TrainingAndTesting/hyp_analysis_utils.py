@@ -196,6 +196,7 @@ def fit_hist(
 
     # get the fit parameters
     mu = fit_tpl.GetParameter(n_bkgpars+1)
+    muErr = fit_tpl.GetParError(n_bkgpars+1)
     sigma = fit_tpl.GetParameter(n_bkgpars+2)
     sigmaErr = fit_tpl.GetParError(n_bkgpars+2)
     signal = fit_tpl.GetParameter(n_bkgpars) / histo.GetBinWidth(1)
@@ -262,4 +263,4 @@ def fit_hist(
     histo.Write()
     cv.Write()
 
-    return (signal, errsignal, signif, errsignif, sigma, sigmaErr)
+    return (signal, errsignal, signif, errsignif, mu, muErr, sigma, sigmaErr)
