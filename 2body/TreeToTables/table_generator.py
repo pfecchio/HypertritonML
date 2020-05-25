@@ -10,7 +10,7 @@ gROOT.LoadMacro("GenerateTableFromData.cc")
 from ROOT import GenerateTableFromMC, GenerateTableFromData
 
 input_dir = os.environ['HYPERML_DATA_2']+ "/splines_trees"
-output_dir = os.environ['HYPERML_TABLES_2']+ "/kf_tables"
+output_dir = os.environ['HYPERML_TABLES_2']+ "/splines_tables"
 
 print("++++++++++++++++++++++++++++++++++++++++++")
 print("Generate Signal Table")

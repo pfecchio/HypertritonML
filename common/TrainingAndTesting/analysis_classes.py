@@ -209,9 +209,11 @@ class ModelApplication:
         if isinstance(skimmed_data, pd.DataFrame):
             self.df_data = skimmed_data
         if skimmed_data is 0:
-            self.df_data = uproot.open(data_filename)['DataTable'].pandas.df().query('has_tof_de==True and has_tof_pr==True')
+            if(self.mode ==3):
+                self.df_data = uproot.open(data_filename)['DataTable'].pandas.df().query('has_tof_de==True and has_tof_pr==True')
+            else:
+                self.df_data = uproot.open(data_filename)['DataTable'].pandas.df()
 
-        self.df_data = uproot.open(data_filename)['DataTable'].pandas.df()
         if analysis_res_filename == data_filename:
             self.hist_centrality = uproot.open(data_filename)['EventCounter']
         else:

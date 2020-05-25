@@ -67,9 +67,10 @@ distribution = TFile(file_name, 'recreate')
 file_name = resultsSysDir + '/' + params['FILE_PREFIX'] + '_results_fit.root'
 results_file = TFile(file_name, 'read')
 
-# abs_file_name = os.environ['HYPERML_UTILS_{}'.format(params['NBODY'])] + '/he3abs/recCtHe3.root'
-# absorp_file = TFile(abs_file_name)
-# absorp_hist = absorp_file.Get('Reconstructed ct spectrum')
+if(params["NBODY"]==2):
+    abs_file_name = os.environ['HYPERML_UTILS_{}'.format(params['NBODY'])] + '/he3abs/recCtHe3.root'
+    absorp_file = TFile(abs_file_name)
+    absorp_hist = absorp_file.Get('Reconstructed ct spectrum')
 
 bkgModels = params['BKG_MODELS'] if 'BKG_MODELS' in params else ['expo']
 hist_list = []
@@ -81,8 +82,17 @@ for split in SPLIT_LIST:
         h2BDTEff = results_file.Get(f'{inDirName}/BDTeff')
         h1BDTEff = h2BDTEff.ProjectionY("bdteff", 1, 1)
 
-        best_sig = [0.81, 0.88, 0.83, 0.86, 0.84, 0.85]
-        sig_ranges = [[0.70, 90, 0.01], [0.80, 0.95, 0.01], [0.70, 0.90, 0.01], [0.79, 0.94, 0.01], [0.79, 0.90, 0.01], [0.83, 0.90, 0.01]]
+        if(params['NBODY']==2):
+            best_sig = np.round(np.array(h1BDTEff)[1:-1], 2)
+            sig_ranges = []
+            for i in best_sig:
+                if i== best_sig[0]:
+                    sig_ranges.append([i-0.03, i+0.03, 0.01])
+                else:
+                    sig_ranges.append([i-0.1, i+0.1, 0.01])
+        else:
+            best_sig = [0.81, 0.88, 0.83, 0.86, 0.84, 0.85]
+            sig_ranges = [[0.70, 90, 0.01], [0.80, 0.95, 0.01], [0.70, 0.90, 0.01], [0.79, 0.94, 0.01], [0.79, 0.90, 0.01], [0.83, 0.90, 0.01]]
 
         ranges = {
                 'BEST': best_sig,
@@ -117,10 +127,15 @@ for split in SPLIT_LIST:
 
             for iBin in range(1, h1RawCounts.GetNbinsX() + 1):
                 h2RawCounts = results_file.Get(f'{inDirName}/RawCounts{ranges["BEST"][iBin-1]:.2f}_{model}')
+
+                abs_corr = 1
+                if(params["NBODY"]==2):
+                    abs_corr = 1-absorp_hist.GetBinContent(iBin)
+
                 h1RawCounts.SetBinContent(iBin, h2RawCounts.GetBinContent(
-                    1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin))
+                    1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin)/abs_corr)
                 h1RawCounts.SetBinError(iBin, h2RawCounts.GetBinError(
-                    1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin))
+                    1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin)/abs_corr)
                 raws.append([])
                 errs.append([])
 
@@ -130,9 +145,9 @@ for split in SPLIT_LIST:
 
                     h2RawCounts = results_file.Get(f'{inDirName}/RawCounts{eff:.2f}_{model}')
                     raws[iBin-1].append(h2RawCounts.GetBinContent(1,
-                                                                iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin))
+                                                                iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/abs_corr)
                     errs[iBin-1].append(h2RawCounts.GetBinError(1,
-                                                                iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin))
+                                                                iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/abs_corr)
 
 
             # h1RawCounts.Divide(absorp_hist)
