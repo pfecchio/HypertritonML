@@ -196,23 +196,9 @@ class ModelApplication:
         if isinstance(skimmed_data, pd.DataFrame):
             self.df_data = skimmed_data
         if skimmed_data is 0:
-<<<<<<< HEAD
-            self.df_data = uproot.open(data_filename)['DataTable'].pandas.df()
-        if mode==3:
-            file_q = TFile(os.path.dirname(data_filename) + '/DataTableQ.root', 'read')
-            file_r = TFile(os.path.dirname(data_filename) + '/DataTableR.root', 'read')
-            self.hist_centrality = uproot.open(os.path.dirname(data_filename) + '/DataTableQ.root')['EventCounter']
-            _hist_cent_r = uproot.open(os.path.dirname(data_filename) + '/DataTableR.root')['EventCounter']
-            self.hist_centrality[:] = self.hist_centrality.values + _hist_cent_r.values
-        
-        else:
-            self.hist_centrality = uproot.open(data_filename)['EventCounter']
-
-=======
             self.df_data = uproot.open(data_filename)['DataTable'].pandas.df().query('has_tof_de==True and has_tof_pr==True')
 
         self.hist_centrality = uproot.open(data_filename)['EventCounter']
->>>>>>> analysis with the KFP vertexer works
 
         for cent in cent_classes:
             self.n_events.append(sum(self.hist_centrality[cent[0] + 1:cent[1]]))
@@ -366,9 +352,6 @@ class ModelApplication:
         print('Significance scan: Done!')
 
         # return max_score, bdt_eff_max_score, max_significance
-<<<<<<< HEAD
-        return bdt_eff_max_score, max_score
-=======
         return bdt_eff_max_score, max_score
 
 
@@ -421,4 +404,3 @@ def get_skimmed_large_data(data_path, cent_classes, pt_bins, ct_bins, training_c
                     df_applied = df_applied.append(df_tmp, ignore_index=True, sort=False)
     
     return df_applied
->>>>>>> analysis with the KFP vertexer works
