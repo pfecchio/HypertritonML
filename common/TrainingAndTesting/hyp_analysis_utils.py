@@ -1,18 +1,79 @@
 import io
 import math
 import os
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import redirect_stdout
 from math import floor, log10
 
 import numpy as np
 
+import pandas as pd
+import uproot
 import xgboost as xgb
+from hipe4ml.model_handler import ModelHandler
 from ROOT import ROOT as RR
 from ROOT import (TF1, TH1D, TH2D, TH3D, TCanvas, TFile, TPaveStats, TPaveText,
                   gDirectory, gStyle)
 
 
+def get_skimmed_large_data(data_path, cent_classes, pt_bins, ct_bins, training_columns, application_columns, mode):
+    print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
+    print ('\nStarting BDT appplication on large data')
+
+    executor = ThreadPoolExecutor(8)
+    iterator = uproot.pandas.iterate(data_path, 'DataTable', executor=executor)
+
+    df_applied = pd.DataFrame()
+
+    counter = 0
+    for data in iterator:
+        counter += len(data)
+        if mode == 3:
+            data = data.query(
+                'cosPA>0.99 and (0<chi2_deuprot<50) and (0<chi2_3prongs<50) and (0<chi2_topology<150)')
+            data['pt'] = abs(data.pt)
+        for cclass in cent_classes:
+            for ptbin in zip(pt_bins[:-1], pt_bins[1:]):
+                for ctbin in zip(ct_bins[:-1], ct_bins[1:]):
+                    info_string = '_{}{}_{}{}_{}{}'.format(
+                        cclass[0], cclass[1], ptbin[0], ptbin[1], ctbin[0], ctbin[1])
+
+                    if mode == 2:
+                        handlers_path = os.environ['HYPERML_MODELS_2'] + \
+                            '/handlers'
+                        efficiencies_path = os.environ['HYPERML_EFFICIENCIES_2']
+                    else:
+                        handlers_path = os.environ['HYPERML_MODELS_3'] + \
+                            '/handlers'
+                        efficiencies_path = os.environ['HYPERML_EFFICIENCIES_3']
+
+                    filename_handler = handlers_path + '/model_handler' + info_string + '.pkl'
+                    filename_efficiencies = efficiencies_path + '/Eff_Score' + info_string + '.npy'
+
+                    model_handler = ModelHandler()
+                    model_handler.load_model_handler(filename_handler)
+
+                    eff_score_array = np.load(filename_efficiencies)
+                    tsd = eff_score_array[1][-1] - 1
+
+                    data_range = f'{ctbin[0]}<ct<{ctbin[1]} and {ptbin[0]}<pt<{ptbin[1]}'
+
+                    df_tmp = data.query(data_range)
+                    df_tmp.insert(0, 'score', model_handler.predict(
+                        df_tmp[training_columns]))
+
+                    df_tmp = df_tmp.query('score>@tsd')
+                    df_tmp = df_tmp.loc[:, application_columns]
+
+                    df_applied = df_applied.append(
+                        df_tmp, ignore_index=True, sort=False)
+
+    print(counter)
+    return df_applied
+
 # nevents assumed to be the number of events in 1% bins
+
+
 def expected_signal_counts(bw, cent_range, pt_range, eff, nevents, n_body=2):
     correction = 0.4  # Very optimistic, considering it constant with centrality
 
@@ -27,7 +88,9 @@ def expected_signal_counts(bw, cent_range, pt_range, eff, nevents, n_body=2):
     for cent in range(cent_range[0]+1, cent_range[1]):
         for index in range(0, 3):
             if cent < cent_bins[index]:
-                signal = signal + nevents[cent] * bw[index].Integral(pt_range[0], pt_range[1], 1e-8)
+                signal = signal + \
+                    nevents[cent] * \
+                    bw[index].Integral(pt_range[0], pt_range[1], 1e-8)
                 break
 
     return int(round(2*signal * eff * correction))
@@ -154,7 +217,8 @@ def fit_hist(
 
     # define limits for the sigma if provided
     if sigma_limits != None:
-        fit_tpl.SetParameter(n_bkgpars + 2, 0.5 * (sigma_limits[0] + sigma_limits[1]))
+        fit_tpl.SetParameter(n_bkgpars + 2, 0.5 *
+                             (sigma_limits[0] + sigma_limits[1]))
         fit_tpl.SetParLimits(n_bkgpars + 2, sigma_limits[0], sigma_limits[1])
     # if the mc sigma is provided set the sigma to that value
     elif fixsigma > 0:
@@ -201,7 +265,8 @@ def fit_hist(
     sigmaErr = fit_tpl.GetParError(n_bkgpars+2)
     signal = fit_tpl.GetParameter(n_bkgpars) / histo.GetBinWidth(1)
     errsignal = fit_tpl.GetParError(n_bkgpars) / histo.GetBinWidth(1)
-    bkg = bkg_tpl.Integral(mu - nsigma * sigma, mu + nsigma * sigma) / histo.GetBinWidth(1)
+    bkg = bkg_tpl.Integral(mu - nsigma * sigma, mu +
+                           nsigma * sigma) / histo.GetBinWidth(1)
 
     if bkg > 0:
         errbkg = math.sqrt(bkg)
@@ -264,3 +329,13 @@ def fit_hist(
     cv.Write()
 
     return (signal, errsignal, signif, errsignif, mu, muErr, sigma, sigmaErr)
+    return (signal, errsignal, signif, errsignif, sigma, sigmaErr)
+
+
+def load_mcsigma(cent_class, pt_range, ct_range, mode, split=''):
+    info_string = f'_{cent_class[0]}{cent_class[1]}_{pt_range[0]}{pt_range[1]}_{ct_range[0]}{ct_range[1]}{split}'
+    sigma_path = os.environ['HYPERML_UTILS_{}'.format(mode)] + '/FixedSigma'
+
+    file_name = f'{sigma_path}/sigma_array{info_string}.npy'
+
+    return np.load(file_name)

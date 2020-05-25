@@ -10,7 +10,7 @@ import yaml
 
 import hyp_analysis_utils as hau
 
-from analysis_classes import load_mcsigma
+
 from ROOT import TH1D, TFile, gROOT
 
 # avoid pandas warning
@@ -106,7 +106,7 @@ for split in SPLIT_LIST:
                 output_subdir.cd()
 
                 if SIGMA_MC:
-                    sigma_dict = load_mcsigma(cclass, ptbin, ctbin, N_BODY, split)
+                    sigma_dict = hau.load_mcsigma(cclass, ptbin, ctbin, N_BODY, split)
 
                 for bkgmodel in BKG_MODELS:
                     # create dirs for models

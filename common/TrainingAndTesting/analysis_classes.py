@@ -1,6 +1,8 @@
 # this class has been created to generalize the training and to open the file.root just one time
 # to achive that alse analysis_utils.py and Significance_Test.py has been modified
 import os
+import sys
+from concurrent.futures import ThreadPoolExecutor
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,7 +14,7 @@ import uproot
 import xgboost as xgb
 from hipe4ml import analysis_utils, plot_utils
 from hipe4ml.model_handler import ModelHandler
-from ROOT import TF1, TH1D, TH2D, TFile, gDirectory
+from ROOT import TF1, TH1, TH1D, TH2D, TFile, gDirectory
 from root_numpy import fill_hist
 from sklearn.model_selection import train_test_split
 
@@ -26,10 +28,12 @@ class TrainingAnalysis:
         print('\nStarting BDT training and testing ')
         print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
 
+        sidebands_selection = 'not (2.965<m<3.015) and has_tof_de==True'
+
         if self.mode == 3:
-            self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df()
-            self.df_generated = uproot.open(mc_file_name)['GenerateTable'].pandas.df()
-            self.df_bkg = uproot.open(bkg_file_name)['BackgroundTable'].pandas.df()
+            self.df_signal = uproot.open(mc_file_name)['Table'].pandas.df().query('has_tof_de==True')
+            self.df_generated = uproot.open(mc_file_name)['GenTable'].pandas.df()
+            self.df_bkg = uproot.open(bkg_file_name)['Table'].pandas.df().sample(n=20000000).query(sidebands_selection)
 
         if self.mode == 2:
             self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df()
@@ -54,8 +58,8 @@ class TrainingAnalysis:
         pres_histo = hau.h2_preselection_efficiency(pt_bins, ct_bins)
         gen_histo = hau.h2_generated(pt_bins, ct_bins)
 
-        fill_hist(pres_histo, self.df_signal.query(cent_cut)[['HypCandPt', 'ct']])
-        fill_hist(gen_histo, self.df_generated.query(cent_cut)[['pT', 'ct']])
+        fill_hist(pres_histo, self.df_signal.query(cent_cut)[['pt', 'ct']])
+        fill_hist(gen_histo, self.df_generated.query(cent_cut)[['pt', 'ct']])
 
         pres_histo.Divide(gen_histo)
 
@@ -71,7 +75,7 @@ class TrainingAnalysis:
         return pres_histo
 
     def prepare_dataframe(self, training_columns, cent_class, pt_range, ct_range, test_size=0.5):
-        data_range = f'{ct_range[0]}<ct<{ct_range[1]} and {pt_range[0]}<HypCandPt<{pt_range[1]} and {cent_class[0]}<centrality<{cent_class[1]}'
+        data_range = f'{ct_range[0]}<ct<{ct_range[1]} and {pt_range[0]}<pt<{pt_range[1]} and {cent_class[0]}<=centrality<{cent_class[1]}'
 
         sig = self.df_signal.query(data_range)
         bkg = self.df_bkg.query(data_range)
@@ -82,7 +86,7 @@ class TrainingAnalysis:
         df = pd.concat([self.df_signal.query(data_range), self.df_bkg.query(data_range)])
 
         train_set, test_set, y_train, y_test = train_test_split(
-            df[training_columns + ['InvMass']], df['y'], test_size=test_size, random_state=42)
+            df[training_columns + ['m']], df['y'], test_size=test_size, random_state=42)
 
         return [train_set, y_train, test_set, y_test]
 
@@ -110,7 +114,7 @@ class TrainingAnalysis:
         mass_bins = 40 if ct_range[1] < 16 else 36
 
         for eff, cut in zip(eff_score_array[0], eff_score_array[1]):
-            counts = data[2][data[3].astype(bool)].query('score>@cut')['InvMass']
+            counts = data[2][data[3].astype(bool)].query('score>@cut')['m']
 
             histo_minv = hau.h1_invmass(inv_mass_array, cent_class, pt_range, ct_range, bins=mass_bins)
             fill_hist(histo_minv, counts)
@@ -184,24 +188,28 @@ class TrainingAnalysis:
 
         bdt_eff_plot.savefig(bdt_eff_dir + '/BDT_Eff' + info_string + '.pdf')
 
-        # FEATURES_IMPORTANCE = plot_utils.plot_feature_imp(data[2], data[3], model_handler)
-        # if not os.path.exists(feat_imp_dir):
-        #     os.makedirs(feat_imp_dir)
+        feat_imp = plot_utils.plot_feature_imp(data[2][model_handler.get_original_model().get_booster().feature_names], data[3], model_handler)
+        if not os.path.exists(feat_imp_dir):
+            os.makedirs(feat_imp_dir)
 
-        # plt.savefig(feat_imp_dir + '/FeatImp' + info_string + '.pdf')
+        plt.savefig(feat_imp_dir + '/FeatImp' + info_string + '.pdf')
 
         print('ML plots saved.\n')
 
 
 class ModelApplication:
 
-    def __init__(self, mode, data_filename, analysis_res_filename,cent_classes, split):
+    def __init__(self, mode, data_filename, analysis_res_filename,cent_classes, split,  skimmed_data=0):
 
         print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
         print('\nStarting BDT appplication and signal extraction')
 
         self.mode = mode
         self.n_events = []
+        if isinstance(skimmed_data, pd.DataFrame):
+            self.df_data = skimmed_data
+        if skimmed_data is 0:
+            self.df_data = uproot.open(data_filename)['DataTable'].pandas.df().query('has_tof_de==True and has_tof_pr==True')
 
         self.df_data = uproot.open(data_filename)['DataTable'].pandas.df()
         if analysis_res_filename == data_filename:
@@ -267,7 +275,7 @@ class ModelApplication:
     def apply_BDT_to_data(self, model_handler, cent_class, pt_range, ct_range, training_columns, application_columns):
         print('\nApplying BDT to data: ...')
 
-        data_range = f'{ct_range[0]}<ct<{ct_range[1]} and {pt_range[0]}<HypCandPt<{pt_range[1]} and {cent_class[0]}<centrality<{cent_class[1]}'
+        data_range = f'{ct_range[0]}<ct<{ct_range[1]} and {pt_range[0]}<pt<{pt_range[1]} and {cent_class[0]}<=centrality<{cent_class[1]}'
         df_applied = self.df_data.query(data_range)
 
         df_applied.insert(0, 'score', model_handler.predict(df_applied[training_columns]))
@@ -278,13 +286,17 @@ class ModelApplication:
         return df_applied
 
     def get_data_slice(self, cent_class, pt_range, ct_range, application_columns):
-        data_range = f'{ct_range[0]}<ct<{ct_range[1]} and {pt_range[0]}<HypCandPt<{pt_range[1]} and {cent_class[0]}<centrality<{cent_class[1]}'
+        data_range = f'{ct_range[0]}<ct<{ct_range[1]} and {pt_range[0]}<pt<{pt_range[1]} and {cent_class[0]}<=centrality<{cent_class[1]}'
 
         return self.df_data.query(data_range)[application_columns]
 
     def significance_scan(
             self, df_bkg, pre_selection_efficiency, eff_score_array, cent_class, pt_range, ct_range, split='', mass_bins=40):
         print('\nSignificance scan: ...')
+
+        hyp_lifetime = 253
+        hist_range = [2.96, 3.04]
+
 
         bdt_efficiency = eff_score_array[0]
         threshold_space = eff_score_array[1]
@@ -295,8 +307,6 @@ class ModelApplication:
         significance_custom = []
         significance_custom_error = []
 
-        hyp_lifetime = 206
-
         bw_file = TFile(os.environ['HYPERML_UTILS'] + '/BlastWaveFits.root', 'read')
         bw = [bw_file.Get("BlastWave/BlastWave{}".format(i)) for i in [0, 1, 2]]
         bw_file.Close()
@@ -304,7 +314,7 @@ class ModelApplication:
         for index, tsd in enumerate(threshold_space):
             df_selected = df_bkg.query('score>@tsd')
 
-            counts, bins = np.histogram(df_selected['InvMass'], bins=mass_bins, range=[2.96, 3.04])
+            counts, bins = np.histogram(df_selected['m'], bins=mass_bins, range=hist_range)
             bin_centers = 0.5 * (bins[1:] + bins[:-1])
 
             side_map = (bin_centers < 2.98) + (bin_centers > 3.005)
@@ -317,7 +327,7 @@ class ModelApplication:
 
             exp_signal_ctint = hau.expected_signal_counts(
                 bw, cent_class, pt_range, pre_selection_efficiency * bdt_efficiency[index],
-                self.hist_centrality)
+                self.hist_centrality, self.mode)
 
             if split is not '':
                 exp_signal_ctint = 0.5 * exp_signal_ctint
@@ -352,7 +362,7 @@ class ModelApplication:
         data_range_array = [ct_range[0], ct_range[1], pt_range[0], pt_range[1], cent_class[0], cent_class[1]]
         hpu.plot_significance_scan(
             max_index, significance_custom, significance_custom_error, expected_signal, df_bkg, threshold_space,
-            data_range_array, bin_centers, nevents, self.mode, split, mass_bins)
+            data_range_array, nevents, self.mode, split, mass_bins, hist_range)
 
         bdt_eff_max_score = bdt_efficiency[max_index]
 
@@ -369,3 +379,45 @@ def load_mcsigma(cent_class, pt_range, ct_range, mode, split=''):
     file_name = f'{sigma_path}/sigma_array{info_string}.npy'
 
     return np.load(file_name)
+
+
+def get_skimmed_large_data(data_path, cent_classes, pt_bins, ct_bins, training_columns, application_columns):
+    print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
+    print ('\nStarting BDT appplication on large data')
+
+    executor = ThreadPoolExecutor(8)
+    iterator = uproot.pandas.iterate(data_path, 'Table', executor=executor)
+
+    df_applied = pd.DataFrame()
+
+    counter = 0
+    for data in iterator:
+        counter+=len(data)
+        for cclass in cent_classes:
+            for ptbin in zip(pt_bins[:-1], pt_bins[1:]):
+                for ctbin in zip(ct_bins[:-1], ct_bins[1:]):
+
+                    info_string = '_{}{}_{}{}_{}{}'.format(cclass[0], cclass[1], ptbin[0], ptbin[1], ctbin[0], ctbin[1])
+                    handlers_path = os.environ['HYPERML_MODELS_3'] + '/handlers'
+                    efficiencies_path = os.environ['HYPERML_EFFICIENCIES_3']
+
+                    filename_handler = handlers_path + '/model_handler' + info_string + '.pkl'
+                    filename_efficiencies = efficiencies_path + '/Eff_Score' + info_string + '.npy'
+
+                    model_handler = ModelHandler()
+                    model_handler.load_model_handler(filename_handler)
+
+                    eff_score_array = np.load(filename_efficiencies)
+                    tsd = eff_score_array[1][-1] - 1
+
+                    data_range = f'{ctbin[0]}<ct<{ctbin[1]} and {ptbin[0]}<pt<{ptbin[1]} and {ctbin[0]}<=centrality<{ctbin[1]}'
+
+                    df_tmp = data.query(data_range)
+                    df_tmp.insert(0, 'score', model_handler.predict(df_tmp[training_columns]))
+
+                    df_tmp = df_tmp.query('score>@tsd')
+                    df_tmp = df_tmp.loc[:, application_columns]
+
+                    df_applied = df_applied.append(df_tmp, ignore_index=True, sort=False)
+    
+    return df_applied

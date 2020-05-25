@@ -23,10 +23,10 @@ public:
 private:
   TTree *tree;
   TF1 *fHe3TPCcalib;
-  float HypCandPt;
+  float pt;
   float TPCnSigmaHe3;
   float ct;
-  float InvMass;
+  float m;
   float ArmenterosAlpha;
   float V0CosPA;
   float V0Chi2;
@@ -63,10 +63,10 @@ Table2::Table2(std::string name, std::string title)
   fHe3TPCcalib = dynamic_cast<TF1 *>(calibFile.Get("He3TPCCalib")->Clone());
   calibFile.Close();
 
-  tree->Branch("HypCandPt", &HypCandPt);
+  tree->Branch("pt", &pt);
   tree->Branch("TPCnSigmaHe3", &TPCnSigmaHe3);
   tree->Branch("ct", &ct);
-  tree->Branch("InvMass", &InvMass);
+  tree->Branch("m", &m);
   tree->Branch("ArmenterosAlpha", &ArmenterosAlpha);
   tree->Branch("V0CosPA", &V0CosPA);
   tree->Branch("V0Chi2", &V0Chi2);
@@ -123,7 +123,7 @@ void Table2::Fill(const RHyperTritonHe3pi &RHyper, const RCollision &RColl)
 
   float alpha = (qP - qN) / (qP + qN);
   ct = kHyperTritonMass * (Hypot(RHyper.fDecayX, RHyper.fDecayY, RHyper.fDecayZ) / hyperVector.P());
-  InvMass = hyperVector.M();
+  m = hyperVector.M();
   ArmenterosAlpha = alpha;
   V0CosPA = CosPA;
   V0Chi2 = RHyper.fChi2V0;
@@ -143,7 +143,7 @@ void Table2::Fill(const RHyperTritonHe3pi &RHyper, const RCollision &RColl)
   TPCnSigmaHe3 = RHyper.fTPCnSigmaHe3;
   TOFnSigmaHe3 = RHyper.fTOFnSigmaHe3;
   TOFnSigmaPi = RHyper.fTOFnSigmaPi;
-  HypCandPt = hyperVector.Pt();
+  pt = hyperVector.Pt();
   Rapidity = hyperVector.Rapidity();
   Matter = RHyper.fMatter;
   PseudoRapidityHe3 = he3Vector.PseudoRapidity();

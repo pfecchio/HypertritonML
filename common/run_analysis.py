@@ -10,7 +10,7 @@ import yaml
 import hyp_analysis_utils as hau
 import pandas as pd
 import xgboost as xgb
-from analysis_classes import ModelApplication, TrainingAnalysis
+from analysis_classes import (ModelApplication, TrainingAnalysis)
 from hipe4ml import analysis_utils, plot_utils
 from hipe4ml.model_handler import ModelHandler
 from ROOT import TFile, gROOT
@@ -42,6 +42,8 @@ with open(os.path.expandvars(args.config), 'r') as stream:
 # define analysis global variables
 N_BODY = params['NBODY']
 FILE_PREFIX = params['FILE_PREFIX']
+LARGE_DATA = params['LARGE_DATA']
+LOAD_LARGE_DATA = params['LOAD_LARGE_DATA']
 
 CENT_CLASSES = params['CENTRALITY_CLASS']
 PT_BINS = params['PT_BINS']
@@ -84,6 +86,7 @@ start_time = time.time()                          # for performances evaluation
 if TRAIN:
     for split in SPLIT_LIST:
         ml_analysis = TrainingAnalysis(N_BODY, signal_path, bkg_path, split)
+        print(f'--- analysis initialized in {((time.time() - start_time) / 60):.2f} minutes ---\n')
 
         for cclass in CENT_CLASSES:
             ml_analysis.preselection_efficiency(cclass, CT_BINS, [0, 10], split)
@@ -96,7 +99,7 @@ if TRAIN:
                     part_time = time.time()
 
                     # data[0]=train_set, data[1]=y_train, data[2]=test_set, data[3]=y_test
-                    data = ml_analysis.prepare_dataframe(COLUMNS, cclass, ct_range=ctbin, pt_range=ptbin)
+                    data = ml_analysis.prepare_dataframe(COLUMNS, cent_class=cclass, ct_range=ctbin, pt_range=ptbin)
 
                     input_model = xgb.XGBClassifier()
                     model_handler = ModelHandler(input_model)
@@ -111,7 +114,7 @@ if TRAIN:
 
                     model_handler.train_test_model(data)
 
-                    print(f'--- model trained in {((time.time() - part_time) / 60):.2f} minutes ---\n')
+                    print(f'--- model trained and tested in {((time.time() - part_time) / 60):.2f} minutes ---\n')
 
                     y_pred = model_handler.predict(data[2])
                     data[2].insert(0, 'score', y_pred)
@@ -136,14 +139,28 @@ if TRAIN:
 
 if APPLICATION:
     app_time = time.time()
-    application_columns = ['score', 'InvMass', 'ct', 'HypCandPt', 'centrality']
+    application_columns = ['score', 'm', 'ct', 'pt', 'centrality']
 
     # create output file
     file_name = results_dir + f'/{FILE_PREFIX}_results.root'
     results_file = TFile(file_name, 'recreate')
 
     for split in SPLIT_LIST:
+<<<<<<< HEAD
         ml_application = ModelApplication(N_BODY, data_path, analysis_res_path,CENT_CLASSES, split)
+=======
+        if LARGE_DATA:
+            if LOAD_LARGE_DATA:
+                df_skimmed = pd.read_parquet(os.path.dirname(data_path) + '/skimmed_df.parquet.gzip')
+            else:
+                df_skimmed = hau.get_skimmed_large_data(data_path, CENT_CLASSES, PT_BINS, CT_BINS, COLUMNS, application_columns, N_BODY)
+                df_skimmed.to_parquet(os.path.dirname(data_path) + '/skimmed_df.parquet.gzip', compression='gzip')
+
+            ml_application = ModelApplication(N_BODY, data_path, CENT_CLASSES, split, df_skimmed)
+
+        else:
+            ml_application = ModelApplication(N_BODY, data_path, CENT_CLASSES, split)
+>>>>>>> dev-kf
 
         for cclass in CENT_CLASSES:
             # create output structure
@@ -160,14 +177,18 @@ if APPLICATION:
                     print('\n==================================================')
                     print('centrality:', cclass, ' ct:', ctbin, ' pT:', ptbin, split)
                     print('Application and signal extraction ...', end='\r')
+                    mass_bins = 40 if ctbin[1] < 16 else 36
 
                     presel_eff = ml_application.get_preselection_efficiency(ptbin_index, ctbin_index)
                     eff_score_array, model_handler = ml_application.load_ML_analysis(cclass, ptbin, ctbin, split)
-                    mass_bins = 40 if ctbin[1] < 16 else 36
 
                     if N_BODY == 2:
-                        df_applied = ml_application.apply_BDT_to_data(
-                            model_handler, cclass, ptbin, ctbin, model_handler.get_training_columns(), application_columns)
+                        if LARGE_DATA:
+                           df_applied = ml_application.get_data_slice(cclass, ptbin, ctbin, application_columns)
+                        else: 
+                            df_applied = ml_application.apply_BDT_to_data(
+                                model_handler, cclass, ptbin, ctbin, model_handler.get_training_columns(), application_columns)
+
 
                     if N_BODY == 3:
                         df_applied = ml_application.get_data_slice(cclass, ptbin, ctbin, application_columns)
@@ -176,12 +197,13 @@ if APPLICATION:
                         sigscan_eff, sigscan_tsd = ml_application.significance_scan(
                             df_applied, presel_eff, eff_score_array, cclass, ptbin, ctbin, split, mass_bins)
                         eff_score_array = np.append(eff_score_array, [[sigscan_eff], [sigscan_tsd]], axis=1)
+
                     # define subdir for saving invariant mass histograms
                     sub_dir = cent_dir.mkdir(f'ct_{ctbin[0]}{ctbin[1]}') if 'ct' in FILE_PREFIX else cent_dir.mkdir(f'pt_{ptbin[0]}{ptbin[1]}')
                     sub_dir.cd()
-                    for eff, tsd in zip(pd.unique(eff_score_array[0][::-1]), pd.unique(eff_score_array[1][::-1])):
 
-                        mass_array = np.array(df_applied.query('score>@tsd')['InvMass'].values, dtype=np.float64)
+                    for eff, tsd in zip(pd.unique(eff_score_array[0][::-1]), pd.unique(eff_score_array[1][::-1])):
+                        mass_array = np.array(df_applied.query('score>@tsd')['m'].values, dtype=np.float64)
                         counts, _ = np.histogram(mass_array, bins=mass_bins, range=[2.96, 3.05])
 
                         histo_name = f'eff{eff:.2f}'

@@ -1,23 +1,21 @@
 NBODY: 3
-FILE_PREFIX: "ct_analysis"
+FILE_PREFIX: "ct_analysis_o2"
+
+LARGE_DATA: True
+LOAD_LARGE_DATA: False
 
 CENTRALITY_CLASS:
   - [0, 90]
-# CT_BINS: [1, 2, 4, 6, 8, 10, 14, 18, 23, 35, 50]
-CT_BINS: [2, 35]
-# CT_BINS: [0, 1000]
-# PT_BINS: [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10]
-PT_BINS: [1, 10]
+CT_BINS: [2, 4, 6, 8, 10, 16, 35]
+PT_BINS: [2, 10]
 
 BKG_MODELS: ["expo", "pol1", "pol2"]
 
-BDT_EFFICIENCY: [0.40, 1., 0.01] # min, max ,step
+BDT_EFFICIENCY: [0.50, 1., 0.01] # min, max ,step
 
-MC_PATH: $HYPERML_TABLES_3/KFP/SignalTable.root
-BKG_PATH: $HYPERML_TABLES_3/KFP/TableLS.root
-# DATA_PATH: $HYPERML_TABLES_3/KFP/DataTable.root
-DATA_PATH: ~/hyper3data/data/LHC18r/Table.parquet.gzip
-# DATA_PATH: ~/hyper3data/data/LHC18r/012/Table.root
+MC_PATH: $HYPERML_TABLES_3/O2/NewSignalTable.root
+BKG_PATH: $HYPERML_TABLES_3/O2/AllDataTable.root
+DATA_PATH: $HYPERML_TABLES_3/O2/AllDataTable.root
 
 XGBOOST_PARAMS:
   # general parameters
@@ -29,18 +27,16 @@ XGBOOST_PARAMS:
   eval_metric: auc
   tree_method: hist
 
-SIGMA_MC: False
-
-IS_DASK: True
+SIGMA_MC: True
 
 HYPERPARAMS:
-  max_depth: 7
-  learning_rate: 0.1862
-  n_estimators: 477
-  gamma: 0.3372
-  min_child_weight: 1.716
-  subsample: 0.8863
-  colsample_bytree: 0.737
+  max_depth: 5
+  learning_rate: 0.08045
+  n_estimators: 500
+  gamma: 0.8596
+  min_child_weight: 11.46
+  subsample: 0.6112
+  colsample_bytree: 0.7719
   seed: 42
 
 HYPERPARAMS_RANGE: #TODO: check if it works without tuples
@@ -58,18 +54,18 @@ HYPERPARAMS_RANGE: #TODO: check if it works without tuples
 TRAINING_COLUMNS:
   - cosPA
   - pt
-  - tpcClus_de
-  - tpcClus_pr
-  - tpcClus_pi
-  - tpcNsig_de
-  - tpcNsig_pr
-  - tpcNsig_pi
-  - tofNsig_de
-  - tofNsig_pr
-  - tofNsig_pi
-  - hasTOF_de
-  - hasTOF_pr
-  - hasTOF_pi
+  - tpc_nclus_de
+  - tpc_nclus_pr
+  - tpc_nclus_pi
+  - tpc_nsig_de
+  - tpc_nsig_pr
+  - tpc_nsig_pi
+  - tof_nsig_de
+  - tof_nsig_pr
+  # - tof_nsig_pi
+  # - has_tof_de
+  - has_tof_pr
+  # - has_tof_pi
   - dca_de
   - dca_pr
   - dca_pi

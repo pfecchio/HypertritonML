@@ -35,7 +35,7 @@ class GenTable2 {
 GenTable2::GenTable2(std::string name, std::string title) {
   tree = new TTree(name.data(), title.data());
 
-  tree->Branch("pT", &Pt);
+  tree->Branch("pt", &Pt);
   tree->Branch("rapidity", &Rapidity);
   tree->Branch("phi", &Phi);
   tree->Branch("ct", &Ct);
