@@ -112,7 +112,7 @@ if TRAIN:
 
                     model_handler.train_test_model(data)
 
-                    print(f'--- model trained in {((time.time() - part_time) / 60):.2f} minutes ---\n')
+                    print(f'--- model trained and tested in {((time.time() - part_time) / 60):.2f} minutes ---\n')
 
                     y_pred = model_handler.predict(data[2])
                     data[2].insert(0, 'score', y_pred)
@@ -171,7 +171,8 @@ if APPLICATION:
                     print('\n==================================================')
                     print('centrality:', cclass, ' ct:', ctbin, ' pT:', ptbin, split)
                     print('Application and signal extraction ...', end='\r')
-                    mass_bins = 40 if ctbin[1] < 16 else 36
+                    # mass_bins = 40 if ctbin[1] < 16 else 36
+                    mass_bins = 30
 
                     presel_eff = ml_application.get_preselection_efficiency(ptbin_index, ctbin_index)
                     eff_score_array, model_handler = ml_application.load_ML_analysis(cclass, ptbin, ctbin, split)

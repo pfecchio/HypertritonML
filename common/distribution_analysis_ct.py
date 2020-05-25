@@ -5,13 +5,15 @@ import math
 import os
 import random
 from array import array
+from multiprocessing import Pool
 
 import numpy as np
 import yaml
-from scipy import stats
 
-from ROOT import (TF1, TH1D, TH2D, TAxis, TCanvas, TColor, TFile, TFrame, TIter, TKey,
-                  TPaveText, gDirectory, gROOT, gStyle, gPad, kBlue, kRed)
+from ROOT import (TF1, TH1D, TH2D, TAxis, TCanvas, TColor, TFile, TFrame,
+                  TIter, TKey, TPaveText, gDirectory, gPad, gROOT, gStyle,
+                  kBlue, kRed)
+from scipy import stats
 
 kBlueC = TColor.GetColor('#1f78b4')
 kBlueCT = TColor.GetColorTransparent(kBlueC, 0.5)
@@ -59,49 +61,40 @@ resultsSysDir = os.environ['HYPERML_RESULTS_{}'.format(params['NBODY'])]
 var = '#it{ct}'
 unit = 'cm'
 
-
 file_name = resultsSysDir + '/' + params['FILE_PREFIX'] + '_dist.root'
 distribution = TFile(file_name, 'recreate')
 
 file_name = resultsSysDir + '/' + params['FILE_PREFIX'] + '_results_fit.root'
-# file_name = resultsSysDir + '/3b.root'
 results_file = TFile(file_name, 'read')
 
-abs_file_name = os.environ['HYPERML_UTILS_{}'.format(params['NBODY'])] + '/he3abs/recCtHe3.root'
-absorp_file = TFile(abs_file_name)
-absorp_hist = absorp_file.Get('Reconstructed ct spectrum')
-
-
-# file_name = '~/HypertritonML/3body/PreselectionEfficiency/PreselectionEfficiencyHist.root'
-# eff_file = TFile(file_name, 'read')
+# abs_file_name = os.environ['HYPERML_UTILS_{}'.format(params['NBODY'])] + '/he3abs/recCtHe3.root'
+# absorp_file = TFile(abs_file_name)
+# absorp_hist = absorp_file.Get('Reconstructed ct spectrum')
 
 bkgModels = params['BKG_MODELS'] if 'BKG_MODELS' in params else ['expo']
-hist_list=[]
+hist_list = []
+
 for split in SPLIT_LIST:
     for cclass in params['CENTRALITY_CLASS']:
-        inDirName = f"{cclass[0]}-{cclass[1]}"+split
+        inDirName = f'{cclass[0]}-{cclass[1]}' + split
 
         h2BDTEff = results_file.Get(f'{inDirName}/BDTeff')
         h1BDTEff = h2BDTEff.ProjectionY("bdteff", 1, 1)
-        best_sig = np.round(np.array(h1BDTEff)[1:-1], 2)
-        sig_ranges = []
-        for i in best_sig:
-            if i== best_sig[0]:
-                sig_ranges.append([i-0.03, i+0.03, 0.01])
-            else:
-                sig_ranges.append([i-0.1, i+0.1, 0.01])
+
+        best_sig = [0.81, 0.88, 0.83, 0.86, 0.84, 0.85]
+        sig_ranges = [[0.70, 90, 0.01], [0.80, 0.95, 0.01], [0.70, 0.90, 0.01], [0.79, 0.94, 0.01], [0.79, 0.90, 0.01], [0.83, 0.90, 0.01]]
+
         ranges = {
                 'BEST': best_sig,
                 'SCAN': sig_ranges
         }
+
         results_file.cd(inDirName)
         out_dir = distribution.mkdir(inDirName)
         cvDir = out_dir.mkdir("canvas")
 
         h2PreselEff = results_file.Get(f'{inDirName}/PreselEff')
         h1PreselEff = h2PreselEff.ProjectionY("preseleff", 1, 1)
-
-        # h1PreselEff = eff_file.Get('fHistEfficiencyVsCt')
 
         for i in range(1, h1PreselEff.GetNbinsX() + 1):
             h1PreselEff.SetBinError(i, 0)
@@ -110,7 +103,7 @@ for split in SPLIT_LIST:
         h1PreselEff.UseCurrentStyle()
         h1PreselEff.SetMinimum(0)
         out_dir.cd()
-        h1PreselEff.Write("h1PreselEff"+split)
+        h1PreselEff.Write("h1PreselEff" + split)
 
         hRawCounts = []
         raws = []
@@ -120,25 +113,26 @@ for split in SPLIT_LIST:
             h1RawCounts = h1PreselEff.Clone(f"best_{model}")
             h1RawCounts.Reset()
 
-            # h2Significance = results_file.Get(f'{inDirName}/significance_{model}')
             out_dir.cd()
-            # h2Significance.ProjectionY().Write(f'significance_ct_{model}')
 
-            for iBin in range(1, h1RawCounts.GetNbinsX()+1):
+            for iBin in range(1, h1RawCounts.GetNbinsX() + 1):
                 h2RawCounts = results_file.Get(f'{inDirName}/RawCounts{ranges["BEST"][iBin-1]:.2f}_{model}')
                 h1RawCounts.SetBinContent(iBin, h2RawCounts.GetBinContent(
-                    1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin)/(1-absorp_hist.GetBinContent(iBin)))
+                    1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin))
                 h1RawCounts.SetBinError(iBin, h2RawCounts.GetBinError(
-                    1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin)/(1-absorp_hist.GetBinContent(iBin)))
+                    1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin))
                 raws.append([])
                 errs.append([])
 
-                for eff in np.arange(ranges['SCAN'][iBin-1][0], ranges['SCAN'][iBin-1][1], ranges['SCAN'][iBin-1][2]):
+                for eff in np.arange(ranges['SCAN'][iBin - 1][0], ranges['SCAN'][iBin - 1][1], ranges['SCAN'][iBin - 1][2]):
+                    if eff > 0.99:
+                        continue
+
                     h2RawCounts = results_file.Get(f'{inDirName}/RawCounts{eff:.2f}_{model}')
                     raws[iBin-1].append(h2RawCounts.GetBinContent(1,
-                                                                iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/(1-absorp_hist.GetBinContent(iBin)))
+                                                                iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin))
                     errs[iBin-1].append(h2RawCounts.GetBinError(1,
-                                                                iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/(1-absorp_hist.GetBinContent(iBin)))
+                                                                iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin))
 
 
             # h1RawCounts.Divide(absorp_hist)
@@ -228,7 +222,7 @@ for split in SPLIT_LIST:
             tmpCt.Reset()
             comboList = []
 
-            for iBin in range(1, tmpCt.GetNbinsX()+1):
+            for iBin in range(1, tmpCt.GetNbinsX() + 1):
                 index = random.randint(0, len(raws[iBin-1])-1)
                 comboList.append(index)
                 tmpCt.SetBinContent(iBin, raws[iBin-1][index])
