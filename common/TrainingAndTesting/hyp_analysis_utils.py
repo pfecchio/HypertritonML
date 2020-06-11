@@ -327,4 +327,4 @@ def load_mcsigma(cent_class, pt_range, ct_range, mode, split=''):
 
     file_name = f'{sigma_path}/sigma_array{info_string}.npy'
 
-    return np.load(file_name)
+    return np.load(file_name, allow_pickle=True)
