@@ -1,8 +1,6 @@
-import io
 import math
 import os
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import redirect_stdout
 from math import floor, log10
 
 import numpy as np
@@ -11,41 +9,34 @@ import pandas as pd
 import uproot
 import xgboost as xgb
 from hipe4ml.model_handler import ModelHandler
-from ROOT import ROOT as RR
-from ROOT import (TF1, TH1D, TH2D, TH3D, TCanvas, TFile, TPaveStats, TPaveText,
-                  gDirectory, gStyle)
+from ROOT import (TF1, TH1D, TH2D, TH3D, TCanvas, TPaveStats, TPaveText, gStyle)
 
 
 def get_skimmed_large_data(data_path, cent_classes, pt_bins, ct_bins, training_columns, application_columns, mode):
     print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
     print ('\nStarting BDT appplication on large data')
 
+    if mode == 3:
+        handlers_path = os.environ['HYPERML_MODELS_3'] + '/handlers'
+        efficiencies_path = os.environ['HYPERML_EFFICIENCIES_3']
+
+    if mode == 2:
+        handlers_path = os.environ['HYPERML_MODELS_2'] + '/handlers'
+        efficiencies_path = os.environ['HYPERML_EFFICIENCIES_2']
+
     executor = ThreadPoolExecutor(8)
-    iterator = uproot.pandas.iterate(data_path, 'DataTable', executor=executor)
+    iterator = uproot.pandas.iterate(data_path, 'SignalTable', executor=executor, reportfile=True)
 
     df_applied = pd.DataFrame()
 
-    counter = 0
-    for data in iterator:
-        counter += len(data)
-        if mode == 3:
-            data = data.query(
-                'cosPA>0.99 and (0<chi2_deuprot<50) and (0<chi2_3prongs<50) and (0<chi2_topology<150)')
-            data['pt'] = abs(data.pt)
+    for current_file, data in iterator:
+        print('current file: {}'.format(current_file))
+        print ('start entry chunk: {}, stop entry chunk: {}'.format(data.index[0], data.index[-1]))
+        
         for cclass in cent_classes:
             for ptbin in zip(pt_bins[:-1], pt_bins[1:]):
                 for ctbin in zip(ct_bins[:-1], ct_bins[1:]):
-                    info_string = '_{}{}_{}{}_{}{}'.format(
-                        cclass[0], cclass[1], ptbin[0], ptbin[1], ctbin[0], ctbin[1])
-
-                    if mode == 2:
-                        handlers_path = os.environ['HYPERML_MODELS_2'] + \
-                            '/handlers'
-                        efficiencies_path = os.environ['HYPERML_EFFICIENCIES_2']
-                    else:
-                        handlers_path = os.environ['HYPERML_MODELS_3'] + \
-                            '/handlers'
-                        efficiencies_path = os.environ['HYPERML_EFFICIENCIES_3']
+                    info_string = '_{}{}_{}{}_{}{}'.format(cclass[0], cclass[1], ptbin[0], ptbin[1], ctbin[0], ctbin[1])
 
                     filename_handler = handlers_path + '/model_handler' + info_string + '.pkl'
                     filename_efficiencies = efficiencies_path + '/Eff_Score' + info_string + '.npy'
@@ -54,21 +45,19 @@ def get_skimmed_large_data(data_path, cent_classes, pt_bins, ct_bins, training_c
                     model_handler.load_model_handler(filename_handler)
 
                     eff_score_array = np.load(filename_efficiencies)
-                    tsd = eff_score_array[1][-1] - 1
+                    tsd = eff_score_array[1][-1]
 
-                    data_range = f'{ctbin[0]}<ct<{ctbin[1]} and {ptbin[0]}<pt<{ptbin[1]}'
+                    data_range = f'{ctbin[0]}<ct<{ctbin[1]} and {ptbin[0]}<pt<{ptbin[1]} and {cclass[0]}<=centrality<{cclass[1]}'
 
                     df_tmp = data.query(data_range)
-                    df_tmp.insert(0, 'score', model_handler.predict(
-                        df_tmp[training_columns]))
+                    df_tmp.insert(0, 'score', model_handler.predict(df_tmp[training_columns]))
 
                     df_tmp = df_tmp.query('score>@tsd')
                     df_tmp = df_tmp.loc[:, application_columns]
 
-                    df_applied = df_applied.append(
-                        df_tmp, ignore_index=True, sort=False)
+                    df_applied = df_applied.append(df_tmp, ignore_index=True, sort=False)
 
-    print(counter)
+    print(df_applied.info(memory_usage='deep'))
     return df_applied
 
 # nevents assumed to be the number of events in 1% bins
