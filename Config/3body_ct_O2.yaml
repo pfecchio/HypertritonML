@@ -6,16 +6,17 @@ LOAD_LARGE_DATA: False
 
 CENTRALITY_CLASS:
   - [0, 90]
-CT_BINS: [2, 4, 6, 8, 10, 14, 18, 23, 35]
+CT_BINS: [0, 2, 4, 6, 8, 10, 14, 18, 23, 35]
 PT_BINS: [2, 10]
 
 BKG_MODELS: ["expo", "pol1", "pol2"]
 
 BDT_EFFICIENCY: [0.50, 1., 0.01] # min, max ,step
 
-MC_PATH: $HYPERML_TABLES_3/O2/signal_reweighted_df.parquet.gzip
-BKG_PATH: $HYPERML_TABLES_3/O2/DataTableAll.root
-DATA_PATH: $HYPERML_TABLES_3/Table.root
+MC_PATH: $HYPERML_TABLES_3/O2/SignalTableReweight.root
+BKG_PATH: $HYPERML_TABLES_3/O2/DataTableBkg.root
+DATA_PATH: $HYPERML_TABLES_3/O2/DataTable_18*.root
+ANALYSIS_RESULTS_PATH: $HYPERML_TABLES_3/O2/AnalysisResultsQR.root
 
 XGBOOST_PARAMS:
   # general parameters
@@ -30,13 +31,13 @@ XGBOOST_PARAMS:
 SIGMA_MC: True
 
 HYPERPARAMS:
-  max_depth: 5
-  learning_rate: 0.08045
-  n_estimators: 500
-  gamma: 0.8596
-  min_child_weight: 11.46
-  subsample: 0.6112
-  colsample_bytree: 0.7719
+  max_depth: 13
+  learning_rate: 0.09823
+  n_estimators: 181
+  gamma: 0.4467
+  min_child_weight: 5.751
+  subsample: 0.7447
+  colsample_bytree: 0.5727
   seed: 42
 
 HYPERPARAMS_RANGE: #TODO: check if it works without tuples
@@ -53,32 +54,31 @@ HYPERPARAMS_RANGE: #TODO: check if it works without tuples
 
 TRAINING_COLUMNS:
 - pt
-- cosPA
-# - cosPA_Lambda
-# - mppi_vert
-# - mppi
-# - dca_lambda_hyper
+- cos_pa
 - dca_de
 - dca_pr
 - dca_pi
-- tpcNsig_de
-- tpcNsig_pr
-- tpcNsig_pi
-- tofNsig_de
-- tofNsig_pr
-# - tofNsig_pi
+- tpc_ncls_de
+- tpc_ncls_pr
+- tpc_ncls_pi
+- tpc_nsig_de
+- tpc_nsig_pr
+- tpc_nsig_pi
 - dca_de_pr
 - dca_de_pi
 - dca_pr_pi
-- dca_de_sv
-- dca_pr_sv
-- dca_pi_sv
-- chi2
-- tpcClus_de
-- tpcClus_pr
-- tpcClus_pi
-- hasTOF_de
-- hasTOF_pr
-# - hasTOF_pi
+# - has_tof_de
+# - has_tof_pr
+# - has_tof_pi
+
+# - dca_de_sv
+# - dca_pr_sv
+# - dca_pi_sv
+# - chi2
+
+# - cos_pa_lambda
+# - mppi_vert
+# - mppi
+# - dca_lambda_hyper
 
 
