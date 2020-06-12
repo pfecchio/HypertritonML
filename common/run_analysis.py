@@ -89,7 +89,8 @@ if TRAIN:
         print(f'--- analysis initialized in {((time.time() - start_time) / 60):.2f} minutes ---\n')
 
         for cclass in CENT_CLASSES:
-            ml_analysis.preselection_efficiency(cclass, CT_BINS, [0, 10], split)
+            if N_BODY is not 3:
+                ml_analysis.preselection_efficiency(cclass, CT_BINS, [0, 10], split)
 
             for ptbin in zip(PT_BINS[:-1], PT_BINS[1:]):
                 for ctbin in zip(CT_BINS[:-1], CT_BINS[1:]):
@@ -178,16 +179,10 @@ if APPLICATION:
                     presel_eff = ml_application.get_preselection_efficiency(ptbin_index, ctbin_index)
                     eff_score_array, model_handler = ml_application.load_ML_analysis(cclass, ptbin, ctbin, split)
 
-                    if N_BODY == 2:
-                        if LARGE_DATA:
-                           df_applied = ml_application.get_data_slice(cclass, ptbin, ctbin, application_columns)
-                        else: 
-                            df_applied = ml_application.apply_BDT_to_data(
-                                model_handler, cclass, ptbin, ctbin, model_handler.get_training_columns(), application_columns)
-
-
-                    if N_BODY == 3:
+                    if LARGE_DATA:
                         df_applied = ml_application.get_data_slice(cclass, ptbin, ctbin, application_columns)
+                    else: 
+                        df_applied = ml_application.apply_BDT_to_data(model_handler, cclass, ptbin, ctbin, model_handler.get_training_columns(), application_columns)
 
                     if SIGNIFICANCE_SCAN:
                         sigscan_eff, sigscan_tsd = ml_application.significance_scan(

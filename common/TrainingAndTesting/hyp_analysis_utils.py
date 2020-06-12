@@ -59,9 +59,7 @@ def get_skimmed_large_data(data_path, cent_classes, pt_bins, ct_bins, training_c
 
     print(df_applied.info(memory_usage='deep'))
     return df_applied
-
-# nevents assumed to be the number of events in 1% bins
-
+    
 
 def expected_signal_counts(bw, cent_range, pt_range, eff, nevents, n_body=2):
     correction = 0.4  # Very optimistic, considering it constant with centrality
