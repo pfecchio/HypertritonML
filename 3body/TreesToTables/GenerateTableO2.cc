@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <exception>
 
 #include <TChain.h>
 #include <TFile.h>
@@ -27,54 +28,52 @@ void GenerateTableO2(std::string dataDir = "~/data3hyper/data/LHC18q/HyperTriton
   TChain inputChain("Hyp3O2");
   inputChain.Add(dataDir.data());
 
-  TTreeReader fReader(&inputChain);
-  TTreeReaderValue<RHyperTriton> RHyper{fReader, "RHyperTriton"};
-//   TTreeReaderValue<SHyperTriton3O2> SHyper{fReader, "SHyperTriton"};
-
-  // if (mc)
-  // {
-  //   SHyper = ;
-  // }
-  // else
-  // {
-  //   RHyper =;
-  // }
-
   TFile outFile(tableDir.data(), "RECREATE");
-  TableO2 tree("SignalTable", "SignalTable", mc);
+  TableO2 tree(mc);
 
-  // get the blast wave functions for the pt reshaping
-  std::string hypUtilsDir = getenv("HYPERML_UTILS");
-  std::string bwFileArg = hypUtilsDir + "/BlastWaveFits.root";
+  TTreeReader fReader(&inputChain);
 
-  // get the bw functions for the pt rejection
-  TFile bwFile(bwFileArg.data());
+  if (mc) {
+    TTreeReaderValue<SHyperTriton3O2> SHyper{fReader, "SHyperTriton"};
 
-  TF1 *BlastWave0{(TF1 *)bwFile.Get("BlastWave/BlastWave0")};
-  TF1 *BlastWave1{(TF1 *)bwFile.Get("BlastWave/BlastWave1")};
-  TF1 *BlastWave2{(TF1 *)bwFile.Get("BlastWave/BlastWave2")};
+    // get the blast wave functions for the pt reshaping
+    std::string hypUtilsDir = getenv("HYPERML_UTILS");
+    std::string bwFileArg = hypUtilsDir + "/BlastWaveFits.root";
 
-  double max0 = BlastWave0->GetMaximum();
-  double max1 = BlastWave1->GetMaximum();
-  double max2 = BlastWave2->GetMaximum();
+    // get the bw functions for the pt rejection
+    TFile bwFile(bwFileArg.data());
 
-  TF1 *BlastWaveArray[3]{BlastWave0, BlastWave1, BlastWave2};
-  double MaxArray[3]{max0, max1, max2};
+    TF1 *BlastWave0{(TF1 *)bwFile.Get("BlastWave/BlastWave0")};
+    TF1 *BlastWave1{(TF1 *)bwFile.Get("BlastWave/BlastWave1")};
+    TF1 *BlastWave2{(TF1 *)bwFile.Get("BlastWave/BlastWave2")};
 
-  while (fReader.Next())
-  {
-    // if (mc) {
-    //   tree.Fill(*SHyper, BlastWaveArray, MaxArray);
-    // }
-    // else
-    // {
+    double max0 = BlastWave0->GetMaximum();
+    double max1 = BlastWave1->GetMaximum();
+    double max2 = BlastWave2->GetMaximum();
+
+    TF1 *BlastWaveArray[3]{BlastWave0, BlastWave1, BlastWave2};
+    double MaxArray[3]{max0, max1, max2};
+
+    while (fReader.Next()) {
+      tree.Fill(*SHyper, BlastWaveArray, MaxArray);
+    }
+
+    outFile.cd();
+    tree.Write();
+    outFile.Close();
+
+    std::cout << "\nDerived tables from MC generated!\n" << std::endl;
+  } else {
+    TTreeReaderValue<RHyperTriton> RHyper{fReader, "RHyperTriton"};
+
+    while (fReader.Next()) {
       tree.Fill(*RHyper);
-    // }
+    }
+
+    outFile.cd();
+    tree.Write();
+    outFile.Close();
+
+    std::cout << "\nDerived tables from Data generated!\n" << std::endl;
   }
-
-  outFile.cd();
-  tree.Write();
-  outFile.Close();
-
-  std::cout << "\nDerived tree from Data generated!\n" << std::endl;
 }

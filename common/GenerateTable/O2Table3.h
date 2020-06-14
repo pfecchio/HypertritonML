@@ -9,7 +9,7 @@
 class TableO2
 {
 public:
-  TableO2(const char *name, const char *title, bool isMC);
+  TableO2(bool isMC);
   void Fill(const RHyperTriton &RHyperVec);
   void Fill(const SHyperTriton3O2 &RHyperVec, TF1 *blastWave[3], double max[3]);
   // void SetName(const char *name);
@@ -61,9 +61,13 @@ private:
   bool bw_accept;
 };
 
-TableO2::TableO2(const char *name, const char *title, bool isMC)
+TableO2::TableO2(bool isMC)
 {
-  tree = new TTree(name, title);
+  if (isMC) {
+    tree = new TTree("SignalTable", "SignalTable");
+  } else {
+    tree = new TTree("DataTable", "DataTable");
+  }
 
   tree->Branch("centrality", &centrality);
   tree->Branch("pt", &pt);
@@ -112,8 +116,6 @@ TableO2::TableO2(const char *name, const char *title, bool isMC)
 
 void TableO2::Fill(const RHyperTriton &RHyper)
 {
-//   if ((RHyper.mppi_vert > 1.1125 && RHyper.mppi_vert < 1.1185) || (RHyper.cosPA < 0))
-//     return;
   if (RHyper.cosPA < 0) return;
 
   centrality = RHyper.centrality;
@@ -153,8 +155,6 @@ void TableO2::Fill(const RHyperTriton &RHyper)
 
 void TableO2::Fill(const SHyperTriton3O2 &SHyper, TF1 *blastWave[3], double max[3])
 {
-  if (SHyper.cosPA < 0) return;
-
   gPt = SHyper.gPt;
   gPhi = SHyper.gPhi;
   const double p = std::hypot(SHyper.gPt, gPt);
