@@ -203,20 +203,20 @@ void TableO2::Fill(const SHyperTriton3O2 &SHyper, TF1 *blastWave[3], double max[
 
 bool TableO2::AcceptCandidateBW(float gPt, float centrality, TF1 *blastWave[3], double max[3])
 {
+
   TF1 *BlastWave{nullptr};
   double maximum  = 0.0;
-
+  int index = 2;
   if (centrality <= 10) {
-    BlastWave = blastWave[0];
-    maximum   = max[0];
+    index = 0;
   }
-  if (centrality > 10. && centrality <= 40.) {
-    BlastWave = blastWave[1];
-    maximum   = max[1];
-  } else {
-    BlastWave = blastWave[2];
-    maximum   = max[2];
+
+  else if (centrality <= 40.) {
+    index = 1;
   }
+
+  BlastWave = blastWave[index];
+  maximum   = max[index];
 
   float bwNum = BlastWave->Eval(gPt) / maximum;
 

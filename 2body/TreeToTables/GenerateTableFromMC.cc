@@ -106,12 +106,12 @@ void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypT
       hypPtShape = hypPtShape0;
       max = max0;
     }
-    if (cent > 10. && cent <= 40.)
+    else if (cent <= 40.)
     {
       hypPtShape = hypPtShape1;
       max = max1;
     }
-    else
+    else if (cent <= 100)
     {
       hypPtShape = hypPtShape2;
       max = max2;
