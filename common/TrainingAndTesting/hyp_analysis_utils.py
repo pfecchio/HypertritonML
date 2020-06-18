@@ -25,7 +25,7 @@ def get_skimmed_large_data(data_path, cent_classes, pt_bins, ct_bins, training_c
         efficiencies_path = os.environ['HYPERML_EFFICIENCIES_2']
 
     executor = ThreadPoolExecutor(8)
-    iterator = uproot.pandas.iterate(data_path, 'SignalTable', executor=executor, reportfile=True)
+    iterator = uproot.pandas.iterate(data_path, 'DataTable', executor=executor, reportfile=True)
 
     df_applied = pd.DataFrame()
 
