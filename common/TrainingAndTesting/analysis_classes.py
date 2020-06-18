@@ -31,9 +31,9 @@ class TrainingAnalysis:
         sidebands_selection = 'not (2.970<m<3.015)'
 
         if self.mode == 3:
-            self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df().query('gReconstructed and bw_accept')
-            # self.df_generated = uproot.open(mc_file_name)['GenTable'].pandas.df()
-            self.df_bkg = uproot.open(bkg_file_name)['SignalTable'].pandas.df(entrystop=40000000).query(sidebands_selection)
+            self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df().query('bw_accept and cos_pa > 0')
+            self.df_generated = uproot.open(mc_file_name)['SignalTable'].pandas.df().query('bw_accept')
+            self.df_bkg = uproot.open(bkg_file_name)['DataTable'].pandas.df(entrystop=40000000).query(sidebands_selection)
 
         if self.mode == 2:
             self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df()
@@ -80,13 +80,15 @@ class TrainingAnalysis:
         sig = self.df_signal.query(data_range)
         bkg = self.df_bkg.query(data_range)
 
+        if (len(bkg) >= 5 * len(sig)):
+            bkg = bkg.sample(n=5*len(sig))
+
         print('\nNumber of signal candidates: {}'.format(len(sig)))
         print('Number of background candidates: {}\n'.format(len(bkg)))
 
         df = pd.concat([self.df_signal.query(data_range), self.df_bkg.query(data_range)])
 
-        train_set, test_set, y_train, y_test = train_test_split(
-            df[training_columns + ['m']], df['y'], test_size=test_size, random_state=42)
+        train_set, test_set, y_train, y_test = train_test_split(df[training_columns + ['m']], df['y'], test_size=test_size, random_state=42)
 
         return [train_set, y_train, test_set, y_test]
 
@@ -139,8 +141,7 @@ class TrainingAnalysis:
         np.save(filename_sigma, np.array(sigma_dict))
         np.save(filename_sigma_error, np.array(sigma_error_dict))
 
-    def save_ML_analysis(
-            self, model_handler, eff_score_array, cent_class, pt_range, ct_range, split=''):
+    def save_ML_analysis(self, model_handler, eff_score_array, cent_class, pt_range, ct_range, split=''):
         info_string = f'_{cent_class[0]}{cent_class[1]}_{pt_range[0]}{pt_range[1]}_{ct_range[0]}{ct_range[1]}{split}'
 
         models_path = os.environ['HYPERML_MODELS_{}'.format(self.mode)]+'/models'
@@ -163,8 +164,7 @@ class TrainingAnalysis:
 
         print('ML analysis results saved.\n')
 
-    def save_ML_plots(
-            self, model_handler, data, eff_score_array, cent_class, pt_range, ct_range, split=''):
+    def save_ML_plots(self, model_handler, data, eff_score_array, cent_class, pt_range, ct_range, split=''):
         fig_path = os.environ['HYPERML_FIGURES_{}'.format(self.mode)]
         info_string = f'_{cent_class[0]}{cent_class[1]}_{pt_range[0]}{pt_range[1]}_{ct_range[0]}{ct_range[1]}{split}'
 
@@ -291,8 +291,7 @@ class ModelApplication:
 
         return self.df_data.query(data_range)[application_columns]
 
-    def significance_scan(
-            self, df_bkg, pre_selection_efficiency, eff_score_array, cent_class, pt_range, ct_range, split='', mass_bins=40):
+    def significance_scan(self, df_bkg, pre_selection_efficiency, eff_score_array, cent_class, pt_range, ct_range, split='', mass_bins=40):
         print('\nSignificance scan: ...')
 
         hyp_lifetime = 253
