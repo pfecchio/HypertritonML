@@ -208,15 +208,10 @@ bool TableO2::AcceptCandidateBW(float gPt, float centrality, TF1 *blastWave[3], 
   double maximum  = 0.0;
   int index = 2;
   if (centrality <= 10) {
-    BlastWave = blastWave[0];
-    maximum   = max[0];
+    index = 0;
   } else if (centrality <= 40.) {
-    BlastWave = blastWave[1];
-    maximum   = max[1];
-  } else {
-    BlastWave = blastWave[2];
-    maximum   = max[2];
-  }
+    index = 1;
+  } 
 
   BlastWave = blastWave[index];
   maximum   = max[index];
