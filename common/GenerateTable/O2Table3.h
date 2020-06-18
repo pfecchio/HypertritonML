@@ -10,8 +10,8 @@ class TableO2
 {
 public:
   TableO2(bool isMC);
-  void Fill(const RHyperTriton &RHyperVec);
-  void Fill(const SHyperTriton3O2 &RHyperVec, TF1 *blastWave[3], double max[3]);
+  void Fill(const RHyperTriton3O2 &RHyper);
+  void Fill(const SHyperTriton3O2 &RHyper, TF1 *blastWave[3], double max[3]);
   // void SetName(const char *name);
   bool AcceptCandidateBW(float gPt, float centrality, TF1 *blastWave[3], double max[3]);
   void Write() { tree->Write("", TObject::kOverwrite); }
@@ -114,7 +114,7 @@ TableO2::TableO2(bool isMC)
   }
 };
 
-void TableO2::Fill(const RHyperTriton &RHyper)
+void TableO2::Fill(const RHyperTriton3O2 &RHyper)
 {
   if (RHyper.cosPA < 0) return;
 
@@ -135,10 +135,10 @@ void TableO2::Fill(const RHyperTriton &RHyper)
   dca_de_pr = RHyper.dca_de_pr;
   dca_de_pi = RHyper.dca_de_pi;
   dca_pr_pi = RHyper.dca_pr_pi;
-  // dca_de_sv = RHyper.dca_de_sv;
-  // dca_pr_sv = RHyper.dca_pr_sv;
-  // dca_pi_sv = RHyper.dca_pi_sv;
-  // chi2 = RHyper.chi2;
+  dca_de_sv = RHyper.dca_de_sv;
+  dca_pr_sv = RHyper.dca_pr_sv;
+  dca_pi_sv = RHyper.dca_pi_sv;
+  chi2 = RHyper.chi2;
   tpc_ncls_de = RHyper.tpcClus_de;
   tpc_ncls_pr = RHyper.tpcClus_pr;
   tpc_ncls_pi = RHyper.tpcClus_pi;
@@ -183,10 +183,10 @@ void TableO2::Fill(const SHyperTriton3O2 &SHyper, TF1 *blastWave[3], double max[
   dca_de_pr = SHyper.dca_de_pr;
   dca_de_pi = SHyper.dca_de_pi;
   dca_pr_pi = SHyper.dca_pr_pi;
-  // dca_de_sv = SHyper.dca_de_sv;
-  // dca_pr_sv = SHyper.dca_pr_sv;
-  // dca_pi_sv = SHyper.dca_pi_sv;
-  // chi2 = SHyper.chi2;
+  dca_de_sv = SHyper.dca_de_sv;
+  dca_pr_sv = SHyper.dca_pr_sv;
+  dca_pi_sv = SHyper.dca_pi_sv;
+  chi2 = SHyper.chi2;
   tpc_ncls_de = SHyper.tpcClus_de;
   tpc_ncls_pr = SHyper.tpcClus_pr;
   tpc_ncls_pi = SHyper.tpcClus_pi;

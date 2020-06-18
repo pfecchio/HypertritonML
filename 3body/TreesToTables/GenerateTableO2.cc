@@ -15,15 +15,15 @@
 
 #include "AliAnalysisTaskHypertriton3.h"
 
-// r data path "~/data3hyper/data/LHC18r/HyperTritonTree3.root"
-// q data path "~/data3hyper/data/LHC18q/HyperTritonTree3.root"
+// r data path "~/data/3body_hypertriton_data/O2/HyperTritonTree3_18r.root"
+// q data path "~/data/3body_hypertriton_data/O2/HyperTritonTree3_18q.root"
 // mc data path "~/data/3body_hypertriton_data/O2/SignalTable.root"
 
 // output r  "~/data/3body_hypertriton_data/O2/DataTable_18r.root"
 // output q  "~/data/3body_hypertriton_data/O2/DataTable_18q.root"
 // output mc "~/data/3body_hypertriton_data/O2/SignalTableReweight.root"
 
-void GenerateTableO2(std::string dataDir = "~/data3hyper/data/LHC18q/HyperTritonTree3.root", std::string tableDir = "~/data/3body_hypertriton_data/O2/DataTable_18q.root", bool mc = false)
+void GenerateTableO2(std::string dataDir = "~/data/3body_hypertriton_data/O2/HyperTritonTree3_18r.root", std::string tableDir = "~/data/3body_hypertriton_data/O2/DataTable_18r.root", bool mc = false)
 {
   TChain inputChain("Hyp3O2");
   inputChain.Add(dataDir.data());
@@ -64,7 +64,7 @@ void GenerateTableO2(std::string dataDir = "~/data3hyper/data/LHC18q/HyperTriton
 
     std::cout << "\nDerived tables from MC generated!\n" << std::endl;
   } else {
-    TTreeReaderValue<RHyperTriton> RHyper{fReader, "RHyperTriton"};
+    TTreeReaderValue<RHyperTriton3O2> RHyper{fReader, "RHyperTriton"};
 
     while (fReader.Next()) {
       tree.Fill(*RHyper);
