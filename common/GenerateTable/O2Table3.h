@@ -85,10 +85,10 @@ TableO2::TableO2(bool isMC)
   tree->Branch("dca_de_pr", &dca_de_pr);
   tree->Branch("dca_de_pi", &dca_de_pi);
   tree->Branch("dca_pr_pi", &dca_pr_pi);
-  // tree->Branch("dca_de_sv",&dca_de_sv);
-  // tree->Branch("dca_pr_sv",&dca_pr_sv);
-  // tree->Branch("dca_pi_sv",&dca_pi_sv);
-  // tree->Branch("chi2",&chi2);
+  tree->Branch("dca_de_sv",&dca_de_sv);
+  tree->Branch("dca_pr_sv",&dca_pr_sv);
+  tree->Branch("dca_pi_sv",&dca_pi_sv);
+  tree->Branch("chi2",&chi2);
   tree->Branch("tpc_ncls_de", &tpc_ncls_de);
   tree->Branch("tpc_ncls_pr", &tpc_ncls_pr);
   tree->Branch("tpc_ncls_pi", &tpc_ncls_pi);
