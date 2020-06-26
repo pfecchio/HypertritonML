@@ -16,9 +16,10 @@ int iparExp1[2] = { 0,      // normalisation
 };
 
 // signal + background function
-int iparExp2[5] = { 0, // normalisation (common)
+int iparExp2[4] = { 0, // normalisation (common)
                   1, // tau (common)
                   2, // delta
+                  3 //delta norm
 };
 
 double ComputeIntegral(TF1 *func, int BinLowEdge, int BinSupEdge){
@@ -29,16 +30,18 @@ if(func->GetNpar() == 2){
 
 expo_inf = TMath::Exp(-BinLowEdge/(0.029979245800*func->GetParameter(1)));
 expo_sup = TMath::Exp(-BinSupEdge/(0.029979245800*func->GetParameter(1)));
+return func->GetParameter(0)*(expo_inf - expo_sup);
 
 }
 
 else
 {
-expo_inf = TMath::Exp(-BinLowEdge/(0.029979245800*(func->GetParameter(1)+func->GetParameter(2))));
-expo_sup = TMath::Exp(-BinSupEdge/(0.029979245800*(func->GetParameter(1)+func->GetParameter(2))));
+expo_inf = TMath::Exp(-BinLowEdge/(0.029979245800*(func->GetParameter(1)*(1+func->GetParameter(2)))));
+expo_sup = TMath::Exp(-BinSupEdge/(0.029979245800*(func->GetParameter(1)*(1+func->GetParameter(2)))));
+return (func->GetParameter(0) + func->GetParameter(3))*(expo_inf - expo_sup);
 }
 
-return func->GetParameter(0)*(expo_inf - expo_sup);
+
 
 }
 
@@ -52,7 +55,7 @@ struct GlobalChi2 {
       for (int i = 0; i < 2; ++i) p1[i] = par[iparExp1[i] ];
 
       double p2[3];
-      for (int i = 0; i < 3; ++i) p2[i] = par[iparExp2[i] ];
+      for (int i = 0; i < 4; ++i) p2[i] = par[iparExp2[i] ];
 
       fF1->SetParameters(p1);
       fF2->SetParameters(p2);
@@ -62,8 +65,8 @@ struct GlobalChi2 {
          int BinWidth = fHist_1->GetBinWidth(i);
          int BinLowEdge = fHist_1->GetBinLowEdge(i);
 
-         chi2_1 += TMath::Power(ComputeIntegral(fF1,BinLowEdge, BinLowEdge + BinWidth)/BinWidth - fHist_1->GetBinContent(i), 2)/fHist_1->GetBinContent(i); 
-         chi2_2 += TMath::Power(ComputeIntegral(fF2, BinLowEdge, BinLowEdge + BinWidth)/BinWidth - fHist_2->GetBinContent(i), 2)/fHist_2->GetBinContent(i);
+         chi2_1 += TMath::Power(ComputeIntegral(fF1,BinLowEdge, BinLowEdge + BinWidth)/BinWidth - fHist_1->GetBinContent(i), 2)/TMath::Power(fHist_1->GetBinError(i),2); 
+         chi2_2 += TMath::Power(ComputeIntegral(fF2, BinLowEdge, BinLowEdge + BinWidth)/BinWidth - fHist_2->GetBinContent(i), 2)/TMath::Power(fHist_2->GetBinError(i),2);
 
 
       }

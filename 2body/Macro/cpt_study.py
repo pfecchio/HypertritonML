@@ -17,7 +17,7 @@ import ROOT
 from scipy import stats
 
 
-random.seed(199)
+random.seed(19434)
 
 from ROOT import gROOT
 gROOT.SetBatch(True)
@@ -56,7 +56,7 @@ if(params["NBODY"] == 2):
     absorp_file = TFile(abs_file_name)
     absorp_hist = absorp_file.Get('Reconstructed ct spectrum')
 
-bkgModels = ["pol2"]
+bkgModels = ["expo", "pol1","pol2"]
 
 
 best_sig = [0.76, 0.79, 0.83, 0.81, 0.83, 0.83, 0.84, 0.75]
@@ -132,29 +132,34 @@ for split in SPLIT_LIST:
 out_dir.cd()
 
 syst_life = TH1D("syst", ";#tau (ps);Entries", 200, 230, 280)
-syst_norm = TH1D("syst2", "; #tau(^{3}_{#Lambda} #bar{H}) - #tau(^{3}_{#Lambda} H) ps ;Entries", 200, -80, 80)
+syst_tau = TH1D("r", "; r ;Entries", 200, -0.15, 0.25)
+syst_norm = TH1D("#delta_{norm}", "; #delta_{norm} ;Entries", 200, -400, 50)
+
+chi2_histo = TH1D("global chi 2", "; chi2 ;Entries", 100, 0, 10)
 
                     # 300, 100, 400, 4000, 2500, 6500)
-tmpCt_mat = h1PreselEff.Clone("tmpCt_mat")
-tmpCt_antimat = h1PreselEff.Clone("tmpCt_antimat")
+tmpCt_mat = h1PreselEff.Clone("hypertriton")
+tmpCt_antimat = h1PreselEff.Clone("anti-hypertriton")
 tmpCt_mat.SetTitle(";#it{c}t (cm);d#it{N}/d(#it{c}t) [(cm)^{-1}]")
 tmpCt_antimat.SetTitle(";#it{c}t (cm);d#it{N}/d(#it{c}t) [(cm)^{-1}]")
-
+tmpCt_mat.SetMinimum(1)
+tmpCt_antimat.SetMinimum(1)
 # Create observables
 Expo1 = TF1(
     "myexpo", "[0]*exp(-x/([1]*0.029979245800))/([1]*0.029979245800)", 1, 35)
 Expo1.SetParLimits(1, 100, 350)
 Expo1.SetParLimits(0, 1000, 3000)
 Expo1.SetParName(0, "Norm")
-Expo1.SetParName(1, "tau")
+Expo1.SetParName(1, "#tau")
 # Create observables
 Expo2 = TF1(
-    "myexpo2", "[0]*exp(-x/(([1]+[2])*0.029979245800))/(([1]+[2])*0.029979245800)", 1, 35)
+    "myexpo2", "([0]+[3])*exp(-x/(([1]*(1+[2]/[1]))*0.029979245800))/(([1]*(1+[2]))*0.029979245800)", 1, 35)
 Expo2.SetParLimits(1, 100, 350)
 Expo2.SetParLimits(0, 1000, 3000)
-Expo1.SetParName(0, "Norm")
-Expo2.SetParName(1, "tau")
-Expo2.SetParName(2, "delta tau")
+Expo2.SetParName(0, "Norm")
+Expo2.SetParName(1, "#tau")
+Expo2.SetParName(2, "r")
+Expo2.SetParName(3, "#delta norm")
 
 combinations = set()
 size = 10000
@@ -196,9 +201,9 @@ for _ in range(size):
     fitter = ROOT.Fit.Fitter() 
 
 
-    par0 = np.array([2000, 250, 10], "double")
+    par0 = np.array([2000, 250, 10, 10], "double")
 
-    fitter.Config().SetParamsSettings(3,par0)
+    fitter.Config().SetParamsSettings(4,par0)
 
     fitter.Config().ParSettings(1).SetLimits(100,350)
 
@@ -206,7 +211,7 @@ for _ in range(size):
     fitter.Config().MinimizerOptions().SetPrintLevel(1)
     fitter.Config().SetMinimizer("Minuit2","Migrad")
 
-    fitter.FitFCN(3, globalChi2)
+    fitter.FitFCN(4, globalChi2)
     result = fitter.Result()
     # print("Result: ", result.MinFcnValue())
 
@@ -216,10 +221,13 @@ for _ in range(size):
     combo = (x for x in comboList)
     if combo in combinations:
         continue
-
-    combinations.add(combo)
-    syst_norm.Fill(result.Value(2))
-    syst_life.Fill(result.Value(1))
+    
+    if(result.MinFcnValue()/(8*2-4)<2):
+        combinations.add(combo)
+        syst_tau.Fill(result.Value(2))
+        syst_norm.Fill(result.Value(3))
+        syst_life.Fill(result.Value(1))
+        chi2_histo.Fill(result.MinFcnValue()/(8*2-4))
 
 
 
@@ -235,8 +243,8 @@ Expo1.SetParameter(1, result.Value(1))
 Expo1.SetParError(1, result.ParError(1))
 # print(result.Chi2())
 # print(result.Ndf())
-Expo1.SetChisquare(result.Chi2())
-Expo1.SetNDF(result.Ndf())
+Expo1.SetChisquare(result.MinFcnValue())
+Expo1.SetNDF(8*2-4)
 
 Expo1.SetLineColor(kBlue)
 tmpCt_mat.GetListOfFunctions().Add(Expo1)
@@ -249,8 +257,10 @@ Expo2.SetParameter(1, result.Value(1))
 Expo2.SetParError(1, result.ParError(1))
 Expo2.SetParameter(2, result.Value(2))
 Expo2.SetParError(2, result.ParError(2))
-Expo2.SetChisquare(result.Chi2())
-Expo2.SetNDF(result.Ndf())
+Expo2.SetParameter(3, result.Value(3))
+Expo2.SetParError(3, result.ParError(3))
+Expo2.SetChisquare(result.MinFcnValue())
+Expo2.SetNDF(8*2-4)
 
 
 Expo2.SetLineColor(kBlue)
@@ -262,11 +272,19 @@ c1.Write()
 
 syst_life.SetFillColor(600)
 syst_life.SetFillStyle(3345)
+syst_tau.SetFillColor(600)
+syst_tau.SetFillStyle(3345)
 syst_norm.SetFillColor(600)
 syst_norm.SetFillStyle(3345)
+chi2_histo.SetFillColor(600)
+chi2_histo.SetFillStyle(3345)
 # syst.Scale(1./syst.Integral())
 syst_life.Write()
+c2 = TCanvas("syst_tau_fit")
+syst_tau.Fit("gaus")
+syst_tau.Write()
 syst_norm.Write()
+chi2_histo.Write()
 
 
 
