@@ -89,8 +89,7 @@ if TRAIN:
         print(f'--- analysis initialized in {((time.time() - start_time) / 60):.2f} minutes ---\n')
 
         for cclass in CENT_CLASSES:
-            if N_BODY is not 3:
-                ml_analysis.preselection_efficiency(cclass, CT_BINS, [0, 10], split)
+            ml_analysis.preselection_efficiency(cclass, CT_BINS, [0, 10], split, save=(N_BODY is not 3))
 
             for ptbin in zip(PT_BINS[:-1], PT_BINS[1:]):
                 for ctbin in zip(CT_BINS[:-1], CT_BINS[1:]):
@@ -140,7 +139,7 @@ if TRAIN:
 
 if APPLICATION:
     app_time = time.time()
-    application_columns = ['score', 'm', 'ct', 'pt', 'centrality']
+    application_columns = ['score', 'm', 'ct', 'pt', 'centrality', 'positive', 'mppi_vert']
 
     # create output file
     file_name = results_dir + f'/{FILE_PREFIX}_results.root'
