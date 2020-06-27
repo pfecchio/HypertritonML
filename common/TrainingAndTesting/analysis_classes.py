@@ -33,7 +33,7 @@ class TrainingAnalysis:
         if self.mode == 3:
             self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df().query('bw_accept and cos_pa > 0')
             self.df_generated = uproot.open(mc_file_name)['SignalTable'].pandas.df().query('bw_accept')
-            self.df_bkg = uproot.open(bkg_file_name)['DataTable'].pandas.df(entrystop=40000000).query(sidebands_selection)
+            self.df_bkg = uproot.open(bkg_file_name)['DataTable'].pandas.df(entrystop=40000000)
 
         if self.mode == 2:
             self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df()
@@ -80,8 +80,8 @@ class TrainingAnalysis:
         sig = self.df_signal.query(data_range)
         bkg = self.df_bkg.query(data_range)
 
-        if (len(bkg) >= 5 * len(sig)):
-            bkg = bkg.sample(n=5*len(sig))
+        if (len(bkg) >= 10*len(sig)):
+            bkg = bkg.sample(n=10*len(sig))
 
         print('\nNumber of signal candidates: {}'.format(len(sig)))
         print('Number of background candidates: {}\n'.format(len(bkg)))
