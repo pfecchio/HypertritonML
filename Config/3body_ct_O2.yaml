@@ -2,19 +2,19 @@ NBODY: 3
 FILE_PREFIX: "ct_analysis_o2"
 
 LARGE_DATA: True
-LOAD_LARGE_DATA: False
+LOAD_LARGE_DATA: True
 
 CENTRALITY_CLASS:
   - [0, 90]
-CT_BINS: [0, 2, 4, 6, 8, 10, 14, 18, 23, 35]
+CT_BINS: [2, 4, 6, 8, 10, 14, 18, 23, 35]
 PT_BINS: [2, 10]
 
 BKG_MODELS: ["expo", "pol1", "pol2"]
 
-BDT_EFFICIENCY: [0.50, 1., 0.01] # min, max ,step
+BDT_EFFICIENCY: [0.10, 1., 0.01] # min, max ,step
 
 MC_PATH: $HYPERML_TABLES_3/O2/SignalTableReweight.root
-BKG_PATH: $HYPERML_TABLES_3/O2/DataTableBkg.root
+BKG_PATH: $HYPERML_TABLES_3/O2/ev_mix/DataTableEM_18r.root
 DATA_PATH: $HYPERML_TABLES_3/O2/DataTable_18*.root
 ANALYSIS_RESULTS_PATH: $HYPERML_TABLES_3/O2/AnalysisResultsQR.root
 
@@ -55,9 +55,9 @@ HYPERPARAMS_RANGE: #TODO: check if it works without tuples
 TRAINING_COLUMNS:
 - pt
 - cos_pa
-- dca_de
-- dca_pr
-- dca_pi
+# - dca_de
+# - dca_pr
+# - dca_pi
 - tpc_ncls_de
 - tpc_ncls_pr
 - tpc_ncls_pi
@@ -67,18 +67,19 @@ TRAINING_COLUMNS:
 - dca_de_pr
 - dca_de_pi
 - dca_pr_pi
+# - cos_pa_lambda
+# - mppi_vert
+# - dca_lambda_hyper
+- dca_de_sv
+- dca_pr_sv
+- dca_pi_sv
+- chi2
 # - has_tof_de
 # - has_tof_pr
 # - has_tof_pi
 
-# - dca_de_sv
-# - dca_pr_sv
-# - dca_pi_sv
-# - chi2
 
-# - cos_pa_lambda
-# - mppi_vert
-# - mppi
-# - dca_lambda_hyper
+
+
 
 
