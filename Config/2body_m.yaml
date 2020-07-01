@@ -1,5 +1,5 @@
 NBODY: 2
-FILE_PREFIX: 'bind_analysis'
+FILE_PREFIX: 'bind_ct_analysis'
 
 CENTRALITY_CLASS:
   - [0, 90]

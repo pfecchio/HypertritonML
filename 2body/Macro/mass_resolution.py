@@ -12,7 +12,14 @@ hyp3mass = 2.99131
 
 parser = argparse.ArgumentParser()
 parser.add_argument("config", help="Path to the YAML configuration file")
+parser.add_argument('-split', '--split', help='Run with matter and anti-matter splitted', action='store_true')
 args = parser.parse_args()
+
+
+if args.split:
+    SPLIT_LIST = ['_matter', '_antimatter']
+else:
+    SPLIT_LIST = ['']
 
 with open(os.path.expandvars(args.config), 'r') as stream:
     try:
@@ -40,20 +47,29 @@ resultsSysDir = os.environ['HYPERML_RESULTS_{}'.format(params['NBODY'])]
 file_name =  resultsSysDir + '/' + params['FILE_PREFIX'] + '_mass_res.root'
 results_file = TFile(file_name,"recreate")
 
-hist_mean = TH1D('hist_mean', ';ct bin; #mu (GeV/c^{{2}})',len(ct_bins)-1,0,len(ct_bins))
-fit_mean = TH1D('fit_mean', ';ct bin; #mu (GeV/c^{{2}})',len(ct_bins)-1,0,len(ct_bins))
 gauss = TF1("gauss","gaus",-0.002,0.002)
 
-for bin in range(1,len(ct_bins)):
-    dfq = df.query('ct>@ct_bins[@bin-1] and ct<@ct_bins[@bin]')
-    counts, _ = np.histogram(dfq['mass_shift'], bins=100, range=[-0.03, 0.03])
-    histo = h1_mass_res(counts,[0,90],[0,10],[ct_bins[bin-1],ct_bins[bin]])
-    histo.Fit(gauss,"QR")
-    fit_mean.SetBinContent(bin, gauss.GetParameter(1))
-    fit_mean.SetBinError(bin, gauss.GetParError(1))
-    hist_mean.SetBinContent(bin, histo.GetMean())
-    hist_mean.SetBinError(bin, histo.GetMeanError())
-    histo.Write()
 
-fit_mean.Write()
-hist_mean.Write()
+for split in SPLIT_LIST:
+    hist_mean = TH1D('hist_mean'+split, ';ct bin; #mu (GeV/c^{{2}})',len(ct_bins)-1,0,len(ct_bins))
+    fit_mean = TH1D('fit_mean'+split, ';ct bin; #mu (GeV/c^{{2}})',len(ct_bins)-1,0,len(ct_bins))
+    results_file.mkdir(split[1:])
+    results_file.cd(split[1:])
+    for bin in range(1,len(ct_bins)):
+        if split=='':
+            dfq = df.query('ct>@ct_bins[@bin-1] and ct<@ct_bins[@bin]')
+        elif split=='_antimatter':
+            dfq = df.query('ct>@ct_bins[@bin-1] and ct<@ct_bins[@bin] and Matter < 0.5')
+        else:
+            dfq = df.query('ct>@ct_bins[@bin-1] and ct<@ct_bins[@bin] and Matter > 0.5')
+        counts, _ = np.histogram(dfq['mass_shift'], bins=100, range=[-0.03, 0.03])
+        histo = h1_mass_res(counts,[0,90],[0,10],[ct_bins[bin-1],ct_bins[bin]])
+        histo.Fit(gauss,"QR")
+        fit_mean.SetBinContent(bin, gauss.GetParameter(1))
+        fit_mean.SetBinError(bin, gauss.GetParError(1))
+        hist_mean.SetBinContent(bin, histo.GetMean())
+        hist_mean.SetBinError(bin, histo.GetMeanError())
+        histo.Write()
+    results_file.cd()
+    fit_mean.Write()
+    hist_mean.Write()

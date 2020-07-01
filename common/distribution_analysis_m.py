@@ -68,12 +68,9 @@ shift_file = TFile(file_name, 'read')
 file_name = resultsSysDir + '/' + params['FILE_PREFIX'] + '_results_fit.root'
 results_file = TFile(file_name, 'read')
 
-hist_shift = shift_file.Get('hist_mean')
-shift = []
-for iBin in range(1, hist_shift.GetNbinsX() + 1):
-    shift.append(hist_shift.GetBinContent(iBin))
 
-
+MEASUREMENT = ['mass','B_{#Lambda}']
+                                        
 mLambda = [1.87561294257,0.00000057]
 mDeuton = [1.115683,0.000006]
 
@@ -90,6 +87,11 @@ hist_list = []
 
 #loop se mat-anti divise
 for split in SPLIT_LIST:
+    hist_shift = shift_file.Get('hist_mean'+split)
+    shift = []
+    for iBin in range(1, hist_shift.GetNbinsX() + 1):
+        shift.append(hist_shift.GetBinContent(iBin))
+
     for cclass in params['CENTRALITY_CLASS']:
         inDirName = f'{cclass[0]}-{cclass[1]}' + split
 
@@ -123,7 +125,6 @@ for split in SPLIT_LIST:
 
         h2PreselEff = results_file.Get(f'{inDirName}/PreselEff')
         h1PreselEff = h2PreselEff.ProjectionY("preseleff", 1, 1)
-
         for model in bkgModels:
             h1MeanMass = h1PreselEff.Clone(f"best_{model}")
             h1MeanMass.Reset()
@@ -139,8 +140,8 @@ for split in SPLIT_LIST:
 
                 lineshape = histo.GetFunction("fitTpl")
 
-                h1MeanMass.SetBinContent(iBin,mLambda[0]+mDeuton[0]-(lineshape.GetParameter(par_index)-shift[iBin-1]))
-                h1MeanMass.SetBinError(iBin,math.sqrt(lineshape.GetParError(par_index)**2+mLambda[1]**2+mDeuton[1]**2))
+                h1MeanMass.SetBinContent(iBin,lineshape.GetParameter(par_index)-shift[iBin-1])
+                h1MeanMass.SetBinError(iBin,lineshape.GetParError(par_index))
 
                 means.append([])
                 errs.append([])
@@ -152,77 +153,97 @@ for split in SPLIT_LIST:
                     histo = results_file.Get(f'{inDirName}/ct_{params["CT_BINS"][iBin-1]}{params["CT_BINS"][iBin]}/{model}/ct{params["CT_BINS"][iBin-1]}{params["CT_BINS"][iBin]}_pT210_cen090_eff{eff:.2f}')
                     lineshape = histo.GetFunction("fitTpl")
 
-                    means[iBin-1].append(mLambda[0]+mDeuton[0]-(lineshape.GetParameter(par_index)-shift[iBin-1]))
-                    errs[iBin-1].append(math.sqrt(lineshape.GetParError(par_index)**2+mLambda[1]**2+mDeuton[1]**2))
+                    means[iBin-1].append(lineshape.GetParameter(par_index)-shift[iBin-1])
+                    errs[iBin-1].append(lineshape.GetParError(par_index))
+            
+            for meas in MEASUREMENT:
+                out_dir.cd()
+                h1MeanMass.UseCurrentStyle()
+                if meas == 'B_{#Lambda}':
+                    for iBin in range(1, hist_shift.GetNbinsX() + 1):
+                        h1MeanMass.SetBinContent(iBin,mLambda[0]+mDeuton[0]-h1MeanMass.GetBinContent(iBin))
+                    rangePad = [-0.004,0.002]
+                else:
+                    rangePad = [2.990,2.995]
 
-            out_dir.cd()
-            h1MeanMass.UseCurrentStyle()
-            if(split!=""):
-                if(model=="pol2"):
-                    hist_list.append(h1MeanMass.Clone("hist"+split))
-            h1MeanMass.Fit(pol0, "MI0+", "",0,35)
-            #fit_function = h1MeanMass.GetFunction("mypol0")
-            pol0.SetLineColor(kOrangeC)
-            h1MeanMass.Write()
-            hMeanMass.append(h1MeanMass)
+                
+                if split == '_antimatter':
+                    label = {
+                    "mass": 'm_{{}^{3}_{#bar{#Lambda}} #bar{H}}',
+                    "B_{#Lambda}": 'B_{#bar{#Lambda}}',
+                    }
+                else:
+                    label = {
+                    "mass": 'm_{{}^{3}_{#Lambda} {H}}',
+                    "B_{#Lambda}": 'B_{#Lambda}',
+                    }
 
-            cvDir.cd()
-            myCv = TCanvas(f"ctSpectraCv_{model}{split}")
+                if(split!=""):
+                    if(model=="pol2"):
+                        hist_list.append(h1MeanMass.Clone("hist"+split))
+                h1MeanMass.Fit(pol0, "MI0+", "",0,35)
+                #fit_function = h1MeanMass.GetFunction("mypol0")
+                pol0.SetLineColor(kOrangeC)
+                h1MeanMass.Write()
+                hMeanMass.append(h1MeanMass)
 
-            frame = gPad.DrawFrame(
-                0., -0.002, 36, 0.001, ";#it{c}t (cm); B_{#Lambda} [GeV/c^{2}]")
-            pinfo2 = TPaveText(0.5, 0.65, 0.88, 0.86, "NDC")
-            pinfo2.SetBorderSize(0)
-            pinfo2.SetFillStyle(0)
-            pinfo2.SetTextAlign(22)
-            pinfo2.SetTextFont(43)
-            pinfo2.SetTextSize(22)
-            string1 = '#bf{ALICE Internal}'
-            string2 = 'Pb-Pb  #sqrt{#it{s}_{NN}} = 5.02 TeV,  0-90%'
-            pinfo2.AddText(string1)
-            pinfo2.AddText(string2)
-            string = 'B_{#Lambda}'+' = {:.5f} #pm {:.5f} GeV/c^{{2}} '.format(pol0.GetParameter(0), pol0.GetParError(0))
-            pinfo2.AddText(string)
-            if pol0.GetNDF()is not 0:
-                string = f'#chi^{{2}} / NDF = {(pol0.GetChisquare() / pol0.GetNDF()):.2f}'
-            pinfo2.AddText(string)
-            pol0.Draw("same")
-            h1MeanMass.Draw("ex0same")
-            #h1MeanMass.SetMarkerStyle(20)
-            #h1MeanMass.SetMarkerColor(kBlueC)
-            #h1MeanMass.SetLineColor(kBlueC)
-            #frame.GetYaxis().SetTitleSize(26)
-            #frame.GetYaxis().SetLabelSize(22)
-            #frame.GetXaxis().SetTitleSize(26)
-            #frame.GetXaxis().SetLabelSize(22)
-            #h1MeanMass.SetStats(0)
+                cvDir.cd()
+                myCv = TCanvas(f"ctSpectraCv_{model}_{meas}{split}")
+                
+                frame = gPad.DrawFrame(
+                    0., rangePad[0], 36, rangePad[1], ";#it{c}t (cm);"+ label[meas] +"[GeV/c^{2}]")
+                pinfo2 = TPaveText(0.5, 0.65, 0.88, 0.86, "NDC")
+                pinfo2.SetBorderSize(0)
+                pinfo2.SetFillStyle(0)
+                pinfo2.SetTextAlign(22)
+                pinfo2.SetTextFont(43)
+                pinfo2.SetTextSize(22)
+                string1 = '#bf{ALICE Internal}'
+                string2 = 'Pb-Pb  #sqrt{#it{s}_{NN}} = 5.02 TeV,  0-90%'
+                pinfo2.AddText(string1)
+                pinfo2.AddText(string2)
+                string = label[meas] + ' = {:.5f} #pm {:.5f} MeV/c^{{2}} '.format(pol0.GetParameter(0)*10**(3), pol0.GetParError(0)*10**(3))
+                pinfo2.AddText(string)
+                if pol0.GetNDF()is not 0:
+                    string = f'#chi^{{2}} / NDF = {(pol0.GetChisquare() / pol0.GetNDF()):.2f}'
+                pinfo2.AddText(string)
+                pol0.Draw("same")
+                h1MeanMass.Draw("ex0same")
+                h1MeanMass.SetMarkerStyle(20)
+                h1MeanMass.SetMarkerColor(kBlueC)
+                h1MeanMass.SetLineColor(kBlueC)
+                #frame.GetYaxis().SetTitleSize(26)
+                #frame.GetYaxis().SetLabelSize(22)
+                #frame.GetXaxis().SetTitleSize(26)
+                #frame.GetXaxis().SetLabelSize(22)
+                #h1MeanMass.SetStats(0)
 
-            pinfo2.Draw("x0same")
-            tmpSyst = h1MeanMass.Clone("hSyst")
-            corSyst = h1MeanMass.Clone("hCorr")
-            tmpSyst.SetFillStyle(0)
-            tmpSyst.SetMinimum(0.001)
-            tmpSyst.SetMaximum(1000)
-            corSyst.SetFillStyle(3345)
-            for iBin in range(1, h1MeanMass.GetNbinsX() + 1):
-                val = h1MeanMass.GetBinContent(iBin)
-                # tmpSyst.SetBinError(iBin, val*0.099)
-            #     # corSyst.SetBinError(iBin, 0.086 * val)
-            # tmpSyst.SetLineColor(kBlueC)
-            # tmpSyst.SetMarkerColor(kBlueC)
-            # tmpSyst.Draw("e2same")
-            # corSyst.Draw("e2same")
-            out_dir.cd()
-            myCv.Write()
+                pinfo2.Draw("x0same")
+                tmpSyst = h1MeanMass.Clone("hSyst")
+                corSyst = h1MeanMass.Clone("hCorr")
+                tmpSyst.SetFillStyle(0)
+                tmpSyst.SetMinimum(0.001)
+                tmpSyst.SetMaximum(1000)
+                corSyst.SetFillStyle(3345)
+                for iBin in range(1, h1MeanMass.GetNbinsX() + 1):
+                    val = h1MeanMass.GetBinContent(iBin)
+                    # tmpSyst.SetBinError(iBin, val*0.099)
+                #     # corSyst.SetBinError(iBin, 0.086 * val)
+                # tmpSyst.SetLineColor(kBlueC)
+                # tmpSyst.SetMarkerColor(kBlueC)
+                # tmpSyst.Draw("e2same")
+                # corSyst.Draw("e2same")
+                out_dir.cd()
+                myCv.Write()
 
-            #h1MeanMass.Draw("ex0same")
-            #pinfo2.Draw()
-            cvDir.cd()
-            myCv.Write()
+                #h1MeanMass.Draw("ex0same")
+                #pinfo2.Draw()
+                cvDir.cd()
+                myCv.Write()
 
         out_dir.cd()
 
-        syst = TH1D("syst", ";B_{#Lambda} (GeV/c^{2});Entries", 300, -0.003, 0.002)
+        syst = TH1D("syst", ";mass (GeV/c^{2});Entries", 300, 2.991, 2.993)
         prob = TH1D("prob", ";constant fit probability;Entries",300, 0, 1)
         tmpCt = hMeanMass[0].Clone("tmpCt")
 
@@ -257,41 +278,5 @@ for split in SPLIT_LIST:
         #syst.Scale(1./syst.Integral())
         syst.Write()
         prob.Write()
-
-
-#-----------------Fill diff histo -------------------------------------------------
-if(split!=""):
-    myCv_diff = TCanvas("diff")
-    myCv_diff.cd()
-    hist_list[1].Add(hist_list[0],-1)   
-    hist_list[1].Fit("pol0","MI+","",0,35)
-    fit_function = hist_list[1].GetFunction("pol0")
-    fit_function.SetLineColor(kOrangeC)
-    frame = gPad.DrawFrame(
-        0., -0.002, 36, 0.001, ";#it{c}t (cm); {}^{3}_{#bar{#Lambda}} #bar{H} - ^{3}_{#Lambda} H")
-    pinfo2 = TPaveText(0.5, 0.65, 0.88, 0.86, "NDC")
-    pinfo2.SetBorderSize(0)
-    pinfo2.SetFillStyle(0)
-    pinfo2.SetTextAlign(22)
-    pinfo2.SetTextFont(43)
-    pinfo2.SetTextSize(22)
-    string1 = '#bf{ALICE Internal}'
-    string2 = 'Pb-Pb  #sqrt{#it{s}_{NN}} = 5.02 TeV,  0-90%'
-    pinfo2.AddText(string1)
-    pinfo2.AddText(string2)
-    string = '#Deltam'+' = {:.5f} #pm {:.5f} GeV/c^{{2}} '.format(pol0.GetParameter(0), pol0.GetParError(0))
-    pinfo2.AddText(string)
-    if pol0.GetNDF()is not 0:
-        string = f'#chi^{{2}} / NDF = {(pol0.GetChisquare() / pol0.GetNDF()):.2f}'
-    pinfo2.AddText(string)
-    fit_function.Draw("same")
-    hist_list[1].Draw("ex0same")
-    pinfo2.Draw("x0same")
-    hist_list[1].SetMarkerColor(kBlue)
-    hist_list[1].SetLineColor(kBlue)
-    hist_list[1].SetMarkerStyle(20)
-    myCv_diff.Write()
-    myCv_diff.Close()
-#-----------------------------------------------------------------------------------
 
 results_file.Close()
