@@ -139,9 +139,11 @@ if TRAIN:
 
 if APPLICATION:
     app_time = time.time()
-    application_columns = ['score', 'm', 'ct', 'pt', 'centrality', 'positive', 'mppi_vert']
+    if(N_BODY==3):
+        application_columns = ['score', 'm', 'ct', 'pt', 'centrality', 'positive', 'mppi_vert']
+    else:
+        application_columns = ['score', 'm', 'ct', 'pt', 'centrality']
 
-    # create output file
     file_name = results_dir + f'/{FILE_PREFIX}_results.root'
     results_file = TFile(file_name, 'recreate')
 

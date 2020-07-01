@@ -280,7 +280,7 @@ class ModelApplication:
         df_applied = self.df_data.query(data_range)
 
         df_applied.insert(0, 'score', model_handler.predict(df_applied[training_columns]))
-        df_applied = df_applied.loc[:, application_columns]
+        df_applied = df_applied[application_columns]
 
         print('Application: Done!')
 
