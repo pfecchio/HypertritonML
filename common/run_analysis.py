@@ -166,6 +166,8 @@ if APPLICATION:
 
             th2_efficiency = ml_application.load_preselection_efficiency(cclass, split)
 
+            df_sign = pd.DataFrame()
+
             for ptbin in zip(PT_BINS[:-1], PT_BINS[1:]):
                 ptbin_index = ml_application.presel_histo.GetXaxis().FindBin(0.5 * (ptbin[0] + ptbin[1]))
 
@@ -195,7 +197,10 @@ if APPLICATION:
                     sub_dir.cd()
 
                     for eff, tsd in zip(pd.unique(eff_score_array[0][::-1]), pd.unique(eff_score_array[1][::-1])):
+                        if(eff==sigscan_eff):
+                            df_sign = df_sign.append(df_applied.query('score>@tsd'), ignore_index=True, sort=False)
                         mass_array = np.array(df_applied.query('score>@tsd')['m'].values, dtype=np.float64)
+
                         counts, _ = np.histogram(mass_array, bins=mass_bins, range=[2.96, 3.05])
 
                         histo_name = f'eff{eff:.2f}'
@@ -207,7 +212,7 @@ if APPLICATION:
 
             cent_dir.cd()
             th2_efficiency.Write()
-
+    df_sign.to_parquet(os.path.dirname(data_path) + '/selected_df.parquet.gzip', compression='gzip')
     print(f'--- ML application time: {((time.time() - app_time) / 60):.2f} minutes ---')
     results_file.Close()
 

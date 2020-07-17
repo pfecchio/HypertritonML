@@ -27,7 +27,7 @@ results_file = Path(os.environ['HYPERML_EFFICIENCIES_3'] + f'/PreselEff_cent{CEN
 df = uproot.open(mc_table)['SignalTable'].pandas.df().query('bw_accept')
 
 df_den = df
-df_num = df.query('cos_pa>0')
+df_num = df.query('cos_pa>0 and pt>2')
 
 # define histograms for reconstructed and generated hypertritons
 presel_histo = hau.h2_preselection_efficiency(PT_BINS, CT_BINS)
