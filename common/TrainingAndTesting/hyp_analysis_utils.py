@@ -159,7 +159,7 @@ def get_ctbin_index(th2, ctbin):
 
 
 def fit_hist(
-        histo, cent_class, pt_range, ct_range, nsigma=3, model="pol2", fixsigma=-1, sigma_limits=None, mode=3):
+        histo, cent_class, pt_range, ct_range, nsigma=3, model="pol2", fixsigma=-1, sigma_limits=None, mode=3, split =''):
     # canvas for plotting the invariant mass distribution
     cv = TCanvas(f'cv_{histo.GetName()}')
 
@@ -278,13 +278,15 @@ def fit_hist(
 
     string = f'ALICE Internal, Pb-Pb 2018 {cent_class[0]}-{cent_class[1]}%'
     pinfo2.AddText(string)
+    
+    decay_label = {
+        "": ['{}^{3}_{#Lambda}H#rightarrow ^{3}He#pi^{-} + c.c.','{}^{3}_{#Lambda}H#rightarrow dp#pi^{-} + c.c.'],
+        "_matter": ['{}^{3}_{#Lambda}H#rightarrow ^{3}He#pi^{-}','{}^{3}_{#Lambda}H#rightarrow dp#pi^{-}'],
+        "_antimatter": ['{}^{3}_{#bar{#Lambda}}#bar{H}#rightarrow ^{3}#bar{He}#pi^{+}','{}^{3}_{#Lambda}H#rightarrow #bar{d}#bar{p}#pi^{+}'],
+    }
 
-    if mode == 2:
-        string = '{}^{3}_{#Lambda}H#rightarrow ^{3}He#pi + c.c., %i #leq #it{ct} < %i cm %i #leq #it{p}_{T} < %i GeV/#it{c} ' % (
-            ct_range[0], ct_range[1], pt_range[0], pt_range[1])
-    if mode == 3:
-        string = '{}^{3}_{#Lambda}H#rightarrow dp#pi + c.c., %i #leq #it{ct} < %i cm %i #leq #it{p}_{T} < %i GeV/#it{c} ' % (
-            ct_range[0], ct_range[1], pt_range[0], pt_range[1])
+    string = decay_label[split][mode-2]+', %i #leq #it{ct} < %i cm %i #leq #it{p}_{T} < %i GeV/#it{c} ' % (
+        ct_range[0], ct_range[1], pt_range[0], pt_range[1])
     pinfo2.AddText(string)
 
     string = f'Significance ({nsigma:.0f}#sigma) {signif:.1f} #pm {errsignif:.1f} '
