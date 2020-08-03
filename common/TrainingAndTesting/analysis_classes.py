@@ -33,7 +33,7 @@ class TrainingAnalysis:
         if self.mode == 3:
             self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df().query('bw_accept and cos_pa > 0')
             self.df_generated = uproot.open(mc_file_name)['SignalTable'].pandas.df().query('bw_accept')
-            self.df_bkg = uproot.open(bkg_file_name)['DataTable'].pandas.df(entrystop=40000000)
+            self.df_bkg = uproot.open(bkg_file_name)['DataTable'].pandas.df(entrystop=4000000)
 
         if self.mode == 2:
             self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df()

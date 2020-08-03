@@ -52,6 +52,9 @@ HYPERPARAMS_RANGE: #TODO: check if it works without tuples
   # # lambda: (0,10]  # L2 regularization term on weights
   # # alpha: (0,10]  # L1 regularization term on weight
 
+
+RENAME_COLUMNS: False
+
 TRAINING_COLUMNS:
 - pt
 - cos_pa

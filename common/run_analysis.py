@@ -59,6 +59,8 @@ FIX_EFF_ARRAY = np.arange(EFF_MIN, EFF_MAX, EFF_STEP)
 
 SIGMA_MC = params['SIGMA_MC']
 
+RENAME_COLUMNS= params["RENAME_COLUMNS"]
+
 TRAIN = args.train
 TEST_MODE = args.test
 SPLIT_MODE = args.split
@@ -140,7 +142,7 @@ if TRAIN:
 if APPLICATION:
     app_time = time.time()
     if(N_BODY==3):
-        application_columns = ['score', 'm', 'ct', 'pt', 'centrality', 'positive', 'mppi_vert']
+        application_columns = ['score', 'm', 'ct', 'pt', 'centrality', 'positive', 'mppi_vert', "r", "pz"]
     else:
         application_columns = ['score', 'm', 'ct', 'pt', 'centrality']
 
@@ -152,7 +154,7 @@ if APPLICATION:
             if LOAD_LARGE_DATA:
                 df_skimmed = pd.read_parquet(os.path.dirname(data_path) + '/skimmed_df.parquet.gzip')
             else:
-                df_skimmed = hau.get_skimmed_large_data(data_path, CENT_CLASSES, PT_BINS, CT_BINS, COLUMNS, application_columns, N_BODY)
+                df_skimmed = hau.get_skimmed_large_data(data_path, CENT_CLASSES, PT_BINS, CT_BINS, COLUMNS, application_columns, N_BODY, rename=RENAME_COLUMNS)
                 df_skimmed.to_parquet(os.path.dirname(data_path) + '/skimmed_df.parquet.gzip', compression='gzip')
 
             ml_application = ModelApplication(N_BODY, data_path, analysis_res_path, CENT_CLASSES, split, df_skimmed)
@@ -212,7 +214,7 @@ if APPLICATION:
 
             cent_dir.cd()
             th2_efficiency.Write()
-    df_sign.to_parquet(os.path.dirname(data_path) + '/selected_df.parquet.gzip', compression='gzip')
+    df_sign.to_parquet(os.path.dirname(data_path) + '/selected_df.parquet_LS.gzip', compression='gzip')
     print(f'--- ML application time: {((time.time() - app_time) / 60):.2f} minutes ---')
     results_file.Close()
 
