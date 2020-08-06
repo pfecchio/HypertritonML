@@ -49,12 +49,12 @@ void GenTable3::Fill(const SHypertriton3 &sHyp3, const REvent &rEv) {
   fMatter = sHyp3.fPdgCode > 0;
 
   // compute decay lenght
-  const double decayLenght = Hypot(sHyp3.fDecayVtxX, sHyp3.fDecayVtxY, sHyp3.fDecayVtxZ);
+  const double decayLenght = Hypote(sHyp3.fDecayVtxX, sHyp3.fDecayVtxY, sHyp3.fDecayVtxZ);
 
   // compute the 4-vector of the daughter tracks
-  const double eDeu = Hypot(sHyp3.fPxDeu, sHyp3.fPyDeu, sHyp3.fPzDeu, kDeuMass);
-  const double eP   = Hypot(sHyp3.fPxP, sHyp3.fPyP, sHyp3.fPzP, kPMass);
-  const double ePi  = Hypot(sHyp3.fPxPi, sHyp3.fPyPi, sHyp3.fPzPi, kPiMass);
+  const double eDeu = Hypote(sHyp3.fPxDeu, sHyp3.fPyDeu, sHyp3.fPzDeu, kDeuMass);
+  const double eP   = Hypote(sHyp3.fPxP, sHyp3.fPyP, sHyp3.fPzP, kPMass);
+  const double ePi  = Hypote(sHyp3.fPxPi, sHyp3.fPyPi, sHyp3.fPzPi, kPiMass);
 
   const TLorentzVector deu4Vector{sHyp3.fPxDeu, sHyp3.fPyDeu, sHyp3.fPzDeu, eDeu};
   const TLorentzVector p4Vector{sHyp3.fPxP, sHyp3.fPyP, sHyp3.fPzP, eP};
@@ -65,7 +65,7 @@ void GenTable3::Fill(const SHypertriton3 &sHyp3, const REvent &rEv) {
 
   fPt       = hyp4Vector.Pt();
   fPhi      = hyp4Vector.Phi();
-  fCt       = decayLenght * kHyperTritonMass / hyp4Vector.P();
+  fCt       = decayLenght * kHyperMass / hyp4Vector.P();
   fRapidity = hyp4Vector.Rapidity();
 
   // fill the tree

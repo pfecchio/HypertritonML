@@ -9,7 +9,7 @@
 #include <TF1.h>
 #include <TLorentzVector.h>
 
-constexpr double kHyperTritonMass{2.99131};
+constexpr double kHyperMass{2.99131};
 
 constexpr float kDeuMass{1.87561};
 constexpr float kPMass{0.938272};
@@ -44,11 +44,11 @@ inline float VProd(const TLorentzVector &a1, const TLorentzVector &a2) {
 
 template <typename T> double Pot2(T a) { return a * a; }
 
-template <typename F> double Hypot(F a, F b) { return std::sqrt(a * a + b * b); }
+template <typename F> double Hypote(F a, F b) { return std::sqrt(a * a + b * b); }
 
-template <typename F> double Hypot(F a, F b, F c) { return std::sqrt(a * a + b * b + c * c); }
+template <typename F> double Hypote(F a, F b, F c) { return std::sqrt(a * a + b * b + c * c); }
 
-template <typename F> double Hypot(F a, F b, F c, F d) { return std::sqrt(a * a + b * b + c * c + d * d); }
+template <typename F> double Hypote(F a, F b, F c, F d) { return std::sqrt(a * a + b * b + c * c + d * d); }
 
 template <typename T> double DistanceZ(T v1, T v2) { return std::sqrt(Pot2(v1[2] - v2[2])); }
 

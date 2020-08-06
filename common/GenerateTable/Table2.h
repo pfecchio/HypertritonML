@@ -95,8 +95,8 @@ Table2::Table2(std::string name, std::string title)
 void Table2::Fill(const RHyperTritonHe3pi &RHyper, const RCollision &RColl)
 {
   centrality = RColl.fCent;
-  double eHe3 = Hypot(RHyper.fPxHe3, RHyper.fPyHe3, RHyper.fPzHe3, AliPID::ParticleMass(AliPID::kHe3));
-  double ePi = Hypot(RHyper.fPxPi, RHyper.fPyPi, RHyper.fPzPi, AliPID::ParticleMass(AliPID::kPion));
+  double eHe3 = Hypote(RHyper.fPxHe3, RHyper.fPyHe3, RHyper.fPzHe3, AliPID::ParticleMass(AliPID::kHe3));
+  double ePi = Hypote(RHyper.fPxPi, RHyper.fPyPi, RHyper.fPzPi, AliPID::ParticleMass(AliPID::kPion));
 
   TLorentzVector he3Vector, piVector, hyperVector;
   he3Vector.SetPxPyPzE(RHyper.fPxHe3, RHyper.fPyHe3, RHyper.fPzHe3, eHe3);
@@ -122,20 +122,20 @@ void Table2::Fill(const RHyperTritonHe3pi &RHyper, const RCollision &RColl)
   }
 
   float alpha = (qP - qN) / (qP + qN);
-  ct = kHyperTritonMass * (Hypot(RHyper.fDecayX, RHyper.fDecayY, RHyper.fDecayZ) / hyperVector.P());
+  ct = kHyperMass * (Hypote(RHyper.fDecayX, RHyper.fDecayY, RHyper.fDecayZ) / hyperVector.P());
   m = hyperVector.M();
   ArmenterosAlpha = alpha;
   V0CosPA = CosPA;
   V0Chi2 = RHyper.fChi2V0;
-  PiProngPt = Hypot(RHyper.fPxPi, RHyper.fPyPi);
-  He3ProngPt = Hypot(RHyper.fPxHe3, RHyper.fPyHe3);
+  PiProngPt = Hypote(RHyper.fPxPi, RHyper.fPyPi);
+  He3ProngPt = Hypote(RHyper.fPxHe3, RHyper.fPyHe3);
   ProngsDCA = RHyper.fDcaV0daughters;
   PiProngPvDCA = RHyper.fDcaPi2PrimaryVertex;
   He3ProngPvDCA = RHyper.fDcaHe32PrimaryVertex;
   PiProngPvDCAXY = RHyper.fDcaPi2PrimaryVertexXY;
   He3ProngPvDCAXY = RHyper.fDcaHe32PrimaryVertexXY;
-  Lrec = Hypot(RHyper.fDecayX, RHyper.fDecayY, RHyper.fDecayZ);
-  V0radius = Hypot(RHyper.fDecayX, RHyper.fDecayY);
+  Lrec = Hypote(RHyper.fDecayX, RHyper.fDecayY, RHyper.fDecayZ);
+  V0radius = Hypote(RHyper.fDecayX, RHyper.fDecayY);
   NpidClustersHe3 = RHyper.fNpidClustersHe3;
   NitsClustersHe3 = RHyper.fITSclusHe3;
   NpidClustersPion = RHyper.fNpidClustersPi;

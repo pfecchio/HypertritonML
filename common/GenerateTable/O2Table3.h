@@ -158,7 +158,7 @@ void TableO2::Fill(const SHyperTriton3O2 &SHyper, TF1 *blastWave[3], double max[
   gPt = SHyper.gPt;
   gPhi = SHyper.gPhi;
   const double p = std::hypot(SHyper.gPt, gPt);
-  const double e = std::hypot(p, kHyperTritonMass);
+  const double e = std::hypot(p, kHyperMass);
   gY = 0.5 * std::log((e + SHyper.gPz) / (e - SHyper.gPz + 1.e-12));
   gCt = SHyper.gCt;
   gT = SHyper.gT;

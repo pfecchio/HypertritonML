@@ -30,7 +30,7 @@ void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypT
   string inFileName = "HyperTritonTree_19d2.root";
   string inFileArg = hypDataDir + "/" + inFileName;
 
-  string outFileName = "SignalTable.root";
+  string outFileName = "SignalTable_19d2.root";
   string outFileArg = hypTableDir + "/" + outFileName;
 
   string absFileName = "absorption.root";
@@ -122,10 +122,10 @@ void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypT
       bool matter = SHyper.fPdgCode > 0;
 
       double pt = std::hypot(SHyper.fPxHe3 + SHyper.fPxPi, SHyper.fPyHe3 + SHyper.fPyPi);
-
-      float hypPtShapeNum = hypPtShape->Eval(pt) / max;
+      
       if (reject)
       {
+        float hypPtShapeNum = hypPtShape->Eval(pt) / max;
         if (hypPtShapeNum < gRandom->Rndm())
           continue;
       }
@@ -164,6 +164,5 @@ void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypT
   absHA.Write();
   outFile.Close();
 
-  std::cout << "\nDerived tables from MC generated!\n"
-            << std::endl;
+
 }

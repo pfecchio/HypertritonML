@@ -46,7 +46,7 @@ GenTable2::GenTable2(std::string name, std::string title) {
 void GenTable2::Fill(const SHyperTritonHe3pi& SHyper, const RCollision& RColl) {
   Centrality = RColl.fCent;
   Matter = SHyper.fPdgCode > 0;
-  const double len = Hypot(SHyper.fDecayX, SHyper.fDecayY, SHyper.fDecayZ);
+  const double len = Hypote(SHyper.fDecayX, SHyper.fDecayY, SHyper.fDecayZ);
 
   using namespace ROOT::Math;
   const LorentzVector<PxPyPzM4D<double>> sHe3{SHyper.fPxHe3, SHyper.fPyHe3, SHyper.fPzHe3, AliPID::ParticleMass(AliPID::kHe3)};
@@ -54,7 +54,7 @@ void GenTable2::Fill(const SHyperTritonHe3pi& SHyper, const RCollision& RColl) {
   const LorentzVector<PxPyPzM4D<double>> sMother = sHe3 + sPi;
   Pt = sMother.Pt();
   Phi = sMother.Phi();
-  Ct = len * kHyperTritonMass / sMother.P();
+  Ct = len * kHyperMass / sMother.P();
   Rapidity = sMother.Rapidity();
   tree->Fill();
 }
