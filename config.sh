@@ -47,8 +47,8 @@ if [ $BODY_2 -eq 1 ]; then
       [ ! -d "$HYPERML_EFFICIENCIES_2" ] && mkdir -p $HYPERML_EFFICIENCIES_2
       [ ! -d "$HYPERML_RESULTS_2" ] && mkdir -p $HYPERML_RESULTS_2
       [ ! -d "$HYPERML_UTILS_2" ] && mkdir -p $HYPERML_UTILS_2
-      [ ! -f "$HYPERML_DATA_2/HyperTritonTree_18q.root"  ] && alien_cp /alice/cern.ch/user/f/fmazzasc/tree/HyperTritonTree_18q.root  file://$HYPERML_DATA_2/HyperTritonTree_18q.root
-      [ ! -f "$HYPERML_DATA_2/HyperTritonTree_18r.root"  ] && alien_cp /alice/cern.ch/user/f/fmazzasc/tree/HyperTritonTree_18r.root  file://$HYPERML_DATA_2/HyperTritonTree_18r.root
+      [ ! -f "$HYPERML_DATA_2/HyperTritonTree_18q.root"  ] && alien_cp /alice/cern.ch/user/f/fmazzasc/splines_trees/HyperTritonTree_18q.root  file://$HYPERML_DATA_2/HyperTritonTree_18q.root
+      [ ! -f "$HYPERML_DATA_2/HyperTritonTree_18r.root"  ] && alien_cp /alice/cern.ch/user/f/fmazzasc/splines_trees/HyperTritonTree_18r.root  file://$HYPERML_DATA_2/HyperTritonTree_18r.root
       [ ! -f "$HYPERML_DATA_2/HyperTritonTree_19d2.root" ] && alien_cp /alice/cern.ch/user/f/fmazzasc/tree/HyperTritonTree_19d2.root file://$HYPERML_DATA_2/HyperTritonTree_19d2.root
       [ ! -f "$HYPERML_DATA_2/HyperTritonTree_18qLS.root" ] && alien_cp /alice/cern.ch/user/a/alitrain/PWGLF/LF_PbPb/1108_20190920-2344/merge/HyperTritonTree.root file://$HYPERML_DATA_2/HyperTritonTree_18qLS.root
       [ ! -f "$HYPERML_DATA_2/HyperTritonTree_18rLS.root" ] && alien_cp /alice/cern.ch/user/a/alitrain/PWGLF/LF_PbPb/1109_20190920-2345/merge/HyperTritonTree.root file://$HYPERML_DATA_2/HyperTritonTree_18rLS.root
