@@ -5,6 +5,7 @@
 
 #include "AliAnalysisTaskHypertriton3.h"
 
+#include "Common.h"
 
 class TableO2
 {
@@ -149,7 +150,7 @@ void TableO2::Fill(const RHyperTriton3O2 &RHyper)
   has_tof_pi = RHyper.hasTOF_pi;
 
   cos_pa_lambda = RHyper.cosPA_Lambda;
-  cos_theta_ppi_H = RHyper.cosThetaProtonPiH;
+  cos_theta_ppi_H = RHyper.cosTheta_ProtonPiH;
   mppi_vert = RHyper.mppi_vert;
   dca_lambda_hyper = RHyper.dca_lambda_hyper;
 
@@ -196,7 +197,7 @@ void TableO2::Fill(const SHyperTriton3O2 &SHyper, TF1 *blastWave[3], double max[
   has_tof_de = SHyper.hasTOF_de;
   has_tof_pr = SHyper.hasTOF_pr;
   has_tof_pi = SHyper.hasTOF_pi;
-
+  cos_theta_ppi_H = SHyper.cosTheta_ProtonPiH;
   cos_pa_lambda = SHyper.cosPA_Lambda;
   mppi_vert = SHyper.mppi_vert;
   dca_lambda_hyper = SHyper.dca_lambda_hyper;
