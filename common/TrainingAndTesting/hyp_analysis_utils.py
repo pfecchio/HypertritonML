@@ -33,7 +33,7 @@ def get_skimmed_large_data(data_path, cent_classes, pt_bins, ct_bins, training_c
         if(rename==True):
             rename_dict = {'dca_de_sv_f':'dca_de_sv', 'dca_pr_sv_f':'dca_pr_sv', "dca_pi_sv_f": "dca_pi_sv", 'tpcClus_de_f':'tpc_ncls_de', 'tpcClus_pr_f':'tpc_ncls_pr', 'tpcClus_pi_f':'tpc_ncls_pi',
                 'tpcNsig_de_f':'tpc_nsig_de', 'tpcNsig_pr_f':'tpc_nsig_pr', 'tpcNsig_pi_f':'tpc_nsig_pi', 'dca_de_pr_f':'dca_de_pr', 'dca_de_pi_f': 'dca_de_pi', 'dca_pr_pi_f':'dca_pr_pi',
-                "cosPA":"cos_pa", 'mppi_vert_f': 'mppi_vert'}
+                "cosPA":"cos_pa", 'mppi_vert_f': 'mppi_vert', "cosTheta_ProtonPiH_f": "cos_theta_ppi_H"}
             data = data.rename(columns = rename_dict)
             data["centrality"] = 10*np.ones(len(data))
 
