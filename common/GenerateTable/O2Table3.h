@@ -49,6 +49,7 @@ private:
   float cos_pa_lambda;
   float mppi_vert;
   float dca_lambda_hyper;
+  float cos_theta_ppi_H;
 
   // mc only variables
   float gPt;
@@ -98,6 +99,7 @@ TableO2::TableO2(bool isMC)
   tree->Branch("positive", &positive);
 
   tree->Branch("cos_pa_lambda", &cos_pa_lambda);
+  tree->Branch("cos_theta_ppi_H", &cos_theta_ppi_H);
   tree->Branch("mppi_vert", &mppi_vert);
   tree->Branch("dca_lambda_hyper", &dca_lambda_hyper);
 
@@ -147,6 +149,7 @@ void TableO2::Fill(const RHyperTriton3O2 &RHyper)
   has_tof_pi = RHyper.hasTOF_pi;
 
   cos_pa_lambda = RHyper.cosPA_Lambda;
+  cos_theta_ppi_H = RHyper.cosThetaProtonPiH;
   mppi_vert = RHyper.mppi_vert;
   dca_lambda_hyper = RHyper.dca_lambda_hyper;
 
