@@ -10,41 +10,46 @@
 using namespace ROOT;
 using namespace TMVA::Experimental;
 
-void PrepareDataFrames() {
+void PrepareDataFrames(std::string dType = "data", std::string hypDataDir = "", std::string hypTableDir = "") {
 
   ROOT::EnableImplicitMT();
 
-  std::ifstream in("lists");
+  if (hypDataDir == "")
+    hypDataDir = getenv("HYPERML_DATA_3");
+  if (hypTableDir == "")
+    hypTableDir = getenv("HYPERML_TABLES_3");
+  
+  
+  std::ifstream in(Form("%s/%s_path_list", hypDataDir.data(), dType.data()));
+
+  std::string outFile = hypTableDir + "/" + "HypDataTable.root";
+
   std::vector<std::string> vecOfStrs;
   std::string str;
+
   while (std::getline(in, str))
   {
     if(str.size() > 0)
-      vecOfStrs.push_back(str);
+      vecOfStrs.push_back(hypDataDir + "/" + str);
   }
 
   ROOT::RDataFrame df("Hyp3O2",vecOfStrs);
-  std::vector<std::string> features{"dca_de","dca_pr","dca_pi","dca_de_sv","dca_pr_sv","dca_pi_sv","tpcClus_de","tpcClus_pr","tpcClus_pi","tpcNsig_de","tpcNsig_pr","tpcNsig_pi","dca_de_pr","dca_de_pi","dca_pr_pi","mppi_vert", "cosTheta_ProtonPiH"};
+  // managing Double_32t variables + renaming
+  std::vector<std::string> inFeatures{"dca_de","dca_pr","dca_pi","dca_de_sv","dca_pr_sv","dca_pi_sv","tpcClus_de","tpcClus_pr","tpcClus_pi","tpcNsig_de","tpcNsig_pr","tpcNsig_pi","dca_de_pr","dca_de_pi","dca_pr_pi","mppi_vert", "cosTheta_ProtonPiH", "cosPA"};
+  std::vector<std::string> outFeatures{"dca_de_f","dca_pr_f","dca_pi_f","dca_de_sv_f","dca_pr_sv_f","dca_pi_sv_f","tpc_clus_de_f","tpc_clus_pr_f","tpc_clus_pi_f","tpc_nsig_de_f","tpc_nsig_pr_f","tpc_sig_pi_f","dca_de_pr_f","dca_de_pi_f","dca_pr_pi_f","mppi_vert_f", "cos_theta_ppi_H_f", "cos_pa_f"};
   auto filterDF = df.Filter("cosPA > 0 ");
-  for (auto& f : features) {
-    filterDF = filterDF.Define(f + "_f", Form("(float)%s",f.data()));
-    f += "_f";
+  for (int i=0; i < inFeatures.size(); i++) {
+    filterDF = filterDF.Define(outFeatures[i], Form("(float)%s", inFeatures[i].data()));
   }
-  features.push_back("cosPA");
-  features.push_back("positive");
-  features.push_back("pt");
-  features.push_back("pz");
-  features.push_back("r");
-  features.push_back("m");
-  features.push_back("ct");
-  features.push_back("chi2");
 
-  auto rHist = filterDF.Histo1D({"rHist",";r (cm); Entries", 200,0,200},"r");
-  filterDF.Snapshot("DataTable","../../../tmp/HypTableData.root",features);
+  outFeatures.push_back("positive");
+  outFeatures.push_back("pt");
+  outFeatures.push_back("pz");
+  outFeatures.push_back("r");
+  outFeatures.push_back("m");
+  outFeatures.push_back("ct");
+  outFeatures.push_back("chi2");
+  outFeatures.push_back("centrality");
+  filterDF.Snapshot("DataTable", outFile, outFeatures);
 
-  TFile output("output.root","recreate");
-  TCanvas rCv("rCv");
-  rHist->Draw();
-  rCv.SaveAs("rCv.png");
-  rHist->Write();
 }
