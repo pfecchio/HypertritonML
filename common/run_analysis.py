@@ -59,8 +59,6 @@ FIX_EFF_ARRAY = np.arange(EFF_MIN, EFF_MAX, EFF_STEP)
 
 SIGMA_MC = params['SIGMA_MC']
 
-RENAME_COLUMNS= params["RENAME_COLUMNS"]
-
 TRAIN = args.train
 TEST_MODE = args.test
 SPLIT_MODE = args.split
@@ -87,7 +85,7 @@ start_time = time.time()                          # for performances evaluation
 
 if TRAIN:
     for split in SPLIT_LIST:
-        ml_analysis = TrainingAnalysis(N_BODY, signal_path, bkg_path, split, rename=RENAME_COLUMNS)
+        ml_analysis = TrainingAnalysis(N_BODY, signal_path, bkg_path, split)
         print(f'--- analysis initialized in {((time.time() - start_time) / 60):.2f} minutes ---\n')
 
         for cclass in CENT_CLASSES:
@@ -154,7 +152,7 @@ if APPLICATION:
             if LOAD_LARGE_DATA:
                 df_skimmed = pd.read_parquet(os.path.dirname(data_path) + '/skimmed_df.parquet.gzip')
             else:
-                df_skimmed = hau.get_skimmed_large_data(data_path, CENT_CLASSES, PT_BINS, CT_BINS, COLUMNS, application_columns, N_BODY, rename=RENAME_COLUMNS)
+                df_skimmed = hau.get_skimmed_large_data(data_path, CENT_CLASSES, PT_BINS, CT_BINS, COLUMNS, application_columns, N_BODY)
                 df_skimmed.to_parquet(os.path.dirname(data_path) + '/skimmed_df.parquet.gzip', compression='gzip')
 
             ml_application = ModelApplication(N_BODY, data_path, analysis_res_path, CENT_CLASSES, split, df_skimmed)

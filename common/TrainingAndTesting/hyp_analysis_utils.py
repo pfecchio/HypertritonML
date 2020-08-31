@@ -12,7 +12,7 @@ from hipe4ml.model_handler import ModelHandler
 from ROOT import (TF1, TH1D, TH2D, TH3D, TCanvas, TPaveStats, TPaveText, gStyle)
 
 
-def get_skimmed_large_data(data_path, cent_classes, pt_bins, ct_bins, training_columns, application_columns, mode, rename=False ):
+def get_skimmed_large_data(data_path, cent_classes, pt_bins, ct_bins, training_columns, application_columns, mode):
     print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
     print ('\nStarting BDT appplication on large data')
 
@@ -30,11 +30,7 @@ def get_skimmed_large_data(data_path, cent_classes, pt_bins, ct_bins, training_c
     df_applied = pd.DataFrame()
 
     for current_file, data in iterator:
-        if(rename==True):
-            rename_dict = {'dca_de_sv_f':'dca_de_sv', 'dca_pr_sv_f':'dca_pr_sv', "dca_pi_sv_f": "dca_pi_sv", 'tpcClus_de_f':'tpc_ncls_de', 'tpcClus_pr_f':'tpc_ncls_pr', 'tpcClus_pi_f':'tpc_ncls_pi',
-                'tpcNsig_de_f':'tpc_nsig_de', 'tpcNsig_pr_f':'tpc_nsig_pr', 'tpcNsig_pi_f':'tpc_nsig_pi', 'dca_de_pr_f':'dca_de_pr', 'dca_de_pi_f': 'dca_de_pi', 'dca_pr_pi_f':'dca_pr_pi',
-                "cosPA":"cos_pa", 'mppi_vert_f': 'mppi_vert', "cosTheta_ProtonPiH_f": "cos_theta_ppi_H"}
-            data = data.rename(columns = rename_dict)
+            rename_df_columns(data)
             data["centrality"] = 10*np.ones(len(data))
 
         print('current file: {}'.format(current_file))
@@ -335,3 +331,14 @@ def load_mcsigma(cent_class, pt_range, ct_range, mode, split=''):
     file_name = f'{sigma_path}/sigma_array{info_string}.npy'
 
     return np.load(file_name, allow_pickle=True)
+
+
+def rename_df_columns(df):
+    rename_dict = {}
+    for col in df.columns:
+        new_col = col
+        if col[-2:]=="_f":
+            new_col = col[:-2]
+        rename_dict[col]=new_col
+    
+    df.rename(columns = rename_dict, inplace=True)
