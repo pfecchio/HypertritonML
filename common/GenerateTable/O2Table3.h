@@ -51,6 +51,8 @@ private:
   float mppi_vert;
   float dca_lambda_hyper;
   float cos_theta_ppi_H;
+  float mppi;
+  float mdpi;
 
   // mc only variables
   float gPt;
@@ -65,9 +67,12 @@ private:
 
 TableO2::TableO2(bool isMC)
 {
-  if (isMC) {
+  if (isMC)
+  {
     tree = new TTree("SignalTable", "SignalTable");
-  } else {
+  }
+  else
+  {
     tree = new TTree("DataTable", "DataTable");
   }
 
@@ -87,10 +92,10 @@ TableO2::TableO2(bool isMC)
   tree->Branch("dca_de_pr", &dca_de_pr);
   tree->Branch("dca_de_pi", &dca_de_pi);
   tree->Branch("dca_pr_pi", &dca_pr_pi);
-  tree->Branch("dca_de_sv",&dca_de_sv);
-  tree->Branch("dca_pr_sv",&dca_pr_sv);
-  tree->Branch("dca_pi_sv",&dca_pi_sv);
-  tree->Branch("chi2",&chi2);
+  tree->Branch("dca_de_sv", &dca_de_sv);
+  tree->Branch("dca_pr_sv", &dca_pr_sv);
+  tree->Branch("dca_pi_sv", &dca_pi_sv);
+  tree->Branch("chi2", &chi2);
   tree->Branch("tpc_ncls_de", &tpc_ncls_de);
   tree->Branch("tpc_ncls_pr", &tpc_ncls_pr);
   tree->Branch("tpc_ncls_pi", &tpc_ncls_pi);
@@ -102,6 +107,8 @@ TableO2::TableO2(bool isMC)
   tree->Branch("cos_pa_lambda", &cos_pa_lambda);
   tree->Branch("cos_theta_ppi_H", &cos_theta_ppi_H);
   tree->Branch("mppi_vert", &mppi_vert);
+  tree->Branch("mppi", &mppi);
+  tree->Branch("mdpi", &mdpi);
   tree->Branch("dca_lambda_hyper", &dca_lambda_hyper);
 
   if (isMC)
@@ -119,7 +126,8 @@ TableO2::TableO2(bool isMC)
 
 void TableO2::Fill(const RHyperTriton3O2 &RHyper)
 {
-  if (RHyper.cosPA < 0) return;
+  if (RHyper.cosPA < 0)
+    return;
 
   centrality = RHyper.centrality;
   pt = RHyper.pt;
@@ -152,6 +160,8 @@ void TableO2::Fill(const RHyperTriton3O2 &RHyper)
   cos_pa_lambda = RHyper.cosPA_Lambda;
   cos_theta_ppi_H = RHyper.cosTheta_ProtonPiH;
   mppi_vert = RHyper.mppi_vert;
+  mppi = RHyper.mppi;
+  mdpi = RHyper.mdpi;
   dca_lambda_hyper = RHyper.dca_lambda_hyper;
 
   tree->Fill();
@@ -173,6 +183,7 @@ void TableO2::Fill(const SHyperTriton3O2 &SHyper, TF1 *blastWave[3], double max[
 
   pt = SHyper.pt;
   positive = SHyper.pt > 0;
+
   m = SHyper.m;
   ct = SHyper.ct;
   cos_pa = SHyper.cosPA;
@@ -200,6 +211,8 @@ void TableO2::Fill(const SHyperTriton3O2 &SHyper, TF1 *blastWave[3], double max[
   cos_theta_ppi_H = SHyper.cosTheta_ProtonPiH;
   cos_pa_lambda = SHyper.cosPA_Lambda;
   mppi_vert = SHyper.mppi_vert;
+  mppi = SHyper.mppi;
+  mdpi = SHyper.mdpi;
   dca_lambda_hyper = SHyper.dca_lambda_hyper;
 
   tree->Fill();
@@ -209,20 +222,24 @@ bool TableO2::AcceptCandidateBW(float gPt, float centrality, TF1 *blastWave[3], 
 {
 
   TF1 *BlastWave{nullptr};
-  double maximum  = 0.0;
+  double maximum = 0.0;
   int index = 2;
-  if (centrality <= 10) {
+  if (centrality <= 10)
+  {
     index = 0;
-  } else if (centrality <= 40.) {
+  }
+  else if (centrality <= 40.)
+  {
     index = 1;
-  } 
+  }
 
   BlastWave = blastWave[index];
-  maximum   = max[index];
+  maximum = max[index];
 
   float bwNum = BlastWave->Eval(gPt) / maximum;
 
-  if (bwNum < gRandom->Rndm()) {
+  if (bwNum < gRandom->Rndm())
+  {
     return false;
   }
   return true;
