@@ -31,7 +31,7 @@ class TrainingAnalysis:
         sidebands_selection = 'not (2.970<m<3.015)'
 
         if self.mode == 3:
-            self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df().query('bw_accept and cos_pa > 0')
+            self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df().query('bw_accept and cos_pa > 0 and pt > 2')
             self.df_generated = uproot.open(mc_file_name)['SignalTable'].pandas.df().query('bw_accept')
             self.df_bkg = uproot.open(bkg_file_name)['DataTable'].pandas.df(entrystop=10000000)
             if rename:
@@ -69,7 +69,7 @@ class TrainingAnalysis:
         gen_histo = hau.h2_generated([0,10], ct_bins)
 
         fill_hist(pres_histo, self.df_signal.query(cent_cut + " and " + pt_cut)[['pt', 'ct']])
-        fill_hist(gen_histo, self.df_generated.query(cent_cut)[['pt', 'ct']])
+        fill_hist(gen_histo, self.df_generated.query(cent_cut)[['gPt', 'gCt']])
 
         pres_histo.Divide(gen_histo)
 
