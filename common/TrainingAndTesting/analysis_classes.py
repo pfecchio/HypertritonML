@@ -34,9 +34,8 @@ class TrainingAnalysis:
             self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df().query('bw_accept and cos_pa > 0 and pt > 2')
             self.df_generated = uproot.open(mc_file_name)['SignalTable'].pandas.df().query('bw_accept')
             self.df_bkg = uproot.open(bkg_file_name)['DataTable'].pandas.df(entrystop=10000000)
-            
+
             hau.rename_df_columns(self.df_bkg)
-            self.df_bkg["centrality"] = 10*np.ones(len(self.df_bkg))
                 
 
         if self.mode == 2:

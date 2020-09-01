@@ -30,9 +30,9 @@ def get_skimmed_large_data(data_path, cent_classes, pt_bins, ct_bins, training_c
     df_applied = pd.DataFrame()
 
     for current_file, data in iterator:
-            rename_df_columns(data)
-            data["centrality"] = 10*np.ones(len(data))
 
+        rename_df_columns(data)
+    
         print('current file: {}'.format(current_file))
         print ('start entry chunk: {}, stop entry chunk: {}'.format(data.index[0], data.index[-1]))
         
