@@ -335,10 +335,10 @@ def load_mcsigma(cent_class, pt_range, ct_range, mode, split=''):
 
 def rename_df_columns(df):
     rename_dict = {}
+
     for col in df.columns:
-        new_col = col
-        if col[-2:]=="_f":
-            new_col = col[:-2]
-        rename_dict[col]=new_col
+
+        if col.endswith('_f'):
+            rename_dict[col] = col[:-2]
     
     df.rename(columns = rename_dict, inplace=True)
