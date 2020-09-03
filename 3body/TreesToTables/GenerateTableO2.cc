@@ -23,7 +23,7 @@
 // output q  "~/data/3body_hypertriton_data/O2/DataTable_18q.root"
 // output mc "~/data/3body_hypertriton_data/O2/SignalTableReweight.root"
 
-void GenerateTableO2(std::string dataDir = "~/data/3body_hypertriton_data/O2/HyperTritonTree3_18r.root", std::string tableDir = "~/data/3body_hypertriton_data/O2/DataTable_18r.root", bool mc = false)
+void GenerateTableO2(std::string dataDir = "~/data/3body_hypertriton_data/O2/last_trees/HyperTritonTree_19d2.root", std::string tableDir = "~/data/3body_hypertriton_data/O2/SignalTableReweight.root", bool mc = true)
 {
   TChain inputChain("Hyp3O2");
   inputChain.Add(dataDir.data());

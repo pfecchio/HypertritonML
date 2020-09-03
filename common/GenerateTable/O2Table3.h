@@ -48,9 +48,11 @@ private:
   bool positive;
 
   float cos_pa_lambda;
+  float mom_dstar;
   float mppi_vert;
   float dca_lambda_hyper;
   float cos_theta_ppi_H;
+  float cos_theta_star;
   float mppi;
   float mdpi;
 
@@ -105,7 +107,9 @@ TableO2::TableO2(bool isMC)
   tree->Branch("positive", &positive);
 
   tree->Branch("cos_pa_lambda", &cos_pa_lambda);
+  tree->Branch("mom_dstar", &mom_dstar);
   tree->Branch("cos_theta_ppi_H", &cos_theta_ppi_H);
+  tree->Branch("cos_theta_star", &cos_theta_star);
   tree->Branch("mppi_vert", &mppi_vert);
   tree->Branch("mppi", &mppi);
   tree->Branch("mdpi", &mdpi);
@@ -158,7 +162,9 @@ void TableO2::Fill(const RHyperTriton3O2 &RHyper)
   has_tof_pi = RHyper.hasTOF_pi;
 
   cos_pa_lambda = RHyper.cosPA_Lambda;
+  mom_dstar = RHyper.momDstar;
   cos_theta_ppi_H = RHyper.cosTheta_ProtonPiH;
+  cos_theta_star = RHyper.cosThetaStar;
   mppi_vert = RHyper.mppi_vert;
   mppi = RHyper.mppi;
   mdpi = RHyper.mdpi;
@@ -210,6 +216,8 @@ void TableO2::Fill(const SHyperTriton3O2 &SHyper, TF1 *blastWave[3], double max[
   has_tof_pi = SHyper.hasTOF_pi;
   cos_theta_ppi_H = SHyper.cosTheta_ProtonPiH;
   cos_pa_lambda = SHyper.cosPA_Lambda;
+  mom_dstar = SHyper.momDstar;
+  cos_theta_star = SHyper.cosThetaStar;
   mppi_vert = SHyper.mppi_vert;
   mppi = SHyper.mppi;
   mdpi = SHyper.mdpi;

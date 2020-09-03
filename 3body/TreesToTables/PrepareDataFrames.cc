@@ -35,9 +35,11 @@ void PrepareDataFrames(std::string dType = "data", std::string hypDataDir = "", 
 
   ROOT::RDataFrame df("Hyp3O2",vecOfStrs);
   // managing Double_32t variables + renaming
-  std::vector<std::string> inFeatures{"dca_de","dca_pr","dca_pi","dca_de_sv","dca_pr_sv","dca_pi_sv","tpcClus_de","tpcClus_pr","tpcClus_pi","tpcNsig_de","tpcNsig_pr","tpcNsig_pi","dca_de_pr","dca_de_pi","dca_pr_pi","mppi_vert", "cosTheta_ProtonPiH", "cosPA"};
-  std::vector<std::string> outFeatures{"dca_de_f","dca_pr_f","dca_pi_f","dca_de_sv_f","dca_pr_sv_f","dca_pi_sv_f","tpc_clus_de_f","tpc_clus_pr_f","tpc_clus_pi_f","tpc_nsig_de_f","tpc_nsig_pr_f","tpc_sig_pi_f","dca_de_pr_f","dca_de_pi_f","dca_pr_pi_f","mppi_vert_f", "cos_theta_ppi_H_f", "cos_pa_f"};
+  std::vector<std::string> inFeatures{"dca_de","dca_pr","dca_pi","dca_de_sv","dca_pr_sv","dca_pi_sv","tpcClus_de","tpcClus_pr","tpcClus_pi","tpcNsig_de","tpcNsig_pr","tpcNsig_pi","dca_de_pr","dca_de_pi","dca_pr_pi","mppi_vert","mppi","mdpi","momDstar","cosTheta_ProtonPiH","cosThetaStar","cosPA"};
+  std::vector<std::string> outFeatures{"dca_de_f","dca_pr_f","dca_pi_f","dca_de_sv_f","dca_pr_sv_f","dca_pi_sv_f","tpc_clus_de_f","tpc_clus_pr_f","tpc_clus_pi_f","tpc_nsig_de_f","tpc_nsig_pr_f","tpc_sig_pi_f","dca_de_pr_f","dca_de_pi_f","dca_pr_pi_f","mppi_vert_f","mppi_f","mdpi_f","mom_dstar_f","cos_theta_ppi_H_f","cos_theta_star_f","cos_pa_f"};
+
   auto filterDF = df.Filter("cosPA > 0 ");
+
   for (int i=0; i < inFeatures.size(); i++) {
     filterDF = filterDF.Define(outFeatures[i], Form("(float)%s", inFeatures[i].data()));
   }
