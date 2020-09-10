@@ -65,8 +65,14 @@ class TrainingAnalysis:
         gen_histo = hau.h2_generated([0,10], ct_bins)
 
         fill_hist(pres_histo, self.df_signal.query(cent_cut + " and " + pt_cut)[['pt', 'ct']])
-        fill_hist(gen_histo, self.df_generated.query(cent_cut)[['gPt', 'gCt']])
 
+
+        if("gPt" in list(self.df_generated.columns)):
+            fill_hist(gen_histo, self.df_generated.query(cent_cut)[['gPt', 'gCt']])
+
+        else:
+            fill_hist(gen_histo, self.df_generated.query(cent_cut)[['pt', 'ct']])
+            
         pres_histo.Divide(gen_histo)
 
         if save:

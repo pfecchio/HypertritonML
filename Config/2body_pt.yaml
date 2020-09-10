@@ -12,9 +12,10 @@ BDT_EFFICIENCY: [0.40, 1., 0.01] ##min, max ,step
 DEDICATED_BACKGROUND: 0
 
 
-MC_PATH: $HYPERML_TABLES_2/SignalTableFlatPt.root
-BKG_PATH: $HYPERML_TABLES_2/DataTableLS.root
-DATA_PATH: $HYPERML_TABLES_2/DataTable_18.root
+MC_PATH: $HYPERML_TABLES_2/pass3_tables/SignalTable.root
+BKG_PATH: $HYPERML_TABLES_2/pass3_tables/DataTable_18LS.root
+DATA_PATH: $HYPERML_TABLES_2/pass3_tables/DataTable_18.root
+ANALYSIS_RESULTS_PATH: $HYPERML_TABLES_2/pass3/AnalysisResults_18.root
 
 XGBOOST_PARAMS:
   # general parameters
@@ -26,10 +27,9 @@ XGBOOST_PARAMS:
   eval_metric: auc
   tree_method: hist
   
-
 SIGMA_MC: True
-
-
+LARGE_DATA: False
+LOAD_LARGE_DATA: False
 
 HYPERPARAMS:
   max_depth: 13

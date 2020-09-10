@@ -140,7 +140,7 @@ if TRAIN:
 if APPLICATION:
     app_time = time.time()
     if(N_BODY==3):
-        application_columns = ['score', 'm', 'ct', 'pt', 'centrality', 'positive', 'mppi_vert', "r", "pz"]
+        application_columns = ['score', 'm', 'ct', 'pt', 'centrality', 'positive', 'mppi_vert', "mppi", "mdpi"]
     else:
         application_columns = ['score', 'm', 'ct', 'pt', 'centrality']
 
