@@ -75,7 +75,7 @@ sigma_fit = []
 sigma_fit_error = []
 # if not specified do not use MC sigma
 mcsigma = -1
-
+count=0
 ###############################################################################
 # start the actual signal extraction
 for split in SPLIT_LIST:

@@ -89,7 +89,7 @@ if TRAIN:
         print(f'--- analysis initialized in {((time.time() - start_time) / 60):.2f} minutes ---\n')
 
         for cclass in CENT_CLASSES:
-            ml_analysis.preselection_efficiency(cclass, CT_BINS, [0, 10], split)
+            ml_analysis.preselection_efficiency(cclass, CT_BINS, PT_BINS, split)
 
             for ptbin in zip(PT_BINS[:-1], PT_BINS[1:]):
                 for ctbin in zip(CT_BINS[:-1], CT_BINS[1:]):
