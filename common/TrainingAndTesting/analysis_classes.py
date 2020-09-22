@@ -57,11 +57,13 @@ class TrainingAnalysis:
 
     def preselection_efficiency(self, cent_class, ct_bins, pt_bins, split_type, save=True):
         cent_cut = f'{cent_class[0]}<=centrality<={cent_class[1]}'
+
         if(len(ct_bins)>2):
             cut  =  f'{pt_bins[0]}<=pt<={pt_bins[1]}'
+            rap_cut = ""
         else:
             cut  =  f'{ct_bins[0]}<=ct<={ct_bins[1]}'            
-
+            rap_cut = " and abs(rapidity)<0.5"
 
 
 
@@ -74,8 +76,10 @@ class TrainingAnalysis:
         if("gPt" in list(self.df_generated.columns)):
             fill_hist(gen_histo, self.df_generated.query(cent_cut)[['gPt', 'gCt']])
 
-        else:
-            fill_hist(gen_histo, self.df_generated.query(cent_cut)[['pt', 'ct']])
+        else:       
+            fill_hist(gen_histo, self.df_generated.query(cent_cut + rap_cut)[['pt', 'ct']])
+
+
             
         pres_histo.Divide(gen_histo)
 

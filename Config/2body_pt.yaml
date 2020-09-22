@@ -1,9 +1,9 @@
 NBODY: 2
 FILE_PREFIX: 'pt_analysis'
 CENTRALITY_CLASS:
-  - [0,10]
+  - [0, 10]
 CT_BINS: [0, 50]
-PT_BINS: [2,3,4,5,6,10]
+PT_BINS: [2,3,4,5,6,9]
 
 BKG_MODELS: ['expo', 'pol1', 'pol2']
 
@@ -12,7 +12,7 @@ BDT_EFFICIENCY: [0.40, 1., 0.01] ##min, max ,step
 DEDICATED_BACKGROUND: 0
 
 
-MC_PATH: $HYPERML_TABLES_2/pass3_tables/SignalTable.root
+MC_PATH: $HYPERML_TABLES_2/pass3_tables/SignalTable_20g7.root
 BKG_PATH: $HYPERML_TABLES_2/pass3_tables/DataTable_18LS.root
 DATA_PATH: $HYPERML_TABLES_2/pass3_tables/DataTable_18.root
 ANALYSIS_RESULTS_PATH: $HYPERML_TABLES_2/pass3_tables/AnalysisResults_18.root

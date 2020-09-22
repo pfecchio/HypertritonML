@@ -65,7 +65,7 @@ results_file = TFile(file_name, 'read')
 ind_list = ["", "_1.5", "_2", "_10"]
 abs_hist_list = []
 for ind in ind_list:
-    abs_file_name = os.environ['HYPERML_UTILS_{}'.format(params['NBODY'])] + '/he3abs/recCtHe3' + ind + ".root"
+    abs_file_name = os.environ['HYPERML_UTILS_{}'.format(params['NBODY'])] + '/he3abs/absorption_ct/recCtHe3' + ind + ".root"
     absorp_file = TFile(abs_file_name)
     abs_hist = absorp_file.Get('Reconstructed ct spectrum')
     abs_hist.SetDirectory(0)

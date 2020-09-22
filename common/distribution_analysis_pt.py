@@ -139,28 +139,28 @@ for split in split_list:
 
                 for eff in np.arange(ranges['SCAN'][iBin-1][0], ranges['SCAN'][iBin-1][1], ranges['SCAN'][iBin-1][2]):
                     h2RawCounts = results_file.Get(f'{inDirName}/RawCounts{eff:.2f}_{model}')
-                    val = h2RawCounts.GetBinContent(iBin,1) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/n_events/0.25
+                    val = h2RawCounts.GetBinContent(iBin,1) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/n_events
                     raws[iBin-1].append(val)
                     errs[iBin-1].append(h2RawCounts.GetBinError(iBin,
-                                                                1) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/n_events/0.25)
+                                                                1) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/n_events)
 
 
         # h1PreselEff.Scale(0.5)  ##rapidity cut correction
         h1RawCounts.UseCurrentStyle()
-        h1RawCounts.Scale(1/n_events/0.25)
-        abs_corr = h1RawCounts.Clone("abs_corr")
-        abs_val = absorption_list_values[split_list.index(split)]
-        abs_edg = absorption_list_edges[split_list.index(split)][1:]
-        for iBin in range(1, h1RawCounts.GetNbinsX() + 1):
-            low_edge = h1RawCounts.GetBinLowEdge(iBin)
-            high_edge = h1RawCounts.GetBinLowEdge(iBin+1)
-            absorption = np.mean(abs_val[np.logical_and(
-                abs_edg >= low_edge, abs_edg < high_edge)])
-            abs_corr.SetBinContent(iBin, absorption)
-        h1RawCounts.Divide(abs_corr)
+        h1RawCounts.Scale(1/n_events)
+        # abs_corr = h1RawCounts.Clone("abs_corr")
+        # abs_val = absorption_list_values[split_list.index(split)]
+        # abs_edg = absorption_list_edges[split_list.index(split)][1:]
+        # for iBin in range(1, h1RawCounts.GetNbinsX() + 1):
+        #     low_edge = h1RawCounts.GetBinLowEdge(iBin)
+        #     high_edge = h1RawCounts.GetBinLowEdge(iBin+1)
+        #     absorption = np.mean(abs_val[np.logical_and(
+        #         abs_edg >= low_edge, abs_edg < high_edge)])
+        #     abs_corr.SetBinContent(iBin, absorption)
+        # h1RawCounts.Divide(abs_corr)
         tmpSyst = h1RawCounts.Clone("hSyst")
         for iBin in range(1, h1RawCounts.GetNbinsX() + 1):
-            tmpSyst.SetBinError(iBin, float(huber(raws[iBin - 1])[1]))
+            tmpSyst.SetBinError(iBin, stats.median_absolute_deviation(raws[iBin - 1]))
 
 
 ##------------------ Fill YieldMean histo-----------------------------------------
@@ -170,8 +170,9 @@ for split in split_list:
             res_hist = yieldmean.YieldMean(h1RawCounts, tmpSyst, fout, bw,
                                  0, 12., 1e-2, 1e-1, False, "log.root", "", "I")
         out_dir.cd()
-        
-        res_hist.Write()
+
+        if(cclass[1] == 10):
+            res_hist.Write()
 ##--------------------------------------------------------------------------------
 
 
@@ -190,6 +191,8 @@ for split in split_list:
         h1RawCounts.SetMarkerColor(kBlue)
         h1RawCounts.SetLineColor(600)
         tmpSyst.SetFillStyle(0)
+        h1PreselEff.Scale(0.5) #rapidity cut correction
+        h1PreselEff.SetStats(0)
         h1PreselEff.Write("h1PreselEff{}".format(split))
         myCv = TCanvas("ptSpectraCv{}".format(split))
         myCv.SetLogy()
@@ -233,6 +236,7 @@ myCv_sum.SetLogy()
 myCv_sum.cd()
 hist_tot=hist_list[0].Clone("hist_sum")
 hist_tot.Add(hist_tot,hist_list[1])
+hist_tot.SetStats(0)
 hist_tot.Draw()
 syst_tot=syst_list[0].Clone("syst_sum")
 syst_tot.Add(syst_tot,syst_list[1])
@@ -253,7 +257,7 @@ eff_list[1].SetLineColor(kBlue)
 eff_list[0].Draw()
 eff_list[1].Draw("SAME")
 pinfo2.Draw("x0same")
-gPad.BuildLegend()
+gPad.BuildLegend(0.5,0.9,0.1,0.8)
 cv_eff_common.Write()
 cv_eff_common.Close()
 cv_eff_common.Close()
@@ -265,7 +269,7 @@ cv_eff_common.Close()
 ratio_error=[]
 for i in range(0,h1RawCounts.GetNbinsX()):
     syst_tot=np.array(raws_list[1][i])/np.array(raws_list[0][i])
-    ratio_error.append(float(huber(syst_tot)[1]))
+    ratio_error.append(stats.median_absolute_deviation(syst_tot))
 myCv_ratio = TCanvas("ratio")
 myCv_ratio.cd()
 hist_list[1].Divide(hist_list[0])
@@ -279,6 +283,7 @@ hist_list[1].SetLineColor(kBlue)
 syst_list[1].SetLineColor(kBlue)
 hist_list[1].SetMarkerStyle(20)
 syst_list[1].Draw("e2same")
+# hist_list[1].SetStats(0)
 pinfo2.Draw("x0same")
 myCv_ratio.Write()
 myCv_ratio.Close()
