@@ -50,6 +50,8 @@ private:
   float Matter;
   float TOFnSigmaHe3;
   float TOFnSigmaPi;
+  float TPCmomHe3;
+  float TPCsignalHe3;
 };
 
 Table2::Table2(std::string name, std::string title)
@@ -90,6 +92,8 @@ Table2::Table2(std::string name, std::string title)
   tree->Branch("Matter", &Matter);
   tree->Branch("TOFnSigmaHe3",&TOFnSigmaHe3);
   tree->Branch("TOFnSigmaPi",&TOFnSigmaPi);
+  tree->Branch("TPCmomHe3",&TPCmomHe3);
+  tree->Branch("TPCsignalHe3",&TPCsignalHe3);
 };
 
 void Table2::Fill(const RHyperTritonHe3pi &RHyper, const RCollision &RColl)
@@ -148,6 +152,8 @@ void Table2::Fill(const RHyperTritonHe3pi &RHyper, const RCollision &RColl)
   Matter = RHyper.fMatter;
   PseudoRapidityHe3 = he3Vector.PseudoRapidity();
   PseudoRapidityPion = piVector.PseudoRapidity();
+  TPCsignalHe3 = RHyper.fTPCsignalHe3;
+  TPCmomHe3 = RHyper.fTPCmomHe3;
   if (He3ProngPt > 1.2 && ProngsDCA < 1.6 && NpidClustersHe3>30)
     tree->Fill();
   else
