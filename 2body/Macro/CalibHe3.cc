@@ -7,7 +7,7 @@
 #include "TH1D.h"
 
 double BetheBlochAleph(double *x, double *p) {
-  return AliExternalTrackParam::BetheBlochAleph(x[0] * 2 / 2.80923f, p[0], p[1], p[2], p[3], p[4]);
+  return AliExternalTrackParam::BetheBlochAleph(x[0] / 2.80923f, p[0], p[1], p[2], p[3], p[4]);
 }
 
 void CalibHe3(std::string tablefile) {
