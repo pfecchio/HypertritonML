@@ -117,7 +117,7 @@ def plot_significance_scan(
     axs[1].plot(x, gauss_signal_counts, 'y', color='orange',
                 label='Signal model (Gauss)')
     axs[1].set_xlabel(r'$m_{\ ^{3}He+\pi^{-}}$')
-    axs[1].set_ylabel(r'Events /  ${}\ \rm{{MeV}}/c^{{2}}$'.format(mass_bins))
+    axs[1].set_ylabel(r'Events /  ${:.3}\ \rm{{MeV}}/c^{{2}}$'.format((hist_range[1] - hist_range[0])/mass_bins))
     axs[1].tick_params(axis='x', direction='in')
     axs[1].tick_params(axis='y', direction='in')
     axs[1].legend(loc='best', frameon=False)
