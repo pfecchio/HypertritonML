@@ -142,7 +142,7 @@ if APPLICATION:
     if(N_BODY==3):
         application_columns = ['score', 'm', 'ct', 'pt', 'centrality', 'positive', 'mppi_vert', 'mppi', 'mdpi', 'tpc_ncls_de', 'tpc_ncls_pr', 'tpc_ncls_pi']
     else:
-        application_columns = ['score', 'm', 'ct', 'pt', 'centrality']
+        application_columns = ['score', 'm', 'ct', 'pt', 'centrality','ArmenterosAlpha']
 
     file_name = results_dir + f'/{FILE_PREFIX}_results.root'
     results_file = TFile(file_name, 'recreate')
@@ -186,7 +186,7 @@ if APPLICATION:
                         df_applied = ml_application.get_data_slice(cclass, ptbin, ctbin, application_columns)
                     else: 
                         df_applied = ml_application.apply_BDT_to_data(model_handler, cclass, ptbin, ctbin, model_handler.get_training_columns(), application_columns)
-
+                    
                     if SIGNIFICANCE_SCAN:
                         sigscan_eff, sigscan_tsd = ml_application.significance_scan(
                             df_applied, presel_eff, eff_score_array, cclass, ptbin, ctbin, split, mass_bins)
