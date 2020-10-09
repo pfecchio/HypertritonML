@@ -21,7 +21,7 @@ from sklearn.model_selection import train_test_split
 
 class TrainingAnalysis:
 
-    def __init__(self, mode, mc_file_name, bkg_file_name, split):
+    def __init__(self, mode, mc_file_name, bkg_file_name, split, sidebands = False):
         self.mode = mode
 
         print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
@@ -41,8 +41,9 @@ class TrainingAnalysis:
         if self.mode == 2:
             self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df()
             self.df_generated = uproot.open(mc_file_name)['GenTable'].pandas.df()
-            self.df_bkg = uproot.open(bkg_file_name)['DataTable'].pandas.df()
-
+            self.df_bkg = uproot.open(bkg_file_name)['DataTable'].pandas.df(entrystop=10000000)
+            if sidebands:
+                self.df_bkg = self.df_bkg.query(sidebands_selection)
         if split == '_antimatter':
             self.df_bkg = self.df_bkg.query('ArmenterosAlpha < 0')
             self.df_signal = self.df_signal.query('ArmenterosAlpha < 0')
@@ -58,14 +59,12 @@ class TrainingAnalysis:
     def preselection_efficiency(self, cent_class, ct_bins, pt_bins, split_type, save=True):
         cent_cut = f'{cent_class[0]}<=centrality<={cent_class[1]}'
 
-        if(len(ct_bins)>2):
+        if(len(ct_bins)<2):
             cut  =  f'{pt_bins[0]}<=pt<={pt_bins[1]}'
             rap_cut = ""
         else:
             cut  =  f'{ct_bins[0]}<=ct<={ct_bins[1]}'            
             rap_cut = " and abs(rapidity)<0.5"
-
-
 
         pres_histo = hau.h2_preselection_efficiency(pt_bins, ct_bins)
         gen_histo = hau.h2_generated(pt_bins, ct_bins)
