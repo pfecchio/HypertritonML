@@ -142,7 +142,7 @@ void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypT
       if (ind >= 0)
       {
         auto &RHyper = RHyperVec[ind];
-        table.Fill(RHyper, *RColl);
+        table.Fill(RHyper, *RColl, false);
         double recpt = std::hypot(RHyper.fPxHe3 + RHyper.fPxPi, RHyper.fPyHe3 + RHyper.fPyPi);
         hNSigmaTPCVsPtHe3->Fill(recpt, RHyper.fTPCnSigmaHe3);
       }

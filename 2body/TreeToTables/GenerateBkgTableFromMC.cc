@@ -53,7 +53,7 @@ void GenerateBkgTableFromMC() {
       for (auto &i : index) {
         if (Rind == i) fake = true;
       }
-      if (fake == false) outputTable.Fill(RHyper, *RColl);
+      if (fake == false) outputTable.Fill(RHyper, *RColl, false);
       Rind = Rind + 1;
     }
   }
