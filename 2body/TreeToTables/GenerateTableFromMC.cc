@@ -27,10 +27,12 @@ void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypT
     hypTableDir = getenv("HYPERML_TABLES_2");
   string hypUtilsDir = getenv("HYPERML_UTILS");
 
-  string inFileName = "HyperTritonTree_19d2.root";
+  string mcName = getenv("HYPERML_MC");
+
+  string inFileName = string("HyperTritonTree_") + mcName + ".root";
   string inFileArg = hypDataDir + "/" + inFileName;
 
-  string outFileName = "SignalTable_19d2.root";
+  string outFileName = string("SignalTable_") + mcName + ".root";
   string outFileArg = hypTableDir + "/" + outFileName;
 
   string absFileName = "absorption.root";

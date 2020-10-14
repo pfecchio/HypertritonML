@@ -20,19 +20,21 @@ void GenerateTableFromData(bool likeSign = false, bool kInt7 = false, string dat
   if (dataDir=="") dataDir = getenv("HYPERML_DATA_2");
   if (tableDir=="") tableDir = getenv("HYPERML_TABLES_2");
 
+  string pass = getenv("HYPERML_PASS");
+
   string kintstring = kInt7 ? "KINT7" : "";
   string lsString = likeSign ? "LS.root" : ".root";
 
-  string inFileNameQ = "HyperTritonTree_18q";
+  string inFileNameQ = "HyperTritonTree_18q_pass" + pass;
   string inFileArgQ = dataDir + "/" + inFileNameQ + lsString;
 
-  string inFileNameR = "HyperTritonTree_18r";
+  string inFileNameR = "HyperTritonTree_18r_pass" + pass;
   string inFileArgR = dataDir + "/" + inFileNameR + lsString;
 
-  string inFileName15 = "HyperTritonTree_15";
+  string inFileName15 = "HyperTritonTree_15o_pass" + pass;
   string inFileArg15 = dataDir + "/" + inFileName15 + lsString;
 
-  string outFileName = "DataTable_18";
+  string outFileName = "DataTable_18_pass" + pass;
   string outFileArg = tableDir + "/" + outFileName + kintstring + lsString;
 
   TChain inputChain("_custom/fTreeV0");

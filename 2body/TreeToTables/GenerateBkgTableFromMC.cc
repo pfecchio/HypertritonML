@@ -20,8 +20,9 @@ void GenerateBkgTableFromMC() {
   string hypDataDir  = getenv("HYPERML_DATA_2");
   string hypTableDir = getenv("HYPERML_TABLES_2");
 
+  string mcName = getenv("HYPERML_MC");
 
-  string inFileName = "HyperTritonTree_19d2.root";
+  string inFileName = "HyperTritonTree_" + mcName + ".root";
   string inFileArg  = hypDataDir + "/" + inFileName;
 
   string outFileName = "BkgTable.root";
