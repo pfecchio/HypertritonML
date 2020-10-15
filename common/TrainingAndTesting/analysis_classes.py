@@ -37,17 +37,18 @@ class TrainingAnalysis:
 
             hau.rename_df_columns(self.df_bkg)
                 
-
         if self.mode == 2:
             self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df()
             self.df_generated = uproot.open(mc_file_name)['GenTable'].pandas.df()
             self.df_bkg = uproot.open(bkg_file_name)['DataTable'].pandas.df(entrystop=10000000)
             if sidebands:
                 self.df_bkg = self.df_bkg.query(sidebands_selection)
+
         if split == '_antimatter':
             self.df_bkg = self.df_bkg.query('ArmenterosAlpha < 0')
             self.df_signal = self.df_signal.query('ArmenterosAlpha < 0')
             self.df_generated = self.df_generated.query('matter < 0.5')
+
         if split == '_matter':
             self.df_bkg = self.df_bkg.query('ArmenterosAlpha > 0')
             self.df_signal = self.df_signal.query('ArmenterosAlpha > 0')
@@ -61,24 +62,22 @@ class TrainingAnalysis:
 
         if(len(ct_bins)<2):
             cut  =  f'{pt_bins[0]}<=pt<={pt_bins[1]}'
-            rap_cut = ""
+            rap_cut = ''
+
         else:
             cut  =  f'{ct_bins[0]}<=ct<={ct_bins[1]}'            
-            rap_cut = " and abs(rapidity)<0.5"
+            rap_cut = ' and abs(rapidity)<0.5'
 
         pres_histo = hau.h2_preselection_efficiency(pt_bins, ct_bins)
         gen_histo = hau.h2_generated(pt_bins, ct_bins)
 
         fill_hist(pres_histo, self.df_signal.query(cent_cut + " and " + cut)[['pt', 'ct']])
 
-
-        if("gPt" in list(self.df_generated.columns)):
+        if ('gPt' in list(self.df_generated.columns)):
             fill_hist(gen_histo, self.df_generated.query(cent_cut)[['gPt', 'gCt']])
 
         else:       
             fill_hist(gen_histo, self.df_generated.query(cent_cut + rap_cut)[['pt', 'ct']])
-
-
             
         pres_histo.Divide(gen_histo)
 
@@ -86,7 +85,7 @@ class TrainingAnalysis:
             path = os.environ['HYPERML_EFFICIENCIES_{}'.format(self.mode)]
 
             filename = path + f'/PreselEff_cent{cent_class[0]}{cent_class[1]}{split_type}.root'
-            t_file = TFile(filename, "recreate")
+            t_file = TFile(filename, 'recreate')
             
             pres_histo.Write()
             t_file.Close()
@@ -169,6 +168,7 @@ class TrainingAnalysis:
 
         if not os.path.exists(models_path):
             os.makedirs(models_path)
+
         if not os.path.exists(handlers_path):
             os.makedirs(handlers_path)
 
@@ -326,7 +326,7 @@ class ModelApplication:
         significance_custom_error = []
 
         bw_file = TFile(os.environ['HYPERML_UTILS'] + '/BlastWaveFits.root', 'read')
-        bw = [bw_file.Get("BlastWave/BlastWave{}".format(i)) for i in [0, 1, 2]]
+        bw = [bw_file.Get('BlastWave/BlastWave{}'.format(i)) for i in [0, 1, 2]]
         bw_file.Close()
 
         for index, tsd in enumerate(threshold_space):
