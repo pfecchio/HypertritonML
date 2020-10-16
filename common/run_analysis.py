@@ -25,8 +25,7 @@ gROOT.SetBatch()
 ###############################################################################
 parser = argparse.ArgumentParser()
 parser.add_argument('-t', '--train', help='Do the training', action='store_true')
-parser.add_argument(
-    '--test', help='Training with reduced number of candidates for testing functionalities', action='store_true')
+parser.add_argument('--test', help='Training with reduced number of candidates for testing functionalities', action='store_true')
 parser.add_argument('-o', '--optimize', help='Run the optimization', action='store_true')
 parser.add_argument('-a', '--application', help='Apply ML predictions on data', action='store_true')
 parser.add_argument('-s', '--significance', help='Run the significance optimisation studies', action='store_true')
@@ -107,7 +106,6 @@ if TRAIN:
 
                     # data[0]=train_set, data[1]=y_train, data[2]=test_set, data[3]=y_test
                     data = ml_analysis.prepare_dataframe(COLUMNS, cent_class=cclass, ct_range=ctbin, pt_range=ptbin)
-                    print("df caricati")
                     input_model = xgb.XGBClassifier()
                     model_handler = ModelHandler(input_model)
                     
@@ -124,9 +122,7 @@ if TRAIN:
                     print(f'--- model trained and tested in {((time.time() - part_time) / 60):.2f} minutes ---\n')
 
                     y_pred = model_handler.predict(data[2])
-                    print("ypred")
                     data[2].insert(0, 'score', y_pred)
-                    print("data2")
                     eff, tsd = analysis_utils.bdt_efficiency_array(data[3], y_pred, n_points=1000)
                     score_from_eff_array = analysis_utils.score_from_efficiency_array(data[3], y_pred, FIX_EFF_ARRAY)
                     fixed_eff_array = np.vstack((FIX_EFF_ARRAY, score_from_eff_array))
@@ -134,12 +130,8 @@ if TRAIN:
                     if SIGMA_MC:
                         ml_analysis.MC_sigma_array(data, fixed_eff_array, cclass, ptbin, ctbin, split)
 
-                    ml_analysis.save_ML_analysis(model_handler, fixed_eff_array, cent_class=cclass,
-                                                 pt_range=ptbin, ct_range=ctbin, split=split)
-                    print("modelli salvati")
-                    ml_analysis.save_ML_plots(
-                        model_handler, data, [eff, tsd],
-                        cent_class=cclass, pt_range=ptbin, ct_range=ctbin, split=split)
+                    ml_analysis.save_ML_analysis(model_handler, fixed_eff_array, cent_class=cclass,pt_range=ptbin, ct_range=ctbin, split=split)
+                    ml_analysis.save_ML_plots(model_handler, data, [eff, tsd],cent_class=cclass, pt_range=ptbin, ct_range=ctbin, split=split)
 
         del ml_analysis
 
@@ -148,13 +140,17 @@ if TRAIN:
 
 if APPLICATION:
     app_time = time.time()
+
+    file_name = results_dir + f'/{FILE_PREFIX}_results.root'
+    results_histos_file = TFile(file_name, 'recreate')
+
     if(N_BODY==3):
         application_columns = ['score', 'm', 'ct', 'pt', 'centrality', 'positive', 'mppi_vert', 'mppi', 'mdpi', 'tpc_ncls_de', 'tpc_ncls_pr', 'tpc_ncls_pi']
     else:
         application_columns = ['score', 'm', 'ct', 'pt', 'centrality','ArmenterosAlpha']
 
-    file_name = results_dir + f'/{FILE_PREFIX}_results.root'
-    results_histos_file = TFile(file_name, 'recreate')
+    if SIGNIFICANCE_SCAN:
+        sigscan_results = {}    
     
     if args.unbinned:
         file_name = results_dir + f'/{FILE_PREFIX}_results_unbinned.root'
@@ -175,7 +171,6 @@ if APPLICATION:
 
         for cclass in CENT_CLASSES:
             # create output structure
-
             cent_dir_histos = results_histos_file.mkdir(f'{cclass[0]}-{cclass[1]}{split}')
 
             th2_efficiency = ml_application.load_preselection_efficiency(cclass, split)
@@ -202,25 +197,28 @@ if APPLICATION:
                         df_applied = ml_application.apply_BDT_to_data(model_handler, cclass, ptbin, ctbin, model_handler.get_training_columns(), application_columns)
 
                     if SIGNIFICANCE_SCAN:
-                        sigscan_eff, sigscan_tsd = ml_application.significance_scan(
-                            df_applied, presel_eff, eff_score_array, cclass, ptbin, ctbin, split, mass_bins)
+                        sigscan_eff, sigscan_tsd = ml_application.significance_scan(df_applied, presel_eff, eff_score_array, cclass, ptbin, ctbin, split, mass_bins)
                         eff_score_array = np.append(eff_score_array, [[sigscan_eff], [sigscan_tsd]], axis=1)
+
+                        sigscan_results[f'ct{ctbin[0]}{ctbin[1]}pt{ptbin[0]}{ptbin[1]}{split}'] = sigscan_eff
+
 
                     # define subdir for saving invariant mass histograms
                     sub_dir_histos = cent_dir_histos.mkdir(f'ct_{ctbin[0]}{ctbin[1]}') if 'ct' in FILE_PREFIX else cent_dir_histos.mkdir(f'pt_{ptbin[0]}{ptbin[1]}')
                     for eff, tsd in zip(pd.unique(eff_score_array[0][::-1]), pd.unique(eff_score_array[1][::-1])):
                         sub_dir_histos.cd()
+
                         if(eff==sigscan_eff):
                             df_sign = df_sign.append(df_applied.query('score>@tsd'), ignore_index=True, sort=False)
                         
                         mass_array = np.array(df_applied.query('score>@tsd')['m'].values, dtype=np.float64)
-
                         counts, _ = np.histogram(mass_array, bins=mass_bins, range=[2.96, 3.05])
 
                         histo_name = f'eff{eff:.2f}'
                         
                         h1_minv = hau.h1_invmass(counts, cclass, ptbin, ctbin, bins=mass_bins, name=histo_name)
                         h1_minv.Write()
+
                         #perform an unbinned fit
                         if args.unbinned:
                             for bkgmodel in BKG_MODELS:        
@@ -347,9 +345,20 @@ if APPLICATION:
 
             cent_dir_histos.cd()
             th2_efficiency.Write()
-    df_sign.to_parquet(os.path.dirname(data_path) + '/selected_df.parquet_LS.gzip', compression='gzip')
-    print(f'--- ML application time: {((time.time() - app_time) / 60):.2f} minutes ---')
+
+    try:
+        sigscan_results = np.asarray(sigscan_results)
+        filename_sigscan = results_dir + f'/Efficiencies/{FILE_PREFIX}_sigscan.npy'
+        np.save(filename_sigscan, sigscan_results)
+
+    except:
+        print('No sigscan, no sigscan results!')
+
+    df_sign.to_parquet(os.path.dirname(data_path) + '/selected_df.parquet.gzip', compression='gzip')
+    print (f'--- ML application time: {((time.time() - app_time) / 60):.2f} minutes ---')
+    
     results_histos_file.Close()
+
     if args.unbinned:
         results_unbin_file.Close()
 
