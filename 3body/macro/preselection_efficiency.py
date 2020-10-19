@@ -5,12 +5,11 @@ from pathlib import Path
 
 import yaml
 
-import aghast
 import hyp_analysis_utils as hau
 import pandas as pd
 import uproot
 from ROOT import TFile
-from root_numpy import fill_hist
+import numpy as np
 
 
 ###############################################################################
@@ -34,8 +33,10 @@ presel_histo = hau.h2_preselection_efficiency(PT_BINS, CT_BINS)
 gen_histo = hau.h2_generated(PT_BINS, CT_BINS)
 
 # fill the histograms
-fill_hist(presel_histo, df_num[['pt', 'ct']])
-fill_hist(gen_histo, df_den[['gPt', 'gCt']])
+for pt, ct in np.asarray(df_num[['pt', 'ct']], dtype=np.double):
+  presel_histo.Fill(pt, ct)
+for pt, ct in np.asarray(df_den[['gPt', 'gCt']], dtype=np.double):
+  gen_histo.Fill(pt, ct)
 
 # compute the efficiency as a function of pt and ct (TH2)
 presel_histo.Divide(gen_histo)

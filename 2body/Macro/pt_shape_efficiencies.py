@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import uproot
 from ROOT import TH1D, gROOT, TFile
-from root_numpy import fill_hist
+import aghast
 
 gROOT.LoadMacro("../TreeToTables/GenerateTableFromMC.cc")
 from ROOT import GenerateTableFromMC
@@ -21,13 +21,12 @@ pt_shape_list = ["bol", "mtexp", "bw"]
 hist_list = []
 
 for pt_shape in pt_shape_list:
-    th1_rec = TH1D("PreselEff_" + pt_shape, ";c#it{t} (cm);Preselection efficiency", len(ct_bins)-1, ct_bins)
-    th1_sim = TH1D("", "", len(ct_bins)-1, ct_bins)
     GenerateTableFromMC(True, input_dir, output_dir, pt_shape)
-    rec = uproot.open(output_dir+"/SignalTable.root")["SignalTable"].array("ct")
-    sim = uproot.open(output_dir+"/SignalTable.root")["GenTable"].array("ct")
-    fill_hist(th1_rec, rec)
-    fill_hist(th1_sim, sim)
+    rec = np.histogram(uproot.open(output_dir+"/SignalTable.root")["SignalTable"].array("ct"), bins=ct_bins)
+    sim = np.histogram(uproot.open(output_dir+"/SignalTable.root")["GenTable"].array("ct"), bins=ct_bins)
+    th1_rec = aghast.to_root(rec, "PreselEff_" + pt_shape)
+    th1_rec.SetTitle(";c#it{t} (cm);Preselection efficiency")
+    th1_sim = aghast.to_root(sim, "Sim_" + pt_shape)
     th1_rec.Divide(th1_sim)
     hist_list.append(th1_rec)
 

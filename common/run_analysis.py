@@ -83,7 +83,7 @@ signal_path = os.path.expandvars(params['MC_PATH'])
 bkg_path = os.path.expandvars(params['BKG_PATH'])
 data_path = os.path.expandvars(params['DATA_PATH'])
 analysis_res_path = os.path.expandvars(params['ANALYSIS_RESULTS_PATH'])
-results_dir = os.environ['HYPERML_RESULTS_{}'.format(N_BODY)]
+results_dir = os.environ[f'HYPERML_RESULTS_{N_BODY}']
 
 ###############################################################################
 start_time = time.time()                          # for performances evaluation
@@ -213,11 +213,12 @@ if APPLICATION:
 
                         
                         mass_array = np.array(df_applied.query('score>@tsd')['m'].values, dtype=np.float64)
-                        counts, _ = np.histogram(mass_array, bins=mass_bins, range=[2.96, 3.05])
+
+                        counts = np.histogram(mass_array, bins=mass_bins, range=[2.96, 3.05])
 
                         histo_name = f'eff{eff:.2f}'
                         
-                        h1_minv = hau.h1_invmass(counts, cclass, ptbin, ctbin, bins=mass_bins, name=histo_name)
+                        h1_minv = hau.h1_invmass(counts, cclass, ptbin, ctbin, name=histo_name)
                         h1_minv.Write()
 
                         if eff == sigscan_eff:

@@ -146,11 +146,12 @@ for split in SPLIT_LIST:
                 
                 eff_index = 1
                 for eff, tsd in zip(pd.unique(eff_score_array[0][::-1]), pd.unique(eff_score_array[1][::-1])):
-                    mass_array = np.array(test_set.query('score>@tsd')['m'].values, dtype=np.float64)
-                    counts, _ = np.histogram(mass_array, bins=mass_bins, range=[2.96, 3.05])
+                    #after selection
+                    mass_array = np.array(data2.query('y>0.5')['m'].values, dtype=np.float64)
+                    counts = np.histogram(mass_array, bins=mass_bins, range=[2.96, 3.05])
                     
                     histo_name = 'selected_' + info_string
-                    h1_sel = hau.h1_invmass(counts, cclass, ptbin, ctbin, bins=mass_bins, name=histo_name)
+                    h1_sel = hau.h1_invmass(counts, cclass, ptbin, ctbin, name=histo_name)
                     h1_sel.Draw()
                     h1_sel.Fit(tf1_gauss,"Q")
                     
