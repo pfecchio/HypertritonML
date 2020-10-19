@@ -220,13 +220,9 @@ if APPLICATION:
                         h1_minv = hau.h1_invmass(counts, cclass, ptbin, ctbin, bins=mass_bins, name=histo_name)
                         h1_minv.Write()
 
-                        if eff == sigscan_eff:
+                        if args.unbinned:
                             for bkg_model in BKG_MODELS:
                                 hau.unbinned_mass_fit(mass_array, eff, bkg_model, results_unbin_file, cclass, ctbin, ptbin, split)
-
-                        # if args.unbinned:
-                        #     for bkg_model in BKG_MODELS:
-                        #         hau.unbinned_mass_fit(mass_array, eff, bkg_model, results_unbin_file, cclass, ctbin, ptbin, split)
                                 
                     print('Application and signal extraction: Done!\n')
 
