@@ -77,10 +77,10 @@ if [ $BODY_2 -eq 1 ]; then
       [ ! -d "$HYPERML_RESULTS_2" ] && mkdir -p $HYPERML_RESULTS_2
       [ ! -d "$HYPERML_UTILS_2" ] && mkdir -p $HYPERML_UTILS_2
       [ ! -f "$HYPERML_DATA_2/HyperTritonTree_18q_pass${PASS}.root"  ] && scp lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/HyperTritonTree_18q_pass${PASS}.root  file://$HYPERML_DATA_2/HyperTritonTree_18q_pass${PASS}.root
-      [ ! -f "$HYPERML_DATA_2/HyperTritonTree_18r_pass${PASS}.root"  ] && scp /eos/user/h/hypertriton/trees/2Body/HyperTritonTree_18r_pass${PASS}.root  file://$HYPERML_DATA_2/HyperTritonTree_18r_pass${PASS}.root
-      [ ! -f "$HYPERML_DATA_2/HyperTritonTree_${MC}.root" ] && scp /eos/user/h/hypertriton/trees/2Body/HyperTritonTree_${MC}.root file://$HYPERML_DATA_2/HyperTritonTree_${MC}.root
-      [ ! -f "$HYPERML_DATA_2/HyperTritonTree_18qLS_pass${PASS}.root" ] && scp /eos/user/h/hypertriton/trees/2Body/HyperTritonTree_18qLS_pass${PASS}.root file://$HYPERML_DATA_2/HyperTritonTree_18qLS_pass${PASS}.root
-      [ ! -f "$HYPERML_DATA_2/HyperTritonTree_18rLS_pass${PASS}.root" ] && scp /eos/user/h/hypertriton/trees/2Body/HyperTritonTree_18rLS_pass${PASS}.root file://$HYPERML_DATA_2/HyperTritonTree_18rLS_pass${PASS}.root
+      [ ! -f "$HYPERML_DATA_2/HyperTritonTree_18r_pass${PASS}.root"  ] && scp lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/HyperTritonTree_18r_pass${PASS}.root  file://$HYPERML_DATA_2/HyperTritonTree_18r_pass${PASS}.root
+      [ ! -f "$HYPERML_DATA_2/HyperTritonTree_${MC}.root" ] && scp lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/HyperTritonTree_${MC}.root file://$HYPERML_DATA_2/HyperTritonTree_${MC}.root
+      [ ! -f "$HYPERML_DATA_2/HyperTritonTree_18qLS_pass${PASS}.root" ] && scp lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/HyperTritonTree_18qLS_pass${PASS}.root file://$HYPERML_DATA_2/HyperTritonTree_18qLS_pass${PASS}.root
+      [ ! -f "$HYPERML_DATA_2/HyperTritonTree_18rLS_pass${PASS}.root" ] && scp lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/HyperTritonTree_18rLS_pass${PASS}.root file://$HYPERML_DATA_2/HyperTritonTree_18rLS_pass${PASS}.root
       [ ! -f "$HYPERML_UTILS/He3TPCCalibration.root" ] && alien_cp /alice/cern.ch/user/m/mpuccio/hyper_data/He3TPCCalibration.root file://$HYPERML_UTILS/He3TPCCalibration.root
       [ ! -f "$HYPERML_UTILS/absorption.root" ] && alien_cp /alice/cern.ch/user/m/mpuccio/hyper_data/absorption.root file://$HYPERML_UTILS/absorption.root
 fi
