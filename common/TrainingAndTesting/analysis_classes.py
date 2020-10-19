@@ -15,7 +15,6 @@ import xgboost as xgb
 from hipe4ml import analysis_utils, plot_utils
 from hipe4ml.model_handler import ModelHandler
 from ROOT import TF1, TH1, TH1D, TH2D, TFile, gDirectory
-import aghast
 from sklearn.model_selection import train_test_split
 
 
@@ -63,18 +62,20 @@ class TrainingAnalysis:
         if(len(ct_bins)<2):
             cut  =  f'{pt_bins[0]}<=pt<={pt_bins[1]}'
             rap_cut = ''
-
         else:
             cut  =  f'{ct_bins[0]}<=ct<={ct_bins[1]}'            
             rap_cut = ' and abs(rapidity)<0.5'
 
-        pres_histo = aghast.to_root(np.histogram2d(self.df_signal.query(cent_cut + " and " + cut)[['pt', 'ct']], bins=[pt_bins, ct_bins]), "PreselEff")
+        pres_histo = hau.h2_preselection_efficiency(pt_bins, ct_bins)
+        gen_histo = hau.h2_generated(pt_bins, ct_bins)
 
-        if("gPt" in list(self.df_generated.columns)):
-            gen_histo = aghast.to_root(np.histogram2d(self.df_generated.query(cent_cut)[['gPt', 'gCt']], bins=[pt_bins, ct_bins]))
-        else:
-            gen_histo = aghast.to_root(np.histogram2d(self.df_generated.query(cent_cut)[['pt', 'ct']], bins=[pt_bins, ct_bins]))
-            
+        for pt, ct in self.df_signal.query(cent_cut + " and " + cut)[['pt', 'ct']].to_records(index=False):
+            pres_histo.Fill(pt,ct)
+        
+        cols = ['gPt', 'gCt'] if "gPt" in list(self.df_generated.columns) else ['pt', 'ct']
+        for pt, ct in self.df_generated.query(cent_cut + rap_cut)[cols].to_records(index=False):
+            gen_histo.Fill(pt,ct)
+
         pres_histo.Divide(gen_histo)
 
         if save:
