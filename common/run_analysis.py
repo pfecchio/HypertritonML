@@ -14,7 +14,6 @@ from analysis_classes import (ModelApplication, TrainingAnalysis)
 from hipe4ml import analysis_utils, plot_utils
 from hipe4ml.model_handler import ModelHandler
 from ROOT import TFile, gROOT
-import ROOT
 
 # avoid pandas warning
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -205,11 +204,13 @@ if APPLICATION:
 
                     # define subdir for saving invariant mass histograms
                     sub_dir_histos = cent_dir_histos.mkdir(f'ct_{ctbin[0]}{ctbin[1]}') if 'ct' in FILE_PREFIX else cent_dir_histos.mkdir(f'pt_{ptbin[0]}{ptbin[1]}')
+
                     for eff, tsd in zip(pd.unique(eff_score_array[0][::-1]), pd.unique(eff_score_array[1][::-1])):
                         sub_dir_histos.cd()
 
-                        if(eff==sigscan_eff):
+                        if eff == sigscan_eff:
                             df_sign = df_sign.append(df_applied.query('score>@tsd'), ignore_index=True, sort=False)
+
                         
                         mass_array = np.array(df_applied.query('score>@tsd')['m'].values, dtype=np.float64)
                         counts, _ = np.histogram(mass_array, bins=mass_bins, range=[2.96, 3.05])
@@ -219,128 +220,14 @@ if APPLICATION:
                         h1_minv = hau.h1_invmass(counts, cclass, ptbin, ctbin, bins=mass_bins, name=histo_name)
                         h1_minv.Write()
 
-                        #perform an unbinned fit
-                        if args.unbinned:
-                            for bkgmodel in BKG_MODELS:        
-                                print("********************")
-                                print(bkgmodel)
-                                print("********************")
-                              
-                                results_unbin_file.cd()
-                                mass = ROOT.RooRealVar("m","m_{^{3}He+#pi}",2.97,3.015,"GeV/c^{2}")
-                                width = ROOT.RooRealVar("width","B0 mass width",0.001,0.003,"GeV/c^2")
-                                mb0 = ROOT.RooRealVar("mb0","B0 mass",2.989,2.993,"GeV^-1")
-                                slope = ROOT.RooRealVar("slope","slope mass",-100.,100.,"GeV")
-                                sig = ROOT.RooGaussian("sig","B0 sig PDF",mass,mb0,width)
-                                c0 = ROOT.RooRealVar("c0","constant c0",1.,"GeV/c^{2}")
-                                c1 = ROOT.RooRealVar("c1","constant c1",1.,"GeV/c^{2}")
-                                c2 = ROOT.RooRealVar("c2","constant c2",1.,"GeV/c^{2}")
+                        if eff == sigscan_eff:
+                            for bkg_model in BKG_MODELS:
+                                hau.unbinned_mass_fit(mass_array, eff, bkg_model, results_unbin_file, cclass, ctbin, ptbin, split)
 
-                                n_sig = ROOT.RooRealVar("n1","n1 const",0.,10000,"GeV")  
-                                n_bkg = ROOT.RooRealVar("n2","n2 const",0.,10000,"GeV")
-
-                                if bkgmodel == 'pol1':
-                                    bkg_func = ROOT.RooPolynomial("bkg","pol1 for bkg",mass,ROOT.RooArgList(mass,c0,c1))                                  
-                                elif bkgmodel == 'pol2':
-                                    bkg_func = ROOT.RooPolynomial("bkg","pol2 for bkg",mass,ROOT.RooArgList(mass,c0,c1,c2))
-                                else:
-                                    bkg_func = ROOT.RooExponential("bkg","expo for bkg",mass,slope)
-
-                                sum = ROOT.RooAddPdf("sum","sig+bkg",ROOT.RooArgList(sig,bkg_func),ROOT.RooArgList(n_sig,n_bkg))
-                            
-                                var = ROOT.RooRealVar("m", "Example Variable",2.97,3.015)
-                                roo_data = hau.df2roo(df_applied.query('score>@tsd'), {'m': var})
-                                sum.fitTo(roo_data)
-                                frame = ROOT.RooPlot()
-                                frame = mass.frame(18)
-                                roo_data.plotOn(frame)
-                                sum.plotOn(frame, ROOT.RooFit.LineColor(ROOT.kRed))
-                                sum.plotOn(frame, ROOT.RooFit.Components("bkg"),ROOT.RooFit.LineStyle(9), ROOT.RooFit.LineColor(ROOT.kBlue))
-                                #add TPaveText
-                                nsigma = 3
-                                mu = mb0.getVal()
-                                muErr = mb0.getError()
-                                sigma = width.getVal()
-                                sigmaErr = width.getError()
-                                #binwidth hardcoded!!!!
-                                xset = ROOT.RooArgSet(mass)
-                                int_sig = sig.createIntegral(xset)
-                                signal = n_sig.getVal() #/ 0.0025
-                                errsignal = math.sqrt(signal)#int_sig.getPropagatedError(sig, xset);
-                                mass_int = mass
-                                mass_int.setRange("significance range", mu-nsigma*sigma,mu+nsigma*sigma)
-                                nset = ROOT.RooArgSet(mass)
-                                xset = ROOT.RooArgSet(mass_int)#
-                                int_bkg = bkg_func.createIntegral(xset,ROOT.RooFit.NormSet(nset),ROOT.RooFit.Range("significance range"))
-                                bkg = int_bkg.getVal()*n_bkg.getVal() #/ 0.0025
-                                print("pt: ",ptbin," ct: ",ctbin," eff: ",eff)
-                                print("range: [", mu-nsigma*sigma,",",mu+nsigma*sigma,"]")
-                                print("sig:",signal," bkg:",bkg)
-                                print("sig:",signal*n_sig.getVal()," bkg:",bkg*n_bkg.getVal())
-                                print("sig:",n_sig.getVal()," bkg:",n_bkg.getVal())
+                        # if args.unbinned:
+                        #     for bkg_model in BKG_MODELS:
+                        #         hau.unbinned_mass_fit(mass_array, eff, bkg_model, results_unbin_file, cclass, ctbin, ptbin, split)
                                 
-                                #x = input()
-                                if bkg > 0:
-                                    errbkg = math.sqrt(bkg)
-                                else:
-                                    errbkg = 0
-                                # compute the significance
-                                if signal+bkg > 0:
-                                    signif = signal/math.sqrt(signal+bkg)
-                                    deriv_sig = 1/math.sqrt(signal+bkg)-signif/(2*(signal+bkg))
-                                    deriv_bkg = -signal/(2*(math.pow(signal+bkg, 1.5)))
-                                    errsignif = math.sqrt((errsignal*deriv_sig)**2+(errbkg*deriv_bkg)**2)
-                                else:
-                                    signif = 0
-                                    errsignif = 0
-
-                                pinfo = ROOT.TPaveText(0.55, 0.5, 0.95, 0.9, "NDC")
-                                pinfo.SetBorderSize(0)
-                                pinfo.SetFillStyle(0)
-                                pinfo.SetTextAlign(30+3)
-                                pinfo.SetTextFont(42)
-                                string = f'ALICE Internal, Pb-Pb 2018 {cclass[0]}-{cclass[1]}%'
-                                pinfo.AddText(string)
-                                
-                                decay_label = {
-                                    "": ['{}^{3}_{#Lambda}H#rightarrow ^{3}He#pi^{-} + c.c.','{}^{3}_{#Lambda}H#rightarrow dp#pi^{-} + c.c.'],
-                                    "_matter": ['{}^{3}_{#Lambda}H#rightarrow ^{3}He#pi^{-}','{}^{3}_{#Lambda}H#rightarrow dp#pi^{-}'],
-                                    "_antimatter": ['{}^{3}_{#bar{#Lambda}}#bar{H}#rightarrow ^{3}#bar{He}#pi^{+}','{}^{3}_{#Lambda}H#rightarrow #bar{d}#bar{p}#pi^{+}'],
-                                }
-
-                                string = decay_label[split][N_BODY-2]+', %i #leq #it{ct} < %i cm %i #leq #it{p}_{T} < %i GeV/#it{c} ' % (
-                                    ctbin[0], ctbin[1], ptbin[0], ptbin[1])
-                                pinfo.AddText(string)
-
-                                string = f'#mu {mu*1000:.2f} #pm {muErr*1000:.2f} MeV/c^{2}'
-                                pinfo.AddText(string)
-
-                                string = f'#sigma {sigma*1000:.2f} #pm {sigmaErr*1000:.2f} MeV/c^{2}'
-                                pinfo.AddText(string)
-                                if roo_data.sumEntries()>0:
-                                    string = '#chi^{2}/NDF'+f'{frame.chiSquare(6 if bkgmodel=="pol2" else 5):.2f}'
-                                    #pinfo.AddText(string)
-
-                                string = f'Significance ({nsigma:.0f}#sigma) {signif:.1f} #pm {errsignif:.1f} '
-                                pinfo.AddText(string)
-
-                                string = f'S2 ({nsigma:.0f}#sigma) {signal:.0f} #pm {errsignal:.0f}'
-                                pinfo.AddText(string)
-
-                                string = f'B ({nsigma:.0f}#sigma) {bkg:.0f} #pm {errbkg:.0f}'
-                                pinfo.AddText(string)
-
-                                if bkg > 0:
-                                    ratio = signal/bkg
-                                    string = f'S/B ({nsigma:.0f}#sigma) {ratio:.4f}'
-
-                                pinfo.AddText(string)
-                                #######
-                                frame.addObject(pinfo)
-                                frame.Write(f'roo_ct{ctbin[0]}{ctbin[1]}_pT{ptbin[0]}{ptbin[1]}_cen{cclass[0]}{cclass[1]}_eff{eff:.2f}_model{bkgmodel}{split}')
-                                width.Write(f'sig_ct{ctbin[0]}{ctbin[1]}_pT{ptbin[0]}{ptbin[1]}_cen{cclass[0]}{cclass[1]}_eff{eff:.2f}_model{bkgmodel}'+split)
-                                mb0.Write(f'm_ct{ctbin[0]}{ctbin[1]}_pT{ptbin[0]}{ptbin[1]}_cen{cclass[0]}{cclass[1]}_eff{eff:.2f}_model{bkgmodel}'+split)
-
                     print('Application and signal extraction: Done!\n')
 
             cent_dir_histos.cd()

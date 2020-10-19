@@ -31,7 +31,6 @@ def get_skimmed_large_data(data_path, cent_classes, pt_bins, ct_bins, training_c
     df_applied = pd.DataFrame()
 
     for current_file, data in iterator:
-
         rename_df_columns(data)
     
         print('current file: {}'.format(current_file))
@@ -99,6 +98,7 @@ def significance_error(signal, background):
 
     if signal+background == 0:
         return 0
+
     return np.sqrt(s_propag * s_propag + b_propag * b_propag)
 
 
@@ -346,8 +346,7 @@ def rename_df_columns(df):
 
 
 
-def df2roo(df, observables=None, columns=None, name='data', weights=None, ownership=True, bins=None,
-           norm_weights=True):
+def df2roo(df, observables=None, columns=None, name='data', weights=None, ownership=True, bins=None, norm_weights=True):
     """ Convert a DataFrame into a RooDataSet
     The `column` parameters select features of the DataFrame which should be included in the RooDataSet.
 
@@ -408,9 +407,11 @@ def df2roo(df, observables=None, columns=None, name='data', weights=None, owners
     if weights is not None:
         if isinstance(weights, str):
             df_subset['w'] = df[weights]
+
         else:
             assert len(weights) == len(df), "Strange length of the weights"
             df_subset['w'] = weights
+
         # Check if weights are normalized
         w = df_subset['w']
         if norm_weights:
@@ -436,6 +437,7 @@ def df2roo(df, observables=None, columns=None, name='data', weights=None, owners
             roo_var_list.append(v)
 
             roo_argset.add(v)
+
     else:
         for v in observables:
             roo_argset.add(observables[v])
@@ -447,8 +449,10 @@ def df2roo(df, observables=None, columns=None, name='data', weights=None, owners
         roo_argset.add(w)
         roo_var_list.append(w)
         df_roo = ROOT.RooDataSet(name, name, roo_argset, ROOT.RooFit.Import(df_tree), ROOT.RooFit.WeightVar(w),)
+
     else:
         df_roo = ROOT.RooDataSet(name, name, roo_argset, ROOT.RooFit.Import(df_tree),)
+
     ROOT.SetOwnership(df_roo, ownership)
 
     # Experimental: return histogram data if bins are set
@@ -456,3 +460,139 @@ def df2roo(df, observables=None, columns=None, name='data', weights=None, owners
         return roo2hist(df_roo, bins, roo_var_list[0], name, roo_argset)
 
     return df_roo
+
+
+
+def ndarray2roo(ndarray, var):
+    if isinstance(ndarray, ROOT.RooDataSet):
+        print('Already a RooDataSet')
+        return ndarray
+
+    assert isinstance(ndarray, np.ndarray), 'Did not receive NumPy array'
+    assert len(ndarray.shape) == 1, 'Can only handle 1d array'
+
+    name = var.GetName()
+    x = np.zeros(1, dtype=np.float64)
+
+    tree = ROOT.TTree('tree', 'tree')
+    tree.Branch(f'{name}', x ,f'{name}/D')
+
+    for i in ndarray:
+        x[0] = i
+        tree.Fill()
+
+    array_roo = ROOT.RooDataSet('data', 'dataset from tree', tree, ROOT.RooArgSet(var))
+    return array_roo
+
+
+
+def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct_range, split):
+    output_dir.cd()
+
+    # define working variable 
+    mass = ROOT.RooRealVar('m', 'm_{^{3}He+#pi}', 2.970, 3.015, 'GeV/c^{2}')
+
+    # define signal parameters
+    hyp_mass = ROOT.RooRealVar('hyp_mass', 'hypertriton mass', 2.989, 2.993, 'GeV/c^{2}')
+    width = ROOT.RooRealVar('width', 'hypertriton width', 0.001, 0.003, 'GeV/c^{2}')
+
+    # define signal component
+    signal = ROOT.RooGaussian('signal', 'signal component pdf', mass, hyp_mass, width)
+
+    # define background parameters
+    slope = ROOT.RooRealVar('slope', 'exponential slope', -100., 100.)
+
+    c0 = ROOT.RooRealVar('c0', 'constant c0', 1.)
+    c1 = ROOT.RooRealVar('c1', 'constant c1', 1.)
+    c2 = ROOT.RooRealVar('c2', 'constant c2', 1.)
+
+    # define background component depending on background model required
+    if bkg_model == 'pol1':
+        background = ROOT.RooPolynomial('bkg', 'pol1 bkg', mass, ROOT.RooArgList(c0, c1))
+                                        
+    if bkg_model == 'pol2':
+        background = ROOT.RooPolynomial('bkg', 'pol2 for bkg', mass, ROOT.RooArgList(c0, c1, c2))
+        
+    if bkg_model == 'expo':
+        background = ROOT.RooExponential('bkg', 'expo for bkg', mass, slope)
+
+    # define signal and background normalization
+    n_sig = ROOT.RooRealVar('nsig', 'n1 const', 0., 10000)
+    n_bkg = ROOT.RooRealVar('nbkg', 'n2 const', 0., 10000)
+
+    # define the fit funciton -> signal component + background component
+    fit_function = ROOT.RooAddPdf('fit', 'N_sig*sig + N_bkg*bkg', ROOT.RooArgList(signal, background), ROOT.RooArgList(n_sig, n_bkg))
+
+    # convert data to RooData               
+    roo_data = ndarray2roo(data, mass)
+
+    # fit data
+    fit_function.fitTo(roo_data, ROOT.RooFit.Range(2.970, 3.015), ROOT.RooFit.Extended(ROOT.kTRUE))
+
+    # plot the fit
+    frame = ROOT.RooPlot()
+    frame = mass.frame(18)
+
+    roo_data.plotOn(frame)
+    fit_function.plotOn(frame, ROOT.RooFit.LineColor(ROOT.kBlue))
+    fit_function.plotOn(frame, ROOT.RooFit.Components('signal'), ROOT.RooFit.LineColor(ROOT.kRed))
+    fit_function.plotOn(frame, ROOT.RooFit.Components('bkg'), ROOT.RooFit.LineStyle(ROOT.kDashed), ROOT.RooFit.LineColor(ROOT.kRed))
+
+    # add info to plot
+    nsigma = 3
+    mu = hyp_mass.getVal()
+    mu_error = hyp_mass.getError()
+    sigma = width.getVal()
+    sigma_error = width.getError()
+
+    # compute significance
+    mass.setRange('signal region',  mu - (nsigma * sigma), mu + (nsigma * sigma))
+    signal_counts = int(round(signal.createIntegral(ROOT.RooArgSet(mass), ROOT.RooFit.Range('signal region')).getVal()))
+    background_counts = int(round(background.createIntegral(ROOT.RooArgSet(mass), ROOT.RooFit.Range('signal region')).getVal()))
+
+    signif = signal_counts / math.sqrt(signal_counts + background_counts + 1e-10)
+    signif_error = significance_error(signal_counts, background_counts)
+
+    pinfo = ROOT.TPaveText(0.55, 0.5, 0.95, 0.9, 'NDC')
+    pinfo.SetBorderSize(0)
+    pinfo.SetFillStyle(0)
+    pinfo.SetTextAlign(30+3)
+    pinfo.SetTextFont(42)
+    string = f'ALICE Internal, Pb-Pb 2018 {cent_class[0]}-{cent_class[1]}%'
+    pinfo.AddText(string)
+                                
+    decay_label = {
+        '': '{}^{3}_{#Lambda}H#rightarrow ^{3}He#pi^{-} + c.c.',
+        '_matter': ['{}^{3}_{#Lambda}H#rightarrow ^{3}He#pi^{-}',' {}^{3}_{#Lambda}H#rightarrow dp#pi^{-}'],
+        '_antimatter': ['{}^{3}_{#bar{#Lambda}}#bar{H}#rightarrow ^{3}#bar{He}#pi^{+}','{}^{3}_{#Lambda}H#rightarrow #bar{d}#bar{p}#pi^{+}'],
+    }
+
+    string = decay_label[split] + ', %i #leq #it{p}_{T} < %i GeV/#it{c} ' % (pt_range[0], pt_range[1])
+    pinfo.AddText(string)
+
+    string = f'#mu {mu*1000:.2f} #pm {mu_error*1000:.2f} MeV/c^{2}'
+    pinfo.AddText(string)
+
+    string = f'#sigma {sigma*1000:.2f} #pm {sigma_error*1000:.2f} MeV/c^{2}'
+    pinfo.AddText(string)
+
+    if roo_data.sumEntries()>0:
+        string = '#chi^{2}/NDF' + f'{frame.chiSquare(6 if bkg_model=="pol2" else 5):.2f}'
+        pinfo.AddText(string)
+
+    string = f'Significance ({nsigma:.0f}#sigma) {signif:.1f} #pm {signif_error:.1f} '
+    pinfo.AddText(string)
+
+    string = f'S ({nsigma:.0f}#sigma) {signal_counts} #pm {int(round(math.sqrt(signal_counts)))}'
+    pinfo.AddText(string)
+
+    string = f'B ({nsigma:.0f}#sigma) {background_counts} #pm {int(round(math.sqrt(signal_counts)))}'
+    pinfo.AddText(string)
+
+    if background_counts > 0:
+        ratio = signal_counts / background_counts
+        string = f'S/B ({nsigma:.0f}#sigma) {ratio:.4f}'
+        pinfo.AddText(string)
+
+    frame.addObject(pinfo)
+    frame.Write(f'roo_ct{ct_range[0]}{ct_range[1]}_pT{pt_range[0]}{pt_range[1]}_cen{cent_class[0]}{cent_class[1]}_eff{eff:.2f}_model{bkg_model}{split}')
