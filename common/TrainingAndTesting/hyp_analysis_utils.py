@@ -521,7 +521,7 @@ def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct
     n_bkg = ROOT.RooRealVar('nbkg', 'n2 const', 0., 10000)
 
     # define the fit funciton -> signal component + background component
-    fit_function = ROOT.RooAddPdf('fit', 'N_sig*sig + N_bkg*bkg', ROOT.RooArgList(signal, background), ROOT.RooArgList(n_sig, n_bkg))
+    fit_function = ROOT.RooAddPdf('model', 'N_sig*sig + N_bkg*bkg', ROOT.RooArgList(signal, background), ROOT.RooArgList(n_sig, n_bkg))
 
     # convert data to RooData               
     roo_data = ndarray2roo(data, mass)
@@ -530,12 +530,11 @@ def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct
     fit_function.fitTo(roo_data, ROOT.RooFit.Range(2.970, 3.015), ROOT.RooFit.Extended(ROOT.kTRUE))
 
     # plot the fit
-    frame = ROOT.RooPlot()
     frame = mass.frame(18)
 
     roo_data.plotOn(frame)
     fit_function.plotOn(frame, ROOT.RooFit.LineColor(ROOT.kBlue))
-    fit_function.plotOn(frame, ROOT.RooFit.Components('signal'), ROOT.RooFit.LineColor(ROOT.kRed))
+    fit_function.plotOn(frame, ROOT.RooFit.Components('signal'), ROOT.RooFit.LineStyle(ROOT.kDotted), ROOT.RooFit.LineColor(ROOT.kRed))
     fit_function.plotOn(frame, ROOT.RooFit.Components('bkg'), ROOT.RooFit.LineStyle(ROOT.kDashed), ROOT.RooFit.LineColor(ROOT.kRed))
 
     # add info to plot
@@ -547,17 +546,18 @@ def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct
 
     # compute significance
     mass.setRange('signal region',  mu - (nsigma * sigma), mu + (nsigma * sigma))
-    signal_counts = int(round(signal.createIntegral(ROOT.RooArgSet(mass), ROOT.RooFit.Range('signal region')).getVal()))
-    background_counts = int(round(background.createIntegral(ROOT.RooArgSet(mass), ROOT.RooFit.Range('signal region')).getVal()))
+    signal_counts = int(round(signal.createIntegral(ROOT.RooArgSet(mass), ROOT.RooArgSet(mass), 'signal region').getVal() * n_sig.getVal()))
+    background_counts = int(round(background.createIntegral(ROOT.RooArgSet(mass), ROOT.RooArgSet(mass), 'signal region').getVal() * n_bkg.getVal()))
 
     signif = signal_counts / math.sqrt(signal_counts + background_counts + 1e-10)
     signif_error = significance_error(signal_counts, background_counts)
 
-    pinfo = ROOT.TPaveText(0.55, 0.5, 0.95, 0.9, 'NDC')
+    pinfo = ROOT.TPaveText(0.537, 0.474, 0.937, 0.875, 'NDC')
     pinfo.SetBorderSize(0)
     pinfo.SetFillStyle(0)
     pinfo.SetTextAlign(30+3)
     pinfo.SetTextFont(42)
+    # pinfo.SetTextSize(12)
     string = f'ALICE Internal, Pb-Pb 2018 {cent_class[0]}-{cent_class[1]}%'
     pinfo.AddText(string)
                                 
@@ -577,7 +577,7 @@ def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct
     pinfo.AddText(string)
 
     if roo_data.sumEntries()>0:
-        string = '#chi^{2}/NDF' + f'{frame.chiSquare(6 if bkg_model=="pol2" else 5):.2f}'
+        string = '#chi^{2} / NDF ' + f'{frame.chiSquare(6 if bkg_model=="pol2" else 5):.2f}'
         pinfo.AddText(string)
 
     string = f'Significance ({nsigma:.0f}#sigma) {signif:.1f} #pm {signif_error:.1f} '
@@ -591,7 +591,7 @@ def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct
 
     if background_counts > 0:
         ratio = signal_counts / background_counts
-        string = f'S/B ({nsigma:.0f}#sigma) {ratio:.4f}'
+        string = f'S/B ({nsigma:.0f}#sigma) {ratio:.2f}'
         pinfo.AddText(string)
 
     frame.addObject(pinfo)
