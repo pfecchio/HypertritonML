@@ -21,10 +21,8 @@ void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypT
 {
   gRandom->SetSeed(1989);
 
-  if (hypDataDir == "")
-    hypDataDir = getenv("HYPERML_DATA_2");
-  if (hypTableDir == "")
-    hypTableDir = getenv("HYPERML_TABLES_2");
+  if (hypDataDir == "") hypDataDir = getenv("HYPERML_DATA_2");
+  if (hypTableDir == "") hypTableDir = getenv("HYPERML_TABLES_2");
   string hypUtilsDir = getenv("HYPERML_UTILS");
 
   string mcName = getenv("HYPERML_MC");

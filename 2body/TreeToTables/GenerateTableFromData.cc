@@ -17,25 +17,26 @@ using namespace std;
 void GenerateTableFromData(bool likeSign = false, bool kInt7 = false, string dataDir = "" , string tableDir = "")
 {
 
-  if (dataDir=="") dataDir = getenv("HYPERML_DATA_2");
-  if (tableDir=="") tableDir = getenv("HYPERML_TABLES_2");
+  if (dataDir == "") dataDir = getenv("HYPERML_DATA_2");
+  if (tableDir == "") tableDir = getenv("HYPERML_TABLES_2");
 
   string pass = getenv("HYPERML_PASS");
+  string passString = "_pass" + pass + ".root";
 
   string kintstring = kInt7 ? "KINT7" : "";
-  string lsString = likeSign ? "LS.root" : ".root";
+  string lsString = likeSign ? "LS" : "";
 
-  string inFileNameQ = "HyperTritonTree_18q_pass" + pass;
-  string inFileArgQ = dataDir + "/" + inFileNameQ + lsString;
+  string inFileNameQ = "HyperTritonTree_18q";
+  string inFileArgQ = dataDir + "/" + inFileNameQ + lsString + passString;
 
-  string inFileNameR = "HyperTritonTree_18r_pass" + pass;
-  string inFileArgR = dataDir + "/" + inFileNameR + lsString;
+  string inFileNameR = "HyperTritonTree_18r";
+  string inFileArgR = dataDir + "/" + inFileNameR + lsString + passString;
 
-  string inFileName15 = "HyperTritonTree_15o_pass" + pass;
-  string inFileArg15 = dataDir + "/" + inFileName15 + lsString;
+  string inFileName15 = "HyperTritonTree_15o";
+  string inFileArg15 = dataDir + "/" + inFileName15 + lsString + passString;
 
-  string outFileName = "DataTable_18_pass" + pass;
-  string outFileArg = tableDir + "/" + outFileName + kintstring + lsString;
+  string outFileName = "DataTable_18";
+  string outFileArg = tableDir + "/" + outFileName + kintstring + lsString + passString;
 
   TChain inputChain("_custom/fTreeV0");
   inputChain.AddFile(inFileArgQ.data());
