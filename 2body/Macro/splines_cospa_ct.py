@@ -1,5 +1,4 @@
 import uproot, numpy as np, pandas as pd 
-from root_numpy import fill_hist, fill_graph 
 from ROOT import TFile, TH2D,TCanvas, kBlack, kBlue, kRed, kOrange, TGraph, gROOT
 from ROOT import TSpline3
 
@@ -17,7 +16,8 @@ ct_bins = np.geomspace(1,36,200)-1
 ct_step_size = np.diff(ct_bins) 
 hist_cosPA = TH2D("histo_cos_pa", '; c#it{t} (cm); # cosPA; Raw counts', len(ct_bins) - 1, ct_bins, len(cospa_bins)-1, cospa_bins) 
 df['V0CosPA_abs'] = np.abs(df['V0CosPA'])
-fill_hist(hist_cosPA, df[['ct','V0CosPA_abs']])
+for ct, cospa in np.asarray(df[['ct','V0CosPA_abs']], dtype=np.double):
+    hist_cosPA.Fill(ct, cospa) # Aghast does not support TH2 for the time being https://github.com/scikit-hep/aghast/pull/4
 for required_eff in required_eff_list:
     cospa_bin_list = []
     for ct_bin in range(1, len(ct_bins)):
@@ -35,9 +35,7 @@ for required_eff in required_eff_list:
     
     ct_array = ct_bins+ct_step_size/2
     cospa_array = cospa_bins[cospa_bin_list-1]+cospa_step_size[cospa_bin_list-1]/2
-    fill = np.vstack((ct_array, cospa_array)).T
-    graph_eff = TGraph(len(cospa_array))
-    fill_graph(graph_eff,fill)
+    graph_eff = TGraph(len(cospa_array), ct_array, cospa_array)
     graph_eff.SetName(f"{required_eff}")
     graph_eff.SetMarkerColor(kRed)
     graph_eff.SetMarkerStyle(8)

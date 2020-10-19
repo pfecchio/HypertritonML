@@ -15,7 +15,7 @@ import xgboost as xgb
 from hipe4ml import analysis_utils, plot_utils
 from hipe4ml.model_handler import ModelHandler
 from ROOT import TF1, TH1, TH1D, TH2D, TFile, gDirectory
-from root_numpy import fill_hist
+import aghast
 from sklearn.model_selection import train_test_split
 
 
@@ -68,16 +68,12 @@ class TrainingAnalysis:
             cut  =  f'{ct_bins[0]}<=ct<={ct_bins[1]}'            
             rap_cut = ' and abs(rapidity)<0.5'
 
-        pres_histo = hau.h2_preselection_efficiency(pt_bins, ct_bins)
-        gen_histo = hau.h2_generated(pt_bins, ct_bins)
+        pres_histo = aghast.to_root(np.histogram2d(self.df_signal.query(cent_cut + " and " + cut)[['pt', 'ct']], bins=[pt_bins, ct_bins]), "PreselEff")
 
-        fill_hist(pres_histo, self.df_signal.query(cent_cut + ' and ' + cut)[['pt', 'ct']])
-
-        if ('gPt' in list(self.df_generated.columns)):
-            fill_hist(gen_histo, self.df_generated.query(cent_cut)[['gPt', 'gCt']])
-
-        else:       
-            fill_hist(gen_histo, self.df_generated.query(cent_cut + rap_cut)[['pt', 'ct']])
+        if("gPt" in list(self.df_generated.columns)):
+            gen_histo = aghast.to_root(np.histogram2d(self.df_generated.query(cent_cut)[['gPt', 'gCt']], bins=[pt_bins, ct_bins]))
+        else:
+            gen_histo = aghast.to_root(np.histogram2d(self.df_generated.query(cent_cut)[['pt', 'ct']], bins=[pt_bins, ct_bins]))
             
         pres_histo.Divide(gen_histo)
 
@@ -111,7 +107,6 @@ class TrainingAnalysis:
         return [train_set, y_train, test_set, y_test]
 
     def MC_sigma_array(self, data, eff_score_array, cent_class, pt_range, ct_range, split=''):
-        inv_mass_array = np.array(np.arange(2.97, 3.04225, 0.00225))
         info_string = f'_{cent_class[0]}{cent_class[1]}_{pt_range[0]}{pt_range[1]}_{ct_range[0]}{ct_range[1]}{split}'
 
         sigma_path = os.environ['HYPERML_UTILS_{}'.format(self.mode)] + '/FixedSigma'
@@ -134,10 +129,9 @@ class TrainingAnalysis:
         mass_bins = 40 if ct_range[1] < 16 else 36
 
         for eff, cut in zip(eff_score_array[0], eff_score_array[1]):
-            counts = data[2][data[3].astype(bool)].query('score>@cut')['m']
+            counts = np.histogram(data[2][data[3].astype(bool)].query(f'score>{cut}')['m'], bins=mass_bins)
 
-            histo_minv = hau.h1_invmass(inv_mass_array, cent_class, pt_range, ct_range, bins=mass_bins)
-            fill_hist(histo_minv, counts)
+            histo_minv = hau.h1_invmass(counts, cent_class, pt_range, ct_range)
 
             histo_minv.Fit('gaus', 'Q')
 

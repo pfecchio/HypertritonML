@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import ROOT
 import uproot
-from root_numpy import fill_hist
 import os 
 
 

@@ -139,7 +139,8 @@ for split in SPLIT_LIST:
                         sum = ROOT.RooAddPdf("sum","b0sig+bkg",func_list,ROOT.RooArgList(n1,n2))
 
                         var = ROOT.RooRealVar("m","Example Variable",2.97,3.015)
-                        roo_data = hau.df2roo(df_applied.query("ct<@ctbin[1] and ct>@ctbin[0] and pt<@ptbin[1] and pt>@ptbin[0]"), {'m': var})
+                        roo_data = hau.df2roo(df_applied.query("ct<@ctbin[1] and ct>@ctbin[0] and pt<@ptbin[1] and pt>@ptbin[0]"), 'm', var)
+
                         sum.fitTo(roo_data)
                         xframe2 = ROOT.RooPlot()
                         xframe2.SetName(f'ct{ctbin[0]}{ctbin[1]}_pT{ptbin[0]}{ptbin[1]}_cen{cclass[0]}{cclass[1]}')
@@ -153,8 +154,8 @@ for split in SPLIT_LIST:
                         iMod = iMod + 1
                 else:
                     mass_array = np.array(df_applied.query("ct<@ctbin[1] and ct>@ctbin[0] and pt<@ptbin[1] and pt>@ptbin[0]")['m'].values, dtype=np.float64)
-                    counts, _ = np.histogram(mass_array, bins=mass_bins, range=[2.96, 3.05])
-                    h1_minv = hau.h1_invmass(counts, cclass, ptbin, ctbin, bins=mass_bins, name="")
+                    counts = np.histogram(mass_array, bins=mass_bins, range=[2.96, 3.05])
+                    h1_minv = hau.h1_invmass(counts, cclass, ptbin, ctbin, name="")
 
                     for bkgmodel in BKG_MODELS:
                         # create dirs for models
