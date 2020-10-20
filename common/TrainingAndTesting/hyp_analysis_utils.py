@@ -5,13 +5,14 @@ from math import floor, log10
 
 import numpy as np
 
+import hyp_analysis_utils as hau
 import pandas as pd
 import uproot
 import xgboost as xgb
 from hipe4ml.model_handler import ModelHandler
 import ROOT
 from ROOT import (TF1, TH1D, TH2D, TH3D, TCanvas, TPaveStats, TPaveText, gStyle)
-from root_numpy import array2tree
+
 
 def get_skimmed_large_data(data_path, cent_classes, pt_bins, ct_bins, training_columns, application_columns, mode, split=''):
     print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
@@ -595,4 +596,16 @@ def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct
         pinfo.AddText(string)
 
     frame.addObject(pinfo)
-    frame.Write(f'roo_ct{ct_range[0]}{ct_range[1]}_pT{pt_range[0]}{pt_range[1]}_cen{cent_class[0]}{cent_class[1]}_eff{eff:.2f}_model{bkg_model}{split}')
+
+    sub_dir_name = f'pT{pt_range[0]}{pt_range[1]}_eff{eff:.2f}{split}'
+    sub_dir = output_dir.GetDirectory(sub_dir_name)
+
+    if not sub_dir:
+        sub_dir = output_dir.mkdir(f'pT{pt_range[0]}{pt_range[1]}_eff{eff:.2f}{split}')
+
+    sub_dir.cd()
+
+    frame.Write(f'frame_model_{bkg_model}')
+    hyp_mass.Write(f'hyp_mass_model{bkg_model}')
+    width.Write(f'width_model{bkg_model}')
+
