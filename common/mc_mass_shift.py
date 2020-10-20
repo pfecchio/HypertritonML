@@ -77,33 +77,23 @@ results_dir = os.environ['HYPERML_RESULTS_{}'.format(params['NBODY'])]
 file_name =  results_dir + '/' + params['FILE_PREFIX'] + '_mass_shift.root'
 results_file = TFile(file_name,"recreate")
 
-file_name = results_dir + '/' + params['FILE_PREFIX'] + '_results_fit.root'
-eff_file = TFile(file_name, 'read')
-
 file_name = results_dir + f'/Efficiencies/{FILE_PREFIX}_sigscan.npy'
 sigscan_dict = np.load(file_name).item()
 
 results_file.cd()
-#efficiency from the significance scan
 
-bdt_eff = []
 tf1_gauss = TF1('gauss','gaus')
+xlabel = '#it{p}_{T} (GeV/#it{c})'
 
 for split in SPLIT_LIST:
-    bdt_eff_h2 = eff_file.Get('0-90' + split + '/BDTeff')
-    bdt_eff_h = bdt_eff_h2.ProjectionX('BDTeff', 1, bdt_eff_h2.GetNbinsY())
-
-    for ibin in range(1, bdt_eff_h.GetNbinsX() + 1):
-        bdt_eff.append(bdt_eff_h.GetBinContent(ibin))
-        xlabel = '#it{p}_{T} (GeV/#it{c})'
-
-    if split == '_matter':
+    if split is '_matter':
         title = 'matter'
-        
-    else:
+
+    elif split is '_antimatter':
         title = 'antimatter'
 
-    canvas = TCanvas('canvas' + split, "")
+    else:
+        title = '(anti-)matter'
 
     pt_binning = np.array(BINS, 'double')
     n_pt_bins = len(BINS)-1

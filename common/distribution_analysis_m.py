@@ -4,17 +4,18 @@ import argparse
 import math
 import os
 import random
-from array import array
-from multiprocessing import Pool
 
 import numpy as np
 import yaml
-
 from ROOT import (TF1, TH1D, TH2D, TAxis, TCanvas, TColor, TFile, TFrame,
                   TIter, TKey, TPaveText, gDirectory, gPad, gROOT, gStyle,
                   kBlue, kRed)
 from scipy import stats
 
+gROOT.SetBatch()
+
+###############################################################################
+# define custom colors
 kBlueC = TColor.GetColor('#1f78b4')
 kBlueCT = TColor.GetColorTransparent(kBlueC, 0.5)
 kRedC = TColor.GetColor('#e31a1c')
@@ -29,359 +30,339 @@ kMagentaC = TColor.GetColor('#f032e6')
 kMagentaCT = TColor.GetColorTransparent(kMagentaC, 0.5)
 kYellowC = TColor.GetColor('#ffe119')
 kYellowCT = TColor.GetColorTransparent(kYellowC, 0.5)
-kBrownC = TColor.GetColor('#b15928')
-kBrownCT = TColor.GetColorTransparent(kBrownC, 0.5)
 
-random.seed(1989)
+random.seed(42)
 
+###############################################################################
 parser = argparse.ArgumentParser()
-parser.add_argument("config", help="Path to the YAML configuration file")
+parser.add_argument('config', help='Path to the YAML configuration file')
 parser.add_argument('-split', '--split', help='Run with matter and anti-matter splitted', action='store_true')
 parser.add_argument('-s', '--scan', help='Use the BDTefficiency selection from the significance scan', action='store_true')
 parser.add_argument('-f', '--f', help='Correct the mass using the fit of the resolution', action='store_true')
 parser.add_argument('-u', '--unbinned', help='Use the unbinned fits', action='store_true')
 args = parser.parse_args()
 
-if args.split:
-    SPLIT_LIST = ['_matter','_antimatter']
-else:
-    SPLIT_LIST = ['']
-
-if args.f:
-    SHIFT_NAME = 'opt_fit_shift'
-    SHIFT_NAME2D = 'fit_shift'
-else:
-    SHIFT_NAME = 'opt_shift'
-    SHIFT_NAME2D = 'mean_shift'
-
-gROOT.SetBatch()
-
-
 with open(os.path.expandvars(args.config), 'r') as stream:
     try:
         params = yaml.full_load(stream)
     except yaml.YAMLError as exc:
         print(exc)
+###############################################################################
 
-resultsSysDir = os.environ['HYPERML_RESULTS_{}'.format(params['NBODY'])]
-
-var = '#it{ct}'
-unit = 'cm'
-
-file_name = resultsSysDir + '/' + params['FILE_PREFIX'] + '_mass.root'
-distribution = TFile(file_name, 'recreate')
-
-file_name = resultsSysDir + '/' + params['FILE_PREFIX'] + '_mass_shift.root'
-shift_file = TFile(file_name, 'read')
-
-if args.unbinned:
-    file_name = resultsSysDir + '/' + params['FILE_PREFIX'] + '_results_unbinned.root'
-    results_file = TFile(file_name, 'read')
-    file_name = resultsSysDir + '/' + params['FILE_PREFIX'] + '_results_fit.root'
-    efficiency_file = TFile(file_name, 'read')
-else:
-    file_name = resultsSysDir + '/' + params['FILE_PREFIX'] + '_results_fit.root'
-    results_file = TFile(file_name, 'read')
-
-file_name = resultsSysDir + '/' + settings['FILE_PREFIX'] + '_results_fit.root'
-lambda_file = TFile(file_name, 'read')
-
+###############################################################################
+# define some globals
+FILE_PREFIX = params['FILE_PREFIX']
 
 MEASUREMENT = ['mass','B_{#Lambda}']
     
-mLambda = [1.115683,0.000006]
-mDeuton = [1.87561294257,0.00000057]
-pol2_meas = []
-systerr = []
-bkgModels = params['BKG_MODELS'] if 'BKG_MODELS' in params else ['expo']
-hist_list = []
+LAMBDA_MASS = [1.115683, 0.000006]
+DEUTERON_MASS = [1.87561294257, 0.00000057]
 
-#loop se mat-anti divise
+SPLIT_LIST = ['']
+if args.split:
+    SPLIT_LIST = ['_matter','_antimatter']
+
+SHIFT_NAME = 'opt_shift'
+SHIFT_NAME2D = 'mean_shift'
+if args.f:
+    SHIFT_NAME = 'opt_fit_shift'
+    SHIFT_NAME2D = 'fit_shift'
+
+BKG_MODELS = params['BKG_MODELS'] if 'BKG_MODELS' in params else['expo']
+
+CENT_CLASS = params['CENTRALITY_CLASS'][0]
+PT_BINS = params['PT_BINS']
+###############################################################################
+
+###############################################################################
+results_dir = os.environ['HYPERML_RESULTS_{}'.format(params['NBODY'])]
+
+# output file
+file_name = results_dir + '/' + FILE_PREFIX + '_mass.root'
+output_file = TFile(file_name, 'recreate')
+
+# mass shift correction file
+file_name = results_dir + '/' + FILE_PREFIX + '_mass_shift.root'
+mass_correction_file = TFile(file_name, 'read')
+
+# input file depending on the analysis mode
+if args.unbinned:
+    file_name = results_dir + '/' + FILE_PREFIX + '_results_unbinned.root'
+
+else:
+    file_name = results_dir + '/' + FILE_PREFIX + '_results_fit.root'
+
+results_file = TFile(file_name, 'read')
+
+# significance scan output
+file_name = results_dir + f'/Efficiencies/{FILE_PREFIX}_sigscan.npy'
+sigscan_dict = np.load(file_name, allow_pickle=True).item()
+###############################################################################
+
+xlabel = '#it{p}_{T} (GeV/#it{c})'
+fit_range = [2, 9]
+
+# loop for split analysis
 for split in SPLIT_LIST:
+    # # get preselection efficiency file
+    # file_name = results_dir + f'/Efficiencies/PreselEff_cent{CENT_CLASS[0]}{CENT_CLASS[1]}{split}.root'
+    # presel_eff_file = TFile(file_name, 'read')
 
-    if 'ct' in params["FILE_PREFIX"]:
-        xlabel = '#it{c}t (cm)'
-        if split=="_matter":
-            fit_range = [1,35]
-        else:
-            fit_range = [1,24]
+    # presel_eff_h2 = presel_eff_file.Get('PreselEff')
+    # presel_eff_h1 = presel_eff_h2.ProjectionX('preseleff', 1, presel_eff_h2.GetNbinsY()+1)
+    # presel_eff = np.array(presel_eff_h1)[1:-1]
+
+    pol0 = TF1('mypol0', 'pol0', fit_range[0], fit_range[1])
+
+    hist_shift = mass_correction_file.Get(SHIFT_NAME + split)
+    hist_shift_h2 = mass_correction_file.Get(SHIFT_NAME2D + split)
+
+    shift = np.array(hist_shift)[1:-1]
+        
+    input_dirname = f'{CENT_CLASS[0]}-{CENT_CLASS[1]}' + split
+
+    if args.scan:
+        best_sig = np.round(list(sigscan_dict.values()), 2)
     else:
-        xlabel = '#it{p}_{T} (GeV/#it{c})'
-        fit_range = [2,9]
-    
-    pol0 = TF1("mypol0", "pol0", fit_range[0], fit_range[1])
+        best_sig = np.full(5, 0.60)
 
-    hist_lambda = lambda_file.Get('0-90'+split+'/mean')
-
-    hist_shift = shift_file.Get(SHIFT_NAME+split)
-    print(SHIFT_NAME+split)
-    hist_shift2D = shift_file.Get(SHIFT_NAME2D+split)
-    shift = []
-    for iBin in range(1,10):# hist_shift.GetNbinsX() + 1):
-        shift.append(hist_shift.GetBinContent(iBin))
+    sig_ranges = np.array([best_sig - 0.05, best_sig + 0.05, np.full(len(best_sig), 0.01)])
+    ranges = {'BEST': best_sig, 'SCAN': sig_ranges}
         
-    for cclass in params['CENTRALITY_CLASS']:
-        inDirName = f'{cclass[0]}-{cclass[1]}' + split
-        if args.unbinned:
-            h2BDTEff = efficiency_file.Get(f'{inDirName}/BDTeff')
-        else:
-            h2BDTEff = results_file.Get(f'{inDirName}/BDTeff')
-        sig_ranges = []
-        if(params['NBODY']==2):
-            if args.scan:
-                if 'ct' in params["FILE_PREFIX"]:
-                    h1BDTEff = h2BDTEff.ProjectionY("bdteff", 1, h2BDTEff.GetNbinsX()+1)
-                    best_sig = np.round(np.array(h1BDTEff)[1:-1], 2)
-                else:
-                    h1BDTEff = h2BDTEff.ProjectionX("bdteff", 1, h2BDTEff.GetNbinsY()+1)
-                    best_sig = np.round(np.array(h1BDTEff)[1:-1], 2)
-                for i in best_sig:
-                    if i== best_sig[0]:
-                        sig_ranges.append([i-0.03, i+0.03, 0.01])
-                    else:
-                        sig_ranges.append([i-0.05, i+0.1, 0.01])
-            else:
-                best_sig = []
-                for i in range(1,len(params['CT_BINS'])*len(params['PT_BINS'])+1):
-                    best_sig.append(0.75)
-                    sig_ranges.append([0.70, 0.80, 0.01])
-            
-        else :
-            sig_ranges = [[0.70, 90, 0.01], [0.80, 0.95, 0.01], [0.70, 0.90, 0.01], [0.79, 0.94, 0.01], [0.79, 0.90, 0.01], [0.83, 0.90, 0.01]]
+    if args.unbinned:
+        results_file.cd()
 
-        ranges = {
-                'BEST': best_sig,
-                'SCAN': sig_ranges
-        }
-        
-        if args.unbinned:
-            results_file.cd()
-        else:
-            results_file.cd(inDirName)
-        out_dir = distribution.mkdir(inDirName)
-        cvDir = out_dir.mkdir("canvas")
+    else:
+        results_file.cd(input_dirname)
 
-        hMeanMass = []
-        means = []
-        errs = []
-        if args.unbinned:
-            h2PreselEff = efficiency_file.Get(f'{inDirName}/BDTeff')
-        else:    
-            h2PreselEff = results_file.Get(f'{inDirName}/BDTeff')
-        if 'ct' in params['FILE_PREFIX']:
-            h1PreselEff = h2PreselEff.ProjectionY("preseleff", 1, h2PreselEff.GetNbinsX()+1)
-        else:
-            h1PreselEff = h2PreselEff.ProjectionX("preseleff", 1, h2PreselEff.GetNbinsY()+1)
+    out_dir = output_file.mkdir(input_dirname)
 
-        for model in bkgModels:
-            h1MeanMass = h1PreselEff.Clone(f"best_{model}")
-            h1MeanMass.Reset()
-            h1Sigmas = h1MeanMass.Clone(f"sigma_{model}{split}")
-            h1Sigmas.SetTitle(";#it{p}_{T} (GeV/c);sigma (MeV/c^{2});")
-            if model!="pol2":
-                par_index = 3
-            else:
-                par_index = 4
+    hMeanMass = []
+    means = []
+    errs = []
+
+    for model in BKG_MODELS:
+        mass_h1 = hist_shift.Clone(f'mass_best_{model}')
+        mass_h1.Reset()
+
+        blambda_h1 = hist_shift.Clone(f'blambda_best_{model}')
+        blambda_h1.Reset()
+
+        sigma_h1 = mass_h1.Clone(f'sigma_{model}{split}')
+        sigma_h1.SetTitle(";#it{p}_{T} (GeV/c);sigma (MeV/c^{2});")
+
+        par_index = 4 if model is 'pol2' else 3
                 
-            out_dir.cd()
-            for iBin in range(1, h1MeanMass.GetNbinsX() + 1):
-
-                if 'ct' in params['FILE_PREFIX']:
-                    dir_name = f'{inDirName}/ct_{params["CT_BINS"][iBin-1]}{params["CT_BINS"][iBin]}/'
-                    obj_name = f'ct{params["CT_BINS"][iBin-1]}{params["CT_BINS"][iBin]}_pT210_cen090_eff{best_sig[iBin-1]:.2f}'
-                else:   
-                    dir_name = f'{inDirName}/pt_{params["PT_BINS"][iBin-1]}{params["PT_BINS"][iBin]}/'
-                    obj_name = f'ct090_pT{params["PT_BINS"][iBin-1]}{params["PT_BINS"][iBin]}_cen090_eff{best_sig[iBin-1]:.2f}'
-                
-                if args.unbinned:
-                    m_var = results_file.Get('m_'+obj_name+f'_model{model}'+split)
-                    sig_var = results_file.Get('sig_'+obj_name+f'_model{model}'+split)
-                    mass = m_var.getVal()
-                    mass_err = m_var.getError()
-                    sigma = sig_var.getVal()
-                    sigma_err = sig_var.getError()
-
-                else:
-                    histo = results_file.Get(dir_name+f'{model}/'+obj_name)
-                    lineshape = histo.GetFunction("fitTpl")
-                    mass = lineshape.GetParameter(par_index)
-                    mass_err = lineshape.GetParError(par_index)
-                    sigma = lineshape.GetParameter(par_index+1)
-                    sigma_err = lineshape.GetParError(par_index+1)
-
-                #the shift is in MeV/c^2
-                h1MeanMass.SetBinContent(iBin,mass-shift[iBin-1]/1000)
-                h1MeanMass.SetBinError(iBin,mass_err)
-                h1Sigmas.SetBinContent(iBin,sigma*1000)
-                h1Sigmas.SetBinError(iBin,sigma_err*1000)
-
-                means.append([])
-                errs.append([])
-
-                for eff in np.arange(ranges['SCAN'][iBin - 1][0], ranges['SCAN'][iBin - 1][1], ranges['SCAN'][iBin - 1][2]):
-                    if eff > 0.99:
-                        continue
-
-                    if 'ct' in params['FILE_PREFIX']:
-                        dir_name = f'{inDirName}/ct_{params["CT_BINS"][iBin-1]}{params["CT_BINS"][iBin]}/'
-                        obj_name = f'ct{params["CT_BINS"][iBin-1]}{params["CT_BINS"][iBin]}_pT210_cen090_eff{eff:.2f}'
-                    else:   
-                        dir_name = f'{inDirName}/pt_{params["PT_BINS"][iBin-1]}{params["PT_BINS"][iBin]}/'
-                        obj_name = f'ct090_pT{params["PT_BINS"][iBin-1]}{params["PT_BINS"][iBin]}_cen090_eff{eff:.2f}'
-                    
-                    if args.unbinned:
-                        m_var = results_file.Get('m_'+obj_name+f'_model{model}'+split)
-                        print('m_'+obj_name+f'_model{model}'+split)
-                        mass = m_var.getVal()
-                        mass_err = m_var.getError()
-                    else:
-                        histo = results_file.Get(dir_name+f'{model}/'+obj_name)
-                        lineshape = histo.GetFunction("fitTpl")
-                        mass = lineshape.GetParameter(par_index)
-                        mass_err = lineshape.GetParError(par_index)
-                    means[iBin-1].append(mass-hist_shift2D.GetBinContent(iBin,(int)((eff-0.20)*100+1))/1000)
-                    errs[iBin-1].append(mass_err)
-            
-            for meas in MEASUREMENT:
-                out_dir.cd()
-                h1MeanMass.UseCurrentStyle()
-                if meas == 'B_{#Lambda}':
-                    for iBin in range(1, hist_shift.GetNbinsX() + 1):
-                        h1MeanMass.SetBinContent(iBin,mLambda[0]+mDeuton[0]-h1MeanMass.GetBinContent(iBin))
-                    rangePad = [-0.004,0.002]
-                else:
-                    rangePad = [2.990,2.995]
-
-                
-                if split == '_antimatter':
-                    label = {
-                    "mass": ['m_{ {}^{3}_{#bar{#Lambda}} #bar{H}}','/c^{2}'],
-                    "B_{#Lambda}": ['B_{#bar{#Lambda}}', ''],
-                    "title": '{}^{3}_{#bar{#Lambda}} #bar{H}'
-                    }
-                else:
-                    label = {
-                    "mass": ['m_{ {}^{3}_{#Lambda}H}','/c^{2}'],
-                    "B_{#Lambda}": ['B_{#Lambda}',''],
-                    "title": '{}^{3}_{#Lambda} H'
-                    }
-
-                if(split!=""):
-                    if(model=="pol2"):
-                        hist_list.append(h1MeanMass.Clone("hist"+split))
-                h1MeanMass.Fit(pol0, "MI0+", "",fit_range[0],fit_range[1])
-                #fit_function = h1MeanMass.GetFunction("mypol0")
-                pol0.SetLineColor(kOrangeC)
-                h1MeanMass.SetMarkerStyle(20)
-                h1MeanMass.SetMarkerColor(kBlueC)
-                h1MeanMass.SetLineColor(kBlueC)
-                h1MeanMass.Write()
-                hMeanMass.append(h1MeanMass)
-
-                cvDir.cd()
-                myCv = TCanvas(f"ctSpectraCv_{model}_{meas}{split}")
-                
-                if 'pt' in params['FILE_PREFIX']:
-                    xplot_range = [params['PT_BINS'][0],params['PT_BINS'][len(params['PT_BINS'])-1]]
-                else:
-                    xplot_range = [params['CT_BINS'][0],params['CT_BINS'][len(params['CT_BINS'])-1]]
-
-                frame = gPad.DrawFrame(
-                    xplot_range[0], rangePad[0], xplot_range[1], rangePad[1], label['title']+";"+xlabel+";"+ label[meas][0] +"[ GeV"+label[meas][1]+"]")
-                pinfo2 = TPaveText(0.5, 0.65, 0.88, 0.86, "NDC")
-                pinfo2.SetBorderSize(0)
-                pinfo2.SetFillStyle(0)
-                pinfo2.SetTextAlign(22)
-                pinfo2.SetTextFont(43)
-                pinfo2.SetTextSize(33)
-                string1 = '#bf{ALICE Internal}'
-                string2 = 'Pb-Pb  #sqrt{#it{s}_{NN}} = 5.02 TeV,  0-90%'
-                pinfo2.AddText(string1)
-                pinfo2.AddText(string2)
-                string = label[meas][0] + ' = {:.2f} #pm {:.2f} '.format(pol0.GetParameter(0)*10**(3), pol0.GetParError(0)*10**(3))+'MeV'+label[meas][1]
-                if bkgModels=='pol2':
-                    pol2_meas.append([pol0.GetParameter(0),pol0.GetParError(0)]) 
-                pinfo2.AddText(string)
-                if pol0.GetNDF()is not 0:
-                    string = f'#chi^{{2}} / NDF = {(pol0.GetChisquare() / pol0.GetNDF()):.2f}'
-                pinfo2.AddText(string)
-                pol0.Draw("same")
-                h1MeanMass.Draw("ex0same")
-                h1MeanMass.GetYaxis().SetTitleSize(26)
-                h1MeanMass.GetYaxis().SetLabelSize(100)
-                h1MeanMass.GetXaxis().SetTitleSize(26)
-                h1MeanMass.GetXaxis().SetLabelSize(100)
-                #h1MeanMass.SetStats(0)
-
-                pinfo2.Draw("x0same")
-                tmpSyst = h1MeanMass.Clone("hSyst")
-                corSyst = h1MeanMass.Clone("hCorr")
-                tmpSyst.SetFillStyle(0)
-                tmpSyst.SetMinimum(0.001)
-                tmpSyst.SetMaximum(1000)
-                corSyst.SetFillStyle(3345)
-                for iBin in range(1, h1MeanMass.GetNbinsX() + 1):
-                    val = h1MeanMass.GetBinContent(iBin)
-                    # tmpSyst.SetBinError(iBin, val*0.099)
-                #     # corSyst.SetBinError(iBin, 0.086 * val)
-                # tmpSyst.SetLineColor(kBlueC)
-                # tmpSyst.SetMarkerColor(kBlueC)
-                # tmpSyst.Draw("e2same")
-                # corSyst.Draw("e2same")
-                out_dir.cd()
-                myCv.Write()
-                
-                h1Sigmas.SetMarkerStyle(22)
-                h1Sigmas.Write()
-                #h1MeanMass.Draw("ex0same")
-                #pinfo2.Draw()
-                cvDir.cd()
-                myCv.Write()
-
         out_dir.cd()
 
-        if split == "_antimatter":
-            title = "{}^{3}_{#bar{#Lambda}} #bar{H}"
-        else:
-            title = "{}^{3}_{#Lambda} H"
-        syst = TH1D("syst", title + ";mass (GeV/c^{2});Entries", 200, 2.990, 2.992)
-        prob = TH1D("prob", ";constant fit probability;Entries",200, 0, 1)
-        tmpCt = hMeanMass[0].Clone("tmpCt")
+        for bin_idx in range(1, mass_h1.GetNbinsX() + 1):
+            if args.unbinned:
+                sub_dir_name = f'pT{PT_BINS[bin_idx-1]}{PT_BINS[bin_idx]}_eff{best_sig[bin_idx-1]:.2f}{split}'
+                roo_hyp_mass = results_file.Get(sub_dir_name + f'/hyp_mass_model{model}')
+                roo_width = results_file.Get(sub_dir_name + f'/width_model{model}')
+                hyp_mass = roo_hyp_mass.getVal()
+                hyp_mass_err = roo_hyp_mass.getError()
+                width = roo_width.getVal()
+                width_err = roo_width.getError()
 
-        combinations = set()
-        size = 20000
-        count=0
-        for _ in range(size):
-            tmpCt.Reset()
-            comboList = []
+            # else:
+            #     histo = results_file.Get(dir_name + f'{model}/' + obj_name)
+            #     lineshape = histo.GetFunction("fitTpl")
+            #     mass = lineshape.GetParameter(par_index)
+            #     mass_err = lineshape.GetParError(par_index)
+            #     sigma = lineshape.GetParameter(par_index+1)
+            #     sigma_err = lineshape.GetParError(par_index+1)
 
-            for iBin in range(1, tmpCt.GetNbinsX() + 1):
-                index = random.randint(0, len(means[iBin-1])-1)
-                comboList.append(index)
-                tmpCt.SetBinContent(iBin, means[iBin-1][index])
-                tmpCt.SetBinError(iBin, errs[iBin-1][index])
-
-            combo = (x for x in comboList)
-            if combo in combinations:
-                continue
-
-            combinations.add(combo)
+            mass_h1.SetBinContent(bin_idx, hyp_mass - shift[bin_idx-1]/1000) # mass correction in MeV/c^2
+            mass_h1.SetBinError(bin_idx, hyp_mass_err)
+            sigma_h1.SetBinContent(bin_idx, width*1000) # width in MeV/c^2
+            sigma_h1.SetBinError(bin_idx, width_err*1000)  # width in MeV/c^2
+            blambda_h1.SetBinContent(bin_idx, (LAMBDA_MASS[0] + DEUTERON_MASS[0] - mass_h1.GetBinContent(bin_idx))*1000)  # BLambda in MeV
+            blambda_error = math.sqrt(LAMBDA_MASS[1]**2 + DEUTERON_MASS[1]**2 + mass_h1.GetBinError(bin_idx)**2)
+            blambda_h1.SetBinError(bin_idx, blambda_error*1000)
             
-            tmpCt.Fit(pol0, "QRMI0+","",fit_range[0],fit_range[1])
-            prob.Fill(pol0.GetProb())
-            if pol0.GetChisquare() < 3. * pol0.GetNDF():
-                if count==0:
-                    tmpCt.Write()
-                    count=1
-                syst.Fill(pol0.GetParameter(0))
+
+            # means.append([])
+            # errs.append([])
+
+            # # sampling for systematics ?
+            # for eff in np.arange(ranges['SCAN'][bin_idx - 1][0], ranges['SCAN'][bin_idx - 1][1], ranges['SCAN'][bin_idx - 1][2]):
+            #     if eff > 0.99:
+            #         continue
+
+            #         if 'ct' in FILE_PREFIX:
+            #             dir_name = f'{input_dirname}/ct_{params['CT_BINS'][bin_idx-1]}{params["CT_BINS"][bin_idx]}/'
+            #             obj_name = f'ct{params["CT_BINS"][bin_idx-1]}{params["CT_BINS"][bin_idx]}_pT210_cen090_eff{eff:.2f}'
+
+            #         else:   
+            #             dir_name = f'{input_dirname}/pt_{PT_BINS[bin_idx-1]}{PT_BINS[bin_idx]}/'
+            #             obj_name = f'ct090_pT{PT_BINS[bin_idx-1]}{PT_BINS[bin_idx]}_cen090_eff{eff:.2f}'
+                    
+            #         if args.unbinned:
+            #             m_var = results_file.Get('m_'+obj_name+f'_model{model}'+split)
+            #             mass = m_var.getVal()
+            #             mass_err = m_var.getError()
+
+            #         else:
+            #             histo = results_file.Get(dir_name+f'{model}/'+obj_name)
+            #             lineshape = histo.GetFunction("fitTpl")
+            #             mass = lineshape.GetParameter(par_index)
+            #             mass_err = lineshape.GetParError(par_index)
+
+            #         means[bin_idx-1].append(mass-hist_shift2D.GetBinContent(bin_idx,(int)((eff-0.20)*100+1))/1000)
+            #         errs[bin_idx-1].append(mass_err)
+
+
+        ###############################################################################
+        # mass plot
+        out_dir.cd()
+        mass_h1.UseCurrentStyle()
+
+        pad_range = [2.990, 2.9916]
         
-        systerr.append(syst.GetStdDev())
+        if split is '_antimatter':
+            label = 'm_{ {}^{3}_{#bar{#Lambda}} #bar{H}}'
+        else:
+            label = 'm_{ {}^{3}_{#Lambda}H}'
+        mass_h1.Fit(pol0, 'MI0+', '', fit_range[0], fit_range[1])
+        pol0.SetLineColor(kOrangeC)
+        mass_h1.SetMarkerStyle(20)
+        mass_h1.SetMarkerColor(kBlueC)
+        mass_h1.SetLineColor(kBlueC)
+        mass_h1.Write()
+        hMeanMass.append(mass_h1)
+        canvas = TCanvas(f"Hyp_Mass_{model}_{split}")
+            
+        xplot_range = [PT_BINS[0], PT_BINS[-1]]
+        frame = gPad.DrawFrame(xplot_range[0], pad_range[0], xplot_range[1], pad_range[1], ';'+xlabel+';'+label+' [ GeV/#it{c}^{2} ]')
+        pinfo = TPaveText(0.142, 0.620, 0.522, 0.848, "NDC")
+        pinfo.SetBorderSize(0)
+        pinfo.SetFillStyle(0)
+        pinfo.SetTextAlign(11)
+        pinfo.SetTextFont(43)
+        pinfo.SetTextSize(25)
+        string_list = []
+        string_list.append('#bf{ALICE Internal}')
+        string_list.append('Pb-Pb  #sqrt{#it{s}_{NN}} = 5.02 TeV,  0-90%')
+        string_list.append(label + ' = {:.5f} #pm {:.5f} '.format(pol0.GetParameter(0), pol0.GetParError(0)) + 'GeV/#it{c}^{2}')
+        if pol0.GetNDF() is not 0:
+            string_list.append(f'#chi^{{2}} / NDF = {(pol0.GetChisquare() / pol0.GetNDF()):.2f}')
+        for s in string_list:
+            pinfo.AddText(s)
 
-        syst.SetFillColor(600)
-        syst.SetFillStyle(3345)
-        #syst.Scale(1./syst.Integral())
-        syst.Write()
-        prob.Write()
+        pol0.Draw("same")
+        pinfo.Draw("x0same")
+        mass_h1.Draw("ex0same")
+        mass_h1.GetYaxis().SetTitleSize(26)
+        mass_h1.GetYaxis().SetLabelSize(100)
+        mass_h1.GetXaxis().SetTitleSize(26)
+        mass_h1.GetXaxis().SetLabelSize(100)
+        canvas.Write()
+                
+        sigma_h1.SetMarkerStyle(22)
+        sigma_h1.SetMarkerColor(kBlue)
+        sigma_h1.Write()
+        mass_h1.Write()
 
+        ###############################################################################
+        # B_Lambda plot
+        pad_range = [0.0, 2.05]
+            
+        if split is '_antimatter':
+            label = 'B_{#bar{#Lambda}}'
+        else:
+            label = 'B_{#Lambda}'
+
+        blambda_h1.Fit(pol0, 'MI0+', '', fit_range[0], fit_range[1])
+
+        pol0.SetLineColor(kOrangeC)
+        blambda_h1.SetMarkerStyle(20)
+        blambda_h1.SetMarkerColor(kBlueC)
+        blambda_h1.SetLineColor(kBlueC)
+        blambda_h1.Write()
+        hMeanMass.append(blambda_h1)
+
+        canvas = TCanvas(f"BLambda_{model}_{split}")
+                
+        xplot_range = [PT_BINS[0], PT_BINS[-1]]
+
+        frame = gPad.DrawFrame(xplot_range[0], pad_range[0], xplot_range[1], pad_range[1], ';'+xlabel+';'+label+' [ MeV/#it{c}^{2} ]')
+        pinfo = TPaveText(0.142, 0.620, 0.522, 0.848, "NDC")
+        pinfo.SetBorderSize(0)
+        pinfo.SetFillStyle(0)
+        pinfo.SetTextAlign(11)
+        pinfo.SetTextFont(43)
+        pinfo.SetTextSize(25)
+
+        string_list = []
+        string_list.append('#bf{ALICE Internal}')
+        string_list.append('Pb-Pb  #sqrt{#it{s}_{NN}} = 5.02 TeV,  0-90%')
+        string_list.append(label + ' = {:.2f} #pm {:.2f} '.format(pol0.GetParameter(0), pol0.GetParError(0)) + 'MeV/#it{c}^{2}')
+
+        if pol0.GetNDF() is not 0:
+            string_list.append(f'#chi^{{2}} / NDF = {(pol0.GetChisquare() / pol0.GetNDF()):.2f}')
+
+        for s in string_list:
+            pinfo.AddText(s)
+
+        pol0.Draw("same")
+        pinfo.Draw("x0same")
+        blambda_h1.Draw("ex0same")
+        blambda_h1.GetYaxis().SetTitleSize(26)
+        blambda_h1.GetYaxis().SetLabelSize(100)
+        blambda_h1.GetXaxis().SetTitleSize(26)
+        blambda_h1.GetXaxis().SetLabelSize(100)
+
+        canvas.Write()
+        blambda_h1.Write()
+
+        # if split == "_antimatter":
+        #     title = "{}^{3}_{#bar{#Lambda}} #bar{H}"
+
+        # else:
+        #     title = "{}^{3}_{#Lambda} H"
+
+        # syst = TH1D("syst", title + ";mass (GeV/c^{2});Entries", 200, 2.990, 2.992)
+        # prob = TH1D("prob", ";constant fit probability;Entries",200, 0, 1)
+        # tmpCt = hMeanMass[0].Clone("tmpCt")
+
+        # combinations = set()
+        # size = 20000
+        # count = 0
+        
+        # for _ in range(size):
+        #     tmpCt.Reset()
+        #     comboList = []
+
+        #     for bin_idx in range(1, tmpCt.GetNbinsX() + 1):
+        #         index = random.randint(0, len(means[bin_idx-1])-1)
+        #         comboList.append(index)
+        #         tmpCt.SetBinContent(bin_idx, means[bin_idx-1][index])
+        #         tmpCt.SetBinError(bin_idx, errs[bin_idx-1][index])
+
+        #     combo = (x for x in comboList)
+
+        #     if combo in combinations:
+        #         continue
+
+        #     combinations.add(combo)
+            
+        #     tmpCt.Fit(pol0, "QRMI0+","",fit_range[0],fit_range[1])
+        #     prob.Fill(pol0.GetProb())
+
+        #     if pol0.GetChisquare() < 3. * pol0.GetNDF():
+        #         if count==0:
+        #             tmpCt.Write()
+        #             count = 1
+                    
+        #         syst.Fill(pol0.GetParameter(0))
+        
+        # systerr.append(syst.GetStdDev())
+
+        # syst.SetFillColor(600)
+        # syst.SetFillStyle(3345)
+        # #syst.Scale(1./syst.Integral())
+        # syst.Write()
+        # prob.Write()
 
 results_file.Close()

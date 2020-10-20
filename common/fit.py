@@ -129,6 +129,7 @@ for split in SPLIT_LIST:
                             mean_fit_error.append(mu_err)
                             sigma_fit.append(sigma)
                             sigma_fit_error.append(sigma_err)
+                            
                         else:
                             rawcounts, err_rawcounts, significance, err_significance, _, _, _, _ = hau.fit_hist(hist, cclass, ptbin, ctbin, model=bkgmodel, fixsigma=mcsigma , mode=N_BODY)
 

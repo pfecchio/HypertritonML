@@ -19,8 +19,6 @@ from ROOT import TFile, gROOT
 warnings.simplefilter(action='ignore', category=FutureWarning)
 gROOT.SetBatch()
 
-
-
 ###############################################################################
 parser = argparse.ArgumentParser()
 parser.add_argument('-t', '--train', help='Do the training', action='store_true')
@@ -56,7 +54,6 @@ COLUMNS = params['TRAINING_COLUMNS']
 MODEL_PARAMS = params['XGBOOST_PARAMS']
 HYPERPARAMS = params['HYPERPARAMS']
 HYPERPARAMS_RANGE = params['HYPERPARAMS_RANGE']
-
 
 BKG_MODELS = params['BKG_MODELS']
 
@@ -143,7 +140,7 @@ if APPLICATION:
     file_name = results_dir + f'/{FILE_PREFIX}_results.root'
     results_histos_file = TFile(file_name, 'recreate')
 
-    if(N_BODY==3):
+    if (N_BODY==3):
         application_columns = ['score', 'm', 'ct', 'pt', 'centrality', 'positive', 'mppi_vert', 'mppi', 'mdpi', 'tpc_ncls_de', 'tpc_ncls_pr', 'tpc_ncls_pi']
     else:
         application_columns = ['score', 'm', 'ct', 'pt', 'centrality','ArmenterosAlpha']
@@ -222,7 +219,7 @@ if APPLICATION:
 
                         if args.unbinned:
                             for bkg_model in BKG_MODELS:
-                                hau.unbinned_mass_fit(mass_array, eff, bkg_model, results_unbin_file, cclass, ctbin, ptbin, split)
+                                hau.unbinned_mass_fit(mass_array, eff, bkg_model, results_unbin_file, cclass, ptbin, ctbin, split)
                                 
                     print('Application and signal extraction: Done!\n')
 
