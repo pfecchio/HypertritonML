@@ -87,7 +87,7 @@ start_time = time.time()                          # for performances evaluation
 
 if TRAIN:
     for split in SPLIT_LIST:
-        ml_analysis = TrainingAnalysis(N_BODY, signal_path, bkg_path, split, sidebands=args.side)
+        ml_analysis = TrainingAnalysis(N_BODY, signal_path, bkg_path, split, sidebands=args.side, entrystop=1000000)
         print(f'--- analysis initialized in {((time.time() - start_time) / 60):.2f} minutes ---\n')
 
         for cclass in CENT_CLASSES:

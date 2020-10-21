@@ -140,14 +140,9 @@ def h2_significance(ptbins, ctbins, name='Significance', suffix=''):
 
 
 def h1_invmass(counts, cent_class, pt_range, ct_range, name=''):
-    th1 = aghast.to_root(counts, f'ct{ct_range[0]}{ct_range[1]}_pT{pt_range[0]}{pt_range[1]}_cen{cent_class[0]}{cent_class[1]}_{name}')
-
-    for index in range(0, len(counts)):
-        th1.SetBinContent(index+1, counts[index])
-        th1.SetBinError(index + 1, math.sqrt(counts[index]))
-
+    ghist = aghast.from_numpy(counts)
+    th1 = aghast.to_root(ghist, f'ct{ct_range[0]}{ct_range[1]}_pT{pt_range[0]}{pt_range[1]}_cen{cent_class[0]}{cent_class[1]}_{name}')
     th1.SetDirectory(0)
-
     return th1
 
 

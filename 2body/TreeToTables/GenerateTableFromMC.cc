@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 #include <vector>
 
 #include <TFile.h>
@@ -17,6 +18,8 @@
 #include "../../common/GenerateTable/GenTable2.h"
 #include "../../common/GenerateTable/Table2.h"
 
+using std::string;
+
 void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypTableDir = "", string ptShape = "bw")
 {
   gRandom->SetSeed(1989);
@@ -24,6 +27,9 @@ void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypT
   if (hypDataDir == "") hypDataDir = getenv("HYPERML_DATA_2");
   if (hypTableDir == "") hypTableDir = getenv("HYPERML_TABLES_2");
   string hypUtilsDir = getenv("HYPERML_UTILS");
+
+  string pass = getenv("HYPERML_PASS");
+  bool useProposeMasses = (pass == "3");
 
   string mcName = getenv("HYPERML_MC");
 
@@ -46,7 +52,7 @@ void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypT
   // get the bw functions for the pt rejection
   TFile bwFile(bwFileArg.data());
 
-  TF1 *hypPtShape{nullptr}; TF1 *hypPtShape0; TF1 *hypPtShape1; TF1 *hypPtShape2;
+  TF1 *hypPtShape{nullptr}; TF1 *hypPtShape0{nullptr}; TF1 *hypPtShape1{nullptr}; TF1 *hypPtShape2{nullptr};
   if (ptShape == "bw")
     {
       hypPtShape0 = (TF1 *)bwFile.Get("BlastWave/BlastWave0");
@@ -142,7 +148,7 @@ void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypT
       if (ind >= 0)
       {
         auto &RHyper = RHyperVec[ind];
-        table.Fill(RHyper, *RColl, false);
+        table.Fill(RHyper, *RColl, useProposeMasses);
         double recpt = std::hypot(RHyper.fPxHe3 + RHyper.fPxPi, RHyper.fPyHe3 + RHyper.fPyPi);
         hNSigmaTPCVsPtHe3->Fill(recpt, RHyper.fTPCnSigmaHe3);
       }

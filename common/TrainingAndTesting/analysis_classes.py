@@ -20,7 +20,7 @@ from sklearn.model_selection import train_test_split
 
 class TrainingAnalysis:
 
-    def __init__(self, mode, mc_file_name, bkg_file_name, split, sidebands = False):
+    def __init__(self, mode, mc_file_name, bkg_file_name, split, sidebands = False, entrystop=10000000):
         self.mode = mode
 
         print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
@@ -32,14 +32,14 @@ class TrainingAnalysis:
         if self.mode == 3:
             self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df().query('bw_accept and cos_pa > 0 and pt > 2')
             self.df_generated = uproot.open(mc_file_name)['SignalTable'].pandas.df().query('bw_accept')
-            self.df_bkg = uproot.open(bkg_file_name)['DataTable'].pandas.df(entrystop=10000000)
+            self.df_bkg = uproot.open(bkg_file_name)['DataTable'].pandas.df(entrystop=entrystop)
 
             hau.rename_df_columns(self.df_bkg)
                 
         if self.mode == 2:
             self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df()
             self.df_generated = uproot.open(mc_file_name)['GenTable'].pandas.df()
-            self.df_bkg = uproot.open(bkg_file_name)['DataTable'].pandas.df(entrystop=10000000)
+            self.df_bkg = uproot.open(bkg_file_name)['DataTable'].pandas.df(entrystop=entrystop)
             if sidebands:
                 self.df_bkg = self.df_bkg.query(sidebands_selection)
 

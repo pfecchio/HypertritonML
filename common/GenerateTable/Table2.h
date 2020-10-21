@@ -58,8 +58,8 @@ Table2::Table2(std::string name, std::string title)
 {
   tree = new TTree(name.data(), title.data());
 
-  string hypUtilsDir = getenv("HYPERML_UTILS");
-  string calibFileArg = hypUtilsDir + "/He3TPCCalibration.root";
+  std::string hypUtilsDir = getenv("HYPERML_UTILS");
+  std::string calibFileArg = hypUtilsDir + "/He3TPCCalibration.root";
 
   TFile calibFile(calibFileArg.data(), "READ");
   fHe3TPCcalib = dynamic_cast<TF1 *>(calibFile.Get("He3TPCCalib")->Clone());
