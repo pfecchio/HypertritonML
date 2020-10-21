@@ -9,6 +9,7 @@ import numpy as np
 import yaml
 
 import numpy as np
+from scipy.stats import gaussian_kde
 
 import hyp_analysis_utils as hau
 import pandas as pd
@@ -55,9 +56,7 @@ HYPERPARAMS_RANGE = params['HYPERPARAMS_RANGE']
 EFF_MIN, EFF_MAX, EFF_STEP = params['BDT_EFFICIENCY']
 FIX_EFF_ARRAY = np.arange(EFF_MIN, EFF_MAX, EFF_STEP)
 
-SPLIT_MODE = args.split
-
-if SPLIT_MODE:
+if args.split:
     SPLIT_LIST = ['_antimatter','_matter']
 else:
     SPLIT_LIST = ['']
@@ -82,7 +81,8 @@ sigscan_dict = np.load(file_name).item()
 
 results_file.cd()
 
-tf1_gauss = TF1('gauss','gaus')
+tf1_fit = TF1('gauss','gaus')
+
 xlabel = '#it{p}_{T} (GeV/#it{c})'
 
 for split in SPLIT_LIST:
@@ -136,23 +136,22 @@ for split in SPLIT_LIST:
                 
                 eff_index = 1
                 for eff, tsd in zip(pd.unique(eff_score_array[0][::-1]), pd.unique(eff_score_array[1][::-1])):
-                    #after selection
-                    mass_array = np.array(data2.query('y>0.5')['m'].values, dtype=np.float64)
-                    counts = np.histogram(mass_array, bins=mass_bins, range=[2.96, 3.05])
+                    mass_array = np.array(test_set.query('score>@tsd')['m'].values, dtype=np.float64)                    
+                    counts, _ = np.histogram(mass_array, bins=mass_bins, range=[2.96, 3.05])
                     
                     histo_name = 'selected_' + info_string
                     h1_sel = hau.h1_invmass(counts, cclass, ptbin, ctbin, name=histo_name)
                     h1_sel.Draw()
-                    h1_sel.Fit(tf1_gauss,"Q")
+                    h1_sel.Fit(tf1_fit,'Q')
                     
-                    mu_sel = tf1_gauss.GetParameter(1)
-                    err_mu_sel = tf1_gauss.GetParError(1)
+                    mu_sel = tf1_fit.GetMaximum()
+                    err_mu_sel = tf1_fit.GetParError(1)
 
                     mean_shift.SetBinContent(shift_bin, eff_index, (h1_sel.GetMean()-hyp3mass)*1000)
-                    mean_shift.SetBinError(shift_bin, eff_index, h1_sel.GetMeanError() * 1000)
+                    mean_shift.SetBinError(shift_bin, eff_index, h1_sel.GetMeanError()*1000)
                     
-                    sigma_mc.SetBinContent(shift_bin, eff_index, tf1_gauss.GetParameter(2)*1000)
-                    sigma_mc.SetBinError(shift_bin, eff_index, tf1_gauss.GetParError(2)*1000)
+                    sigma_mc.SetBinContent(shift_bin, eff_index, tf1_fit.GetParameter(2)*1000)
+                    sigma_mc.SetBinError(shift_bin, eff_index, tf1_fit.GetParError(2)*1000)
                     
                     fit_shift.SetBinContent(shift_bin, eff_index, (mu_sel-hyp3mass)*1000)
                     fit_shift.SetBinError(shift_bin, eff_index, err_mu_sel*1000)
@@ -161,16 +160,20 @@ for split in SPLIT_LIST:
                         opt_shift.SetBinContent(shift_bin, eff_index, (h1_sel.GetMean()-hyp3mass)*1000)
                         opt_shift.SetBinError(shift_bin, eff_index, h1_sel.GetMeanError() * 1000)
 
-                        opt_sigma_mc.SetBinContent(shift_bin, eff_index, tf1_gauss.GetParameter(2)*1000)
-                        opt_sigma_mc.SetBinError(shift_bin, eff_index, tf1_gauss.GetParError(2)*1000)
+                        opt_sigma_mc.SetBinContent(shift_bin, eff_index, tf1_fit.GetParameter(2)*1000)
+                        opt_sigma_mc.SetBinError(shift_bin, eff_index, tf1_fit.GetParError(2)*1000)
 
                         opt_fit_shift.SetBinContent(shift_bin, eff_index, (mu_sel-hyp3mass)*1000)
                         opt_fit_shift.SetBinError(shift_bin, eff_index, err_mu_sel*1000)
 
+                        opt_fit_shift.SetBinContent(shift_bin, eff_index, (maximum-hyp3mass)*1000)
+                        opt_fit_shift.SetBinError(shift_bin, eff_index, err_mu_sel*1000)
+
+                        h1_sel.Write()
+
                     eff_index += 1
                         
                 shift_bin += 1
-        
 
         del ml_analysis
         del ml_application
@@ -197,4 +200,3 @@ for split in SPLIT_LIST:
     legend.AddEntry(opt_shift,'#Deltamean[m]', "lep")
     legend.AddEntry(opt_fit_shift,'#Delta#mu from gaussian fit', "lep")
     legend.Draw()
-    canvas.Write()
