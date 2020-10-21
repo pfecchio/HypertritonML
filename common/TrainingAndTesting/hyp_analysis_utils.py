@@ -435,43 +435,33 @@ def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct
     pinfo.SetTextAlign(30+3)
     pinfo.SetTextFont(42)
     # pinfo.SetTextSize(12)
-    string = f'ALICE Internal, Pb-Pb 2018 {cent_class[0]}-{cent_class[1]}%'
-    pinfo.AddText(string)
-                                
+
     decay_label = {
         '': '{}^{3}_{#Lambda}H#rightarrow ^{3}He#pi^{-} + c.c.',
-        '_matter': ['{}^{3}_{#Lambda}H#rightarrow ^{3}He#pi^{-}',' {}^{3}_{#Lambda}H#rightarrow dp#pi^{-}'],
-        '_antimatter': ['{}^{3}_{#bar{#Lambda}}#bar{H}#rightarrow ^{3}#bar{He}#pi^{+}','{}^{3}_{#Lambda}H#rightarrow #bar{d}#bar{p}#pi^{+}'],
+        '_matter': '{}^{3}_{#Lambda}H#rightarrow ^{3}He#pi^{-}',
+        '_antimatter': '{}^{3}_{#bar{#Lambda}}#bar{H}#rightarrow ^{3}#bar{He}#pi^{+}',
     }
 
-    string = decay_label[split] + ', %i #leq #it{p}_{T} < %i GeV/#it{c} ' % (pt_range[0], pt_range[1])
-    pinfo.AddText(string)
+    string_list = []
 
-    string = f'#mu {mu*1000:.2f} #pm {mu_error*1000:.2f} MeV/c^{2}'
-    pinfo.AddText(string)
-
-    string = f'#sigma {sigma*1000:.2f} #pm {sigma_error*1000:.2f} MeV/c^{2}'
-    pinfo.AddText(string)
+    string_list.append(f'ALICE Internal, Pb-Pb 2018 {cent_class[0]}-{cent_class[1]}%')
+    string_list.append(decay_label[split] + ', %i #leq #it{p}_{T} < %i GeV/#it{c} ' % (pt_range[0], pt_range[1]))
+    string_list.append(f'#mu {mu*1000:.2f} #pm {mu_error*1000:.2f} MeV/c^{2}')
+    string_list.append(f'#sigma {sigma*1000:.2f} #pm {sigma_error*1000:.2f} MeV/c^{2}')
 
     if roo_data.sumEntries()>0:
-        string = '#chi^{2} / NDF ' + f'{frame.chiSquare(6 if bkg_model=="pol2" else 5):.2f}'
-        pinfo.AddText(string)
+        string_list.append('#chi^{2} / NDF ' + f'{frame.chiSquare(6 if bkg_model=="pol2" else 5):.2f}')
 
-    string = f'Significance ({nsigma:.0f}#sigma) {signif:.1f} #pm {signif_error:.1f} '
-    pinfo.AddText(string)
-
-    string = f'S ({nsigma:.0f}#sigma) {signal_counts} #pm {int(round(math.sqrt(signal_counts)))}'
-    pinfo.AddText(string)
-
-    string = f'B ({nsigma:.0f}#sigma) {background_counts} #pm {int(round(math.sqrt(signal_counts)))}'
-    pinfo.AddText(string)
+    string_list.append(f'Significance ({nsigma:.0f}#sigma) {signif:.1f} #pm {signif_error:.1f}')
+    string_list.append(f'S ({nsigma:.0f}#sigma) {signal_counts} #pm {int(round(math.sqrt(signal_counts)))}')
+    string_list.append(f'B ({nsigma:.0f}#sigma) {background_counts} #pm {int(round(math.sqrt(signal_counts)))}')
 
     if background_counts > 0:
         ratio = signal_counts / background_counts
-        string = f'S/B ({nsigma:.0f}#sigma) {ratio:.2f}'
-        pinfo.AddText(string)
+        string_list.append(f'S/B ({nsigma:.0f}#sigma) {ratio:.2f}')
 
-    frame.addObject(pinfo)
+    for s in string_list:
+        frame.addObject(s)
 
     sub_dir_name = f'pT{pt_range[0]}{pt_range[1]}_eff{eff:.2f}{split}'
     sub_dir = output_dir.GetDirectory(sub_dir_name)
