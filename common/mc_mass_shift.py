@@ -137,14 +137,14 @@ for split in SPLIT_LIST:
                 eff_index = 1
                 for eff, tsd in zip(pd.unique(eff_score_array[0][::-1]), pd.unique(eff_score_array[1][::-1])):
                     mass_array = np.array(test_set.query('score>@tsd')['m'].values, dtype=np.float64)                    
-                    counts, _ = np.histogram(mass_array, bins=mass_bins, range=[2.96, 3.05])
+                    counts = np.histogram(mass_array, bins=mass_bins, range=[2.96, 3.05])
                     
                     histo_name = 'selected_' + info_string
                     h1_sel = hau.h1_invmass(counts, cclass, ptbin, ctbin, name=histo_name)
                     h1_sel.Draw()
                     h1_sel.Fit(tf1_fit,'Q')
                     
-                    mu_sel = tf1_fit.GetMaximum()
+                    mu_sel = tf1_fit.GetParameter(1)
                     err_mu_sel = tf1_fit.GetParError(1)
 
                     mean_shift.SetBinContent(shift_bin, eff_index, (h1_sel.GetMean()-hyp3mass)*1000)
@@ -164,9 +164,6 @@ for split in SPLIT_LIST:
                         opt_sigma_mc.SetBinError(shift_bin, eff_index, tf1_fit.GetParError(2)*1000)
 
                         opt_fit_shift.SetBinContent(shift_bin, eff_index, (mu_sel-hyp3mass)*1000)
-                        opt_fit_shift.SetBinError(shift_bin, eff_index, err_mu_sel*1000)
-
-                        opt_fit_shift.SetBinContent(shift_bin, eff_index, (maximum-hyp3mass)*1000)
                         opt_fit_shift.SetBinError(shift_bin, eff_index, err_mu_sel*1000)
 
                         h1_sel.Write()
