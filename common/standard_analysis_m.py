@@ -81,8 +81,8 @@ standard_selection = 'V0CosPA > 0.9999 && NpidClustersHe3 > 80 && He3ProngPt > 1
 rdfData = ROOT.RDataFrame("DataTable",data_path)
 rdfMC = ROOT.RDataFrame("SignalTable",signal_path)
 
-mass = ROOT.RooRealVar("m","m_{^{3}He+#pi}",2.97,3.015,"GeV/c^{2}")
-width = ROOT.RooRealVar("width","B0 mass width",0.001,0.003,"GeV/c^2")
+mass = ROOT.RooRealVar("m","m_{^{3}He+#pi}",2.975, 3.01,"GeV/c^{2}")
+width = ROOT.RooRealVar("width","B0 mass width",0.001,0.002,"GeV/c^2")
 mb0 = ROOT.RooRealVar("mb0","B0 mass",2.989,2.993,"GeV^-1")
 slope = ROOT.RooRealVar("slope","slope mass",-100.,0.,"GeV")
 b0sig = ROOT.RooGaussian("b0sig","B0 sig PDF",mass,mb0,width)
@@ -92,7 +92,10 @@ c2 = ROOT.RooRealVar("c2","constant c2",-100.,100.,"GeV/c^{2}")
 expo = ROOT.RooExponential("expo","expo for bkg",mass,slope)
 pol1 = ROOT.RooPolynomial("pol1","pol1 for bkg",mass,ROOT.RooArgList(c0,c1))
 pol2 = ROOT.RooPolynomial("pol2","pol2 for bkg",mass,ROOT.RooArgList(c0,c1,c2))
-n1 = ROOT.RooRealVar("n1","n1 const",0.,1.,"GeV")  
+n1 = ROOT.RooRealVar("n1","n1 const",0.,1.,"GeV")
+width2 = ROOT.RooRealVar("tails width","tails width",0.002,0.006,"GeV")
+resSig = ROOT.RooGaussian("resSig", "signal + resolution", mass, mb0, width2)
+convSig = ROOT.RooAddPdf("convSig","Double Gaussian",ROOT.RooArgList(b0sig, resSig),ROOT.RooArgList(n1))
 
 bLfunction = ROOT.TF1("bLfunction", "1115.683 + 1875.61294257 - [0]",0,10)
 rooFunList = []
@@ -130,7 +133,7 @@ for split,splitcut in zip(SPLIT_LIST,SPLIT_CUTS):
                 ct = 0.5 * (ctbin[0] + ctbin[1])
                 binNo = hist_massesMC[0].GetXaxis().FindBin(ct) if 'ct' in FILE_PREFIX else hist_massesMC[0].GetXaxis().FindBin(pt)
                 
-                mass_bins = 36
+                mass_bins = 35
                 sub_dir = cent_dir.mkdir(f'ct_{ctbin[0]}{ctbin[1]}') if 'ct' in FILE_PREFIX else cent_dir.mkdir(f'pt_{ptbin[0]}{ptbin[1]}')
                 sub_dir.cd()
                 massData_array = dfData_cent.Filter(f"ct<{ctbin[1]} && ct>{ctbin[0]} && pt<{ptbin[1]} && pt>{ptbin[0]}").AsNumpy(["m"])
@@ -139,19 +142,19 @@ for split,splitcut in zip(SPLIT_LIST,SPLIT_CUTS):
                     roo_data = hau.ndarray2roo(massData_array['m'], mass)
                     roo_mc = hau.ndarray2roo(massMC_array['m'], mass)
                 else:
-                    countsData = np.histogram(massData_array['m'], mass_bins, range=[2.96, 3.05])
-                    countsMC = np.histogram(massMC_array['m'], mass_bins, range=[2.96, 3.05])
+                    countsData = np.histogram(massData_array['m'], mass_bins, range=[2.975, 3.01])
+                    countsMC = np.histogram(massMC_array['m'], mass_bins, range=[2.975, 3.01])
                     h1_minvData = hau.h1_invmass(countsData, cclass, ptbin, ctbin, name="data")
                     h1_minvMC = hau.h1_invmass(countsMC, cclass, ptbin, ctbin, name="MC")
                     roo_data = ROOT.RooDataHist(f'Roo{h1_minvData.GetName()}', 'Data', ROOT.RooArgList(mass), h1_minvData)
                     roo_mc = ROOT.RooDataHist(f'Roo{h1_minvMC.GetName()}', 'MC', ROOT.RooArgList(mass), h1_minvMC)
                 
-                b0sig.fitTo(roo_mc)
+                convSig.fitTo(roo_mc)
                 xframe = mass.frame(mass_bins)
                 xframe.SetName(f'frameMC_ct{ctbin[0]}{ctbin[1]}_pT{ptbin[0]}{ptbin[1]}_cen{cclass[0]}{cclass[1]}')
                 roo_mc.plotOn(xframe)
-                b0sig.plotOn(xframe)
-                b0sig.paramOn(xframe)
+                convSig.plotOn(xframe)
+                convSig.paramOn(xframe)
                 hist_massesMC[0].SetBinContent(binNo, mb0.getVal() * 1000 - 2991.31)
                 hist_massesMC[0].SetBinError(binNo, mb0.getError() * 1000)
                 hist_massesMC[1].SetBinContent(binNo, roo_mc.mean(mass) * 1000 - 2991.31)
