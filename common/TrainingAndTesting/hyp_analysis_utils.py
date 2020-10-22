@@ -367,11 +367,11 @@ def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct
     output_dir.cd()
 
     # define working variable 
-    mass = ROOT.RooRealVar('m', 'm_{^{3}He+#pi}', 2.970, 3.015, 'GeV/c^{2}')
+    mass = ROOT.RooRealVar('m', 'm_{^{3}He+#pi}', 2.975, 3.010, 'GeV/c^{2}')
 
     # define signal parameters
     hyp_mass = ROOT.RooRealVar('hyp_mass', 'hypertriton mass', 2.989, 2.993, 'GeV/c^{2}')
-    width = ROOT.RooRealVar('width', 'hypertriton width', 0.001, 0.003, 'GeV/c^{2}')
+    width = ROOT.RooRealVar('width', 'hypertriton width', 0.001, 0.002, 'GeV/c^{2}')
 
     # define signal component
     signal = ROOT.RooGaussian('signal', 'signal component pdf', mass, hyp_mass, width)
@@ -461,7 +461,9 @@ def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct
         string_list.append(f'S/B ({nsigma:.0f}#sigma) {ratio:.2f}')
 
     for s in string_list:
-        frame.addObject(s)
+        pinfo.AddText(s)
+
+    frame.addObject(pinfo)
 
     sub_dir_name = f'pT{pt_range[0]}{pt_range[1]}_eff{eff:.2f}{split}'
     sub_dir = output_dir.GetDirectory(sub_dir_name)
@@ -474,4 +476,3 @@ def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct
     frame.Write(f'frame_model_{bkg_model}')
     hyp_mass.Write(f'hyp_mass_model{bkg_model}')
     width.Write(f'width_model{bkg_model}')
-
