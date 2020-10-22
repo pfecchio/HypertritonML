@@ -155,10 +155,10 @@ if APPLICATION:
     for split in SPLIT_LIST:
         if LARGE_DATA:
             if LOAD_LARGE_DATA:
-                df_skimmed = pd.read_parquet(os.path.dirname(data_path) + '/skimmed_df.parquet.gzip')
+                df_skimmed = pd.read_parquet(os.path.dirname(data_path) + f'/skimmed_df_{FILE_PREFIX}.parquet.gzip')
             else:
                 df_skimmed = hau.get_skimmed_large_data(data_path, CENT_CLASSES, PT_BINS, CT_BINS, COLUMNS, application_columns, N_BODY, split)
-                df_skimmed.to_parquet(os.path.dirname(data_path) + '/skimmed_df.parquet.gzip', compression='gzip')
+                df_skimmed.to_parquet(os.path.dirname(data_path) + f'/skimmed_df_{FILE_PREFIX}.parquet.gzip', compression='gzip')
 
             ml_application = ModelApplication(N_BODY, data_path, analysis_res_path, CENT_CLASSES, split, df_skimmed)
 
