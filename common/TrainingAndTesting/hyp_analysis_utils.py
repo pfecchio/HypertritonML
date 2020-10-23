@@ -371,7 +371,7 @@ def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct
 
     # define signal parameters
     hyp_mass = ROOT.RooRealVar('hyp_mass', 'hypertriton mass', 2.989, 2.993, 'GeV/c^{2}')
-    width = ROOT.RooRealVar('width', 'hypertriton width', 0.001, 0.002, 'GeV/c^{2}')
+    width = ROOT.RooRealVar('width', 'hypertriton width', 0.001, 0.0025, 'GeV/c^{2}')
 
     # define signal component
     signal = ROOT.RooGaussian('signal', 'signal component pdf', mass, hyp_mass, width)
@@ -476,3 +476,16 @@ def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct
     frame.Write(f'frame_model_{bkg_model}')
     hyp_mass.Write(f'hyp_mass_model{bkg_model}')
     width.Write(f'width_model{bkg_model}')
+
+
+
+def estimate_maxima(kde):
+    
+    no_samples = 10000
+
+    samples = np.linspace(2.990, 2.992, no_samples)
+    probs = kde.evaluate(samples)
+    maxima_index = probs.argmax()
+    maxima = samples[maxima_index]
+
+    return maxima

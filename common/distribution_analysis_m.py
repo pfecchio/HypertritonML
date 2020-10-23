@@ -39,6 +39,7 @@ parser.add_argument('config', help='Path to the YAML configuration file')
 parser.add_argument('-split', '--split', help='Run with matter and anti-matter splitted', action='store_true')
 parser.add_argument('-s', '--scan', help='Use the BDTefficiency selection from the significance scan', action='store_true')
 parser.add_argument('-f', '--f', help='Correct the mass using the fit of the resolution', action='store_true')
+parser.add_argument('-k', '--k', help='Correct the mass using the kernel density', action='store_true')
 parser.add_argument('-u', '--unbinned', help='Use the unbinned fits', action='store_true')
 args = parser.parse_args()
 
@@ -54,19 +55,24 @@ with open(os.path.expandvars(args.config), 'r') as stream:
 FILE_PREFIX = params['FILE_PREFIX']
 
 MEASUREMENT = ['mass','B_{#Lambda}']
-    
 LAMBDA_MASS = [1.115683, 0.000006]
 DEUTERON_MASS = [1.87561294257, 0.00000057]
 
 SPLIT_LIST = ['']
+
 if args.split:
     SPLIT_LIST = ['_matter','_antimatter']
 
 SHIFT_NAME = 'opt_shift'
 SHIFT_NAME2D = 'mean_shift'
+
 if args.f:
     SHIFT_NAME = 'opt_fit_shift'
     SHIFT_NAME2D = 'fit_shift'
+
+if args.k:
+    SHIFT_NAME = 'opt_kernel_shift'
+
 
 BKG_MODELS = params['BKG_MODELS'] if 'BKG_MODELS' in params else['expo']
 
@@ -100,7 +106,7 @@ sigscan_dict = np.load(file_name, allow_pickle=True).item()
 ###############################################################################
 
 xlabel = '#it{p}_{T} (GeV/#it{c})'
-fit_range = [2, 9]
+fit_range = [2, 8]
 
 # loop for split analysis
 for split in SPLIT_LIST:
@@ -179,7 +185,7 @@ for split in SPLIT_LIST:
             sigma_h1.SetBinError(bin_idx, width_err*1000)  # width in MeV/c^2
             blambda_h1.SetBinContent(bin_idx, (LAMBDA_MASS[0] + DEUTERON_MASS[0] - mass_h1.GetBinContent(bin_idx))*1000)  # BLambda in MeV
             blambda_error = math.sqrt(LAMBDA_MASS[1]**2 + DEUTERON_MASS[1]**2 + mass_h1.GetBinError(bin_idx)**2)
-            blambda_h1.SetBinError(bin_idx, blambda_error*1000)
+            blambda_h1.SetBinError(bin_idx, mass_h1.GetBinError(bin_idx)*1000)
             
 
             # means.append([])
@@ -218,13 +224,13 @@ for split in SPLIT_LIST:
         out_dir.cd()
         mass_h1.UseCurrentStyle()
 
-        pad_range = [2.990, 2.9916]
+        pad_range = [2.988, 2.993]
         
         if split is '_antimatter':
             label = 'm_{ {}^{3}_{#bar{#Lambda}} #bar{H}}'
         else:
             label = 'm_{ {}^{3}_{#Lambda}H}'
-        mass_h1.Fit(pol0, 'MI0+', '', fit_range[0], fit_range[1])
+        mass_h1.Fit(pol0, 'LI0+', '', fit_range[0], fit_range[1])
         pol0.SetLineColor(kOrangeC)
         mass_h1.SetMarkerStyle(20)
         mass_h1.SetMarkerColor(kBlueC)
@@ -266,14 +272,14 @@ for split in SPLIT_LIST:
 
         ###############################################################################
         # B_Lambda plot
-        pad_range = [0.0, 2.05]
+        pad_range = [-2.05, 2.05]
             
         if split is '_antimatter':
             label = 'B_{#bar{#Lambda}}'
         else:
             label = 'B_{#Lambda}'
 
-        blambda_h1.Fit(pol0, 'MI0+', '', fit_range[0], fit_range[1])
+        blambda_h1.Fit(pol0, 'LI0+', '', fit_range[0], fit_range[1])
 
         pol0.SetLineColor(kOrangeC)
         blambda_h1.SetMarkerStyle(20)
