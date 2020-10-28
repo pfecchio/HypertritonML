@@ -78,7 +78,7 @@ file_name =  results_dir + '/' + params['FILE_PREFIX'] + '_mass_shift.root'
 results_file = TFile(file_name,'recreate')
 
 file_name = results_dir + f'/Efficiencies/{FILE_PREFIX}_sigscan.npy'
-sigscan_dict = np.load(file_name).item()
+sigscan_dict = np.load(file_name, allow_pickle=True).item()
 
 results_file.cd()
 
