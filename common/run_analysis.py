@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 import argparse
+import math
 import os
 import time
 import warnings
-import math
-import numpy as np
-import yaml
 
 import hyp_analysis_utils as hau
+import numpy as np
 import pandas as pd
 import xgboost as xgb
-from analysis_classes import (ModelApplication, TrainingAnalysis)
+import yaml
+from analysis_classes import ModelApplication, TrainingAnalysis
 from hipe4ml import analysis_utils, plot_utils
 from hipe4ml.model_handler import ModelHandler
 from ROOT import TFile, gROOT

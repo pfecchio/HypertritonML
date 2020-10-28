@@ -6,9 +6,6 @@ from concurrent.futures import ThreadPoolExecutor
 
 import matplotlib.pyplot as plt
 import numpy as np
-
-import hyp_analysis_utils as hau
-import hyp_plot_utils as hpu
 import pandas as pd
 import uproot
 import xgboost as xgb
@@ -16,6 +13,9 @@ from hipe4ml import analysis_utils, plot_utils
 from hipe4ml.model_handler import ModelHandler
 from ROOT import TF1, TH1, TH1D, TH2D, TFile, gDirectory
 from sklearn.model_selection import train_test_split
+
+import hyp_analysis_utils as hau
+import hyp_plot_utils as hpu
 
 
 class TrainingAnalysis:
