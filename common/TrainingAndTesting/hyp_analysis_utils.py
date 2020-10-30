@@ -3,16 +3,17 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 from math import floor, log10
 
+import aghast
 import numpy as np
-
-import hyp_analysis_utils as hau
 import pandas as pd
+import ROOT
 import uproot
 import xgboost as xgb
 from hipe4ml.model_handler import ModelHandler
-import ROOT
-from ROOT import (TF1, TH1D, TH2D, TH3D, TCanvas, TPaveStats, TPaveText, gStyle)
-import aghast
+from ROOT import TF1, TH1D, TH2D, TH3D, TCanvas, TPaveStats, TPaveText, gStyle
+
+import hyp_analysis_utils as hau
+
 
 def get_skimmed_large_data(data_path, cent_classes, pt_bins, ct_bins, training_columns, application_columns, mode, split=''):
     print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
@@ -393,21 +394,20 @@ def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct
     if bkg_model == 'expo':
         background = ROOT.RooExponential('bkg', 'expo for bkg', mass, slope)
 
-    # define signal and background normalization
-    n_sig = ROOT.RooRealVar('nsig', 'n1 const', 0., 10000)
-    n_bkg = ROOT.RooRealVar('nbkg', 'n2 const', 0., 10000)
+    # define fraction
+    n1 = ROOT.RooRealVar('n1', 'n1 const', 0., 1, 'GeV')
 
     # define the fit funciton -> signal component + background component
-    fit_function = ROOT.RooAddPdf('model', 'N_sig*sig + N_bkg*bkg', ROOT.RooArgList(signal, background), ROOT.RooArgList(n_sig, n_bkg))
+    fit_function = ROOT.RooAddPdf(f'{bkg_model}_gaus', 'signal + background', ROOT.RooArgList(signal, background), ROOT.RooArgList(n1))
 
     # convert data to RooData               
     roo_data = ndarray2roo(data, mass)
 
     # fit data
-    fit_function.fitTo(roo_data, ROOT.RooFit.Range(2.970, 3.015), ROOT.RooFit.Extended(ROOT.kTRUE))
+    fit_function.fitTo(roo_data, ROOT.RooFit.Range(2.975, 3.01))
 
     # plot the fit
-    frame = mass.frame(18)
+    frame = mass.frame(35)
 
     roo_data.plotOn(frame)
     fit_function.plotOn(frame, ROOT.RooFit.LineColor(ROOT.kBlue))
@@ -421,13 +421,13 @@ def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct
     sigma = width.getVal()
     sigma_error = width.getError()
 
-    # compute significance
-    mass.setRange('signal region',  mu - (nsigma * sigma), mu + (nsigma * sigma))
-    signal_counts = int(round(signal.createIntegral(ROOT.RooArgSet(mass), ROOT.RooArgSet(mass), 'signal region').getVal() * n_sig.getVal()))
-    background_counts = int(round(background.createIntegral(ROOT.RooArgSet(mass), ROOT.RooArgSet(mass), 'signal region').getVal() * n_bkg.getVal()))
+    # # compute significance
+    # mass.setRange('signal region',  mu - (nsigma * sigma), mu + (nsigma * sigma))
+    # signal_counts = int(round(signal.createIntegral(ROOT.RooArgSet(mass), ROOT.RooArgSet(mass), 'signal region').getVal() * n1.getVal()*normalization))
+    # background_counts = int(round(background.createIntegral(ROOT.RooArgSet(mass), ROOT.RooArgSet(mass), 'signal region').getVal() * (1 - n1.getVal())*normalization))
 
-    signif = signal_counts / math.sqrt(signal_counts + background_counts + 1e-10)
-    signif_error = significance_error(signal_counts, background_counts)
+    # signif = signal_counts / math.sqrt(signal_counts + background_counts + 1e-10)
+    # signif_error = significance_error(signal_counts, background_counts)
 
     pinfo = ROOT.TPaveText(0.537, 0.474, 0.937, 0.875, 'NDC')
     pinfo.SetBorderSize(0)
@@ -452,13 +452,13 @@ def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct
     if roo_data.sumEntries()>0:
         string_list.append('#chi^{2} / NDF ' + f'{frame.chiSquare(6 if bkg_model=="pol2" else 5):.2f}')
 
-    string_list.append(f'Significance ({nsigma:.0f}#sigma) {signif:.1f} #pm {signif_error:.1f}')
-    string_list.append(f'S ({nsigma:.0f}#sigma) {signal_counts} #pm {int(round(math.sqrt(signal_counts)))}')
-    string_list.append(f'B ({nsigma:.0f}#sigma) {background_counts} #pm {int(round(math.sqrt(signal_counts)))}')
+    # string_list.append(f'Significance ({nsigma:.0f}#sigma) {signif:.1f} #pm {signif_error:.1f}')
+    # string_list.append(f'S ({nsigma:.0f}#sigma) {signal_counts} #pm {int(round(math.sqrt(signal_counts)))}')
+    # string_list.append(f'B ({nsigma:.0f}#sigma) {background_counts} #pm {int(round(math.sqrt(signal_counts)))}')
 
-    if background_counts > 0:
-        ratio = signal_counts / background_counts
-        string_list.append(f'S/B ({nsigma:.0f}#sigma) {ratio:.2f}')
+    # if background_counts > 0:
+    #     ratio = signal_counts / background_counts
+    #     string_list.append(f'S/B ({nsigma:.0f}#sigma) {ratio:.2f}')
 
     for s in string_list:
         pinfo.AddText(s)
