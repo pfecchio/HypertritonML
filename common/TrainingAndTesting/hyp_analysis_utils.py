@@ -378,11 +378,11 @@ def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct
     signal = ROOT.RooGaussian('signal', 'signal component pdf', mass, hyp_mass, width)
 
     # define background parameters
-    slope = ROOT.RooRealVar('slope', 'exponential slope', -100., 100.)
+    slope = ROOT.RooRealVar('slope', 'exponential slope', -100., 0)
 
-    c0 = ROOT.RooRealVar('c0', 'constant c0', 1.)
-    c1 = ROOT.RooRealVar('c1', 'constant c1', 1.)
-    c2 = ROOT.RooRealVar('c2', 'constant c2', 1.)
+    c0 = ROOT.RooRealVar('c0', 'constant c0', -100., 100.)
+    c1 = ROOT.RooRealVar('c1', 'constant c1', -100., 100.)
+    c2 = ROOT.RooRealVar('c2', 'constant c2', -100., 100.)
 
     # define background component depending on background model required
     if bkg_model == 'pol1':
