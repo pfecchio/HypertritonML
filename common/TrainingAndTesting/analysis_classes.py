@@ -59,13 +59,12 @@ class TrainingAnalysis:
     def preselection_efficiency(self, cent_class, ct_bins, pt_bins, split, save=True):
         cent_cut = f'{cent_class[0]}<=centrality<={cent_class[1]}'
 
-        if (len(ct_bins)<2):
+        if (len(ct_bins)>2):
             cut  =  f'{pt_bins[0]}<=pt<={pt_bins[1]}'
-            rap_cut = ''
         else:
             cut  =  f'{ct_bins[0]}<=ct<={ct_bins[1]}'            
-            rap_cut = ' and abs(rapidity)<0.5'
-
+            
+        # rap_cut = ' and abs(rapidity)<0.5'
         pres_histo = hau.h2_preselection_efficiency(pt_bins, ct_bins)
         gen_histo = hau.h2_generated(pt_bins, ct_bins)
 
@@ -73,7 +72,7 @@ class TrainingAnalysis:
             pres_histo.Fill(pt,ct)
         
         cols = ['gPt', 'gCt'] if "gPt" in list(self.df_generated.columns) else ['pt', 'ct']
-        for pt, ct in self.df_generated.query(cent_cut + rap_cut)[cols].to_records(index=False):
+        for pt, ct in self.df_generated.query(cent_cut)[cols].to_records(index=False):
             gen_histo.Fill(pt,ct)
 
         pres_histo.Divide(gen_histo)
