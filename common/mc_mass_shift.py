@@ -15,13 +15,10 @@ import yaml
 from analysis_classes import ModelApplication, TrainingAnalysis
 from hipe4ml import analysis_utils, plot_utils
 from hipe4ml.model_handler import ModelHandler
-from ROOT import TF1, TH1D, TH2D, TCanvas, TFile, TLegend, gROOT
-
-hyp3mass = 2.9913100
 
 # avoid pandas warning
 warnings.simplefilter(action='ignore', category=FutureWarning)
-gROOT.SetBatch()
+ROOT.gROOT.SetBatch()
 
 ###############################################################################
 parser = argparse.ArgumentParser()
@@ -47,17 +44,14 @@ PT_BINS = params['PT_BINS']
 BINS = params['PT_BINS']
 
 COLUMNS = params['TRAINING_COLUMNS']
-MODEL_PARAMS = params['XGBOOST_PARAMS']
-HYPERPARAMS = params['HYPERPARAMS']
-HYPERPARAMS_RANGE = params['HYPERPARAMS_RANGE']
 
 EFF_MIN, EFF_MAX, EFF_STEP = params['BDT_EFFICIENCY']
-FIX_EFF_ARRAY = np.arange(EFF_MIN, EFF_MAX, EFF_STEP)
+EFF_ARRAY = np.arange(EFF_MIN, EFF_MAX, EFF_STEP)
 
-if args.split:
-    SPLIT_LIST = ['_antimatter','_matter']
-else:
-    SPLIT_LIST = ['']
+SPLIT_LIST = ['_matter','_antimatter'] if args.split else ['']
+
+HYPERTRITON_MASS = 2.9913100
+MASS_BINS = 18
 
 ###############################################################################
 # define paths for loading data
@@ -66,24 +60,22 @@ bkg_path = os.path.expandvars(params['BKG_PATH'])
 data_path = os.path.expandvars(params['DATA_PATH'])
 analysis_res_path = os.path.expandvars(params['ANALYSIS_RESULTS_PATH'])
 
-handlers_path = os.environ['HYPERML_MODELS_{}'.format(N_BODY)]+'/handlers'
+handlers_path = os.environ['HYPERML_MODELS_{}'.format(N_BODY)] + '/handlers'
 ###############################################################################
 
 results_dir = os.environ['HYPERML_RESULTS_{}'.format(params['NBODY'])]
 
 file_name =  results_dir + '/' + params['FILE_PREFIX'] + '_mass_shift.root'
-results_file = TFile(file_name,'recreate')
+results_file = ROOT.TFile(file_name, 'recreate')
 
 file_name = results_dir + f'/Efficiencies/{FILE_PREFIX}_sigscan.npy'
 sigscan_dict = np.load(file_name, allow_pickle=True).item()
 
 results_file.cd()
 
-# tf1_fit = TF1('gauss', 'gaus', 2.9905, 2.9920)
-
-mass = ROOT.RooRealVar('m', 'm_{^{3}He+#pi}', 2.984, 3.0, 'GeV/c^{2}')
+mass = ROOT.RooRealVar('m', 'm_{^{3}He+#pi}', 2.975, 3.01, 'GeV/c^{2}')
 hyp_mass_mc = ROOT.RooRealVar('hyp_mass_mc', 'hyp_mass_mc', 2.989, 2.993, 'GeV^-1')
-width_hyp_mc = ROOT.RooRealVar('width', 'hyp_mass_mc width',0.001, 0.0025, 'GeV/c^2')
+width_hyp_mc = ROOT.RooRealVar('width', 'hyp_mass_mc width',0.0005, 0.004, 'GeV/c^2')
 n1 = ROOT.RooRealVar('n1', 'n1 const', 0., 1., 'GeV')
 width_res = ROOT.RooRealVar('tails width', 'tails width', 0.002, 0.006, 'GeV')
 hyp_pdf = ROOT.RooGaussian('hyp_mc_sigma', 'hyp_mc_sigma', mass, hyp_mass_mc, width_hyp_mc)
@@ -93,29 +85,32 @@ conv_sig = ROOT.RooAddPdf('conv_sig', 'Double Gaussian', ROOT.RooArgList(hyp_pdf
 xlabel = '#it{p}_{T} (GeV/#it{c})'
 
 for split in SPLIT_LIST:
-    if split is '_matter':
-        title = 'matter'
-
-    elif split is '_antimatter':
-        title = 'antimatter'
-
-    else:
-        title = '(anti-)matter'
+    title = '(anti-)matter'
+    if split is not '':
+        title = split.replace('_', '')
 
     pt_binning = np.array(BINS, 'double')
-    n_pt_bins = len(BINS)-1
+    n_pt_bins = len(BINS) - 1
     
-    mean_shift = TH2D('mean_shift'+split, title+';'+xlabel+';BDT efficiency; mean[m_{after BDT}]-m_{gen}] (MeV/c^{2})', n_pt_bins, pt_binning, 68, 0.195, 0.995)
-    opt_shift = TH1D('opt_shift'+split, title+';'+xlabel+'; mean[m_{after BDT}]-m_{gen} (MeV/c^{2})', n_pt_bins, pt_binning)
-    sigma_mc = TH2D('sigma_mc'+split, title+';'+xlabel+';BDT efficiency; #sigma_{after BDT} (MeV/c^{2})', n_pt_bins, pt_binning, 68, 0.195, 0.995)
-    opt_sigma_mc = TH1D('opt_sigma_mc'+split, title+';'+xlabel+'Monte Carlo; #sigma (MeV/c^{2})', n_pt_bins, pt_binning)
-    fit_shift = TH2D('fit_shift'+split, title+';'+xlabel+';BDT efficiency; #mu_{after BDT}-m_{gen} (MeV/c^{2})', n_pt_bins, pt_binning,68,0.195,0.995)
-    opt_fit_shift = TH1D('opt_fit_shift' + split, title + ';' + xlabel + '; #mu_{after BDT}-m_{gen} (MeV/c^{2})', n_pt_bins, pt_binning)
-    opt_kernel_shift = TH1D('opt_kernel_shift' + split, title + ';' + xlabel + '; #mu_{after BDT}-m_{gen} (MeV/c^{2})', n_pt_bins, pt_binning)
+    shift_fit_nobdt = ROOT.TH1D('shift_fit_nobdt' + split, title + ';' + xlabel + '; m_{rec}-m_{gen} (MeV/c^{2})',
+                                 n_pt_bins, pt_binning)
+    
+    shift_mean = ROOT.TH2D('shift_mean' + split, title + ';' + xlabel + ';BDT efficiency; mean[m_{after BDT}-m_{gen}] (MeV/c^{2})',
+                            n_pt_bins, pt_binning, len(EFF_ARRAY), EFF_MIN-0.005, EFF_MAX-0.005)
+    shift_mean_opt = ROOT.TH1D('opt_shift_mean' + split, title + ';' + xlabel + '; mean[m_{after BDT}-m_{gen}] (MeV/c^{2})',
+                                n_pt_bins, pt_binning)
+    
+    shift_fit = ROOT.TH2D('shift_fit' + split, title + ';' + xlabel + ';BDT efficiency; #mu_{after BDT}-m_{gen} (MeV/c^{2})',
+                           n_pt_bins, pt_binning, len(EFF_ARRAY), EFF_MIN-0.005, EFF_MAX-0.005)
+    shift_fit_opt = ROOT.TH1D('opt_shift_fit' + split, title + ';' + xlabel + '; #mu_{after BDT}-m_{gen} (MeV/c^{2})',
+                               n_pt_bins, pt_binning)
 
+    sigma_mc = ROOT.TH2D('sigma_mc' + split, title + ';' + xlabel + ';BDT efficiency; #sigma_{after BDT} (MeV/c^{2})',
+                          n_pt_bins, pt_binning, len(EFF_ARRAY), EFF_MIN-0.005, EFF_MAX-0.005)
+    sigma_mc_opt=ROOT.TH1D('sigma_mc_opt' + split, title + ';' + xlabel + '; #sigma (MeV/c^{2})',
+                            n_pt_bins, pt_binning)
+    
     ml_analysis = TrainingAnalysis(N_BODY, signal_path, bkg_path, split)
-    application_columns = ['score', 'm', 'ct', 'pt', 'centrality', 'ArmenterosAlpha']
-
     ml_application = ModelApplication(N_BODY, data_path, analysis_res_path, CENT_CLASSES, split)
     
     shift_bin = 1
@@ -138,18 +133,34 @@ for split in SPLIT_LIST:
                 test_set.insert(0, 'score', y_pred)
                 test_set.query('y>0', inplace=True)
 
-                mass_bins = 400
+                # fit the reconstructed MC hypertritons before BDT selection
+                mass_array = np.array(test_set['m'].values, dtype=np.float64)
+                roo_mass = hau.ndarray2roo(mass_array, mass)
+
+                conv_sig.fitTo(roo_mass)
+
+                mu_sel = hyp_mass_mc.getVal()
+                mu_sel_error = hyp_mass_mc.getError()
+
+                shift_fit_nobdt.SetBinContent(shift_bin, (mu_sel-HYPERTRITON_MASS)*1000)
+                shift_fit_nobdt.SetBinError(shift_bin, mu_sel_error * 1000)
+                
+                # plot for the mc mass fit before the BDT selections
+                xframe = mass.frame(ROOT.RooFit.Name('mass_reco_hyp'), ROOT.RooFit.Bins(MASS_BINS))
+                roo_mass.plotOn(xframe)
+                conv_sig.plotOn(xframe)
+                conv_sig.paramOn(xframe)
+                xframe.Write()
         
                 eff_score_array, model_handler = ml_application.load_ML_analysis(cclass, ptbin, ctbin, split)
                 
+                # loop on the BDT efficiency
                 eff_index = 1
                 for eff, tsd in zip(pd.unique(eff_score_array[0][::-1]), pd.unique(eff_score_array[1][::-1])):
-                    mass_array = np.array(test_set.query('score>@tsd')['m'].values, dtype=np.float64)                    
-                    counts = np.histogram(mass_array, bins=mass_bins, range=[2.96, 3.05])
-                    
-                    histo_name = 'selected_' + info_string
-
+                    # Fit the BDT selected MC hypertritons at fixed efficiency        
+                    mass_array = np.array(test_set.query('score>@tsd')['m'].values, dtype=np.float64)
                     roo_mass = hau.ndarray2roo(mass_array, mass)
+
                     conv_sig.fitTo(roo_mass)
                     
                     mu_sel = hyp_mass_mc.getVal()
@@ -158,65 +169,20 @@ for split in SPLIT_LIST:
                     width_mc = width_hyp_mc.getVal()
                     width_mc_error = width_hyp_mc.getError()
 
-                    mean_shift.SetBinContent(shift_bin, eff_index, (roo_mass.mean(mass)-hyp3mass)*1000)
-                    mean_shift.SetBinError(shift_bin, eff_index, roo_mass.sigma(mass)*1000)
-                    
+                    shift_mean.SetBinContent(shift_bin, eff_index, (roo_mass.mean(mass)-HYPERTRITON_MASS)*1000)
+                    shift_mean.SetBinError(shift_bin, eff_index, 0)
+
                     sigma_mc.SetBinContent(shift_bin, eff_index, width_mc*1000)
                     sigma_mc.SetBinError(shift_bin, eff_index, width_mc_error*1000)
-                    
-                    fit_shift.SetBinContent(shift_bin, eff_index, (mu_sel-hyp3mass)*1000)
-                    fit_shift.SetBinError(shift_bin, eff_index, mu_sel_error*1000)
 
-                    if round(eff, 2) == round(sigscan_dict[f'ct{ctbin[0]}{ctbin[1]}pt{ptbin[0]}{ptbin[1]}{split}'], 2):
-                        opt_shift.SetBinContent(shift_bin, eff_index, (roo_mass.mean(mass)-hyp3mass)*1000)
-                        opt_shift.SetBinError(shift_bin, eff_index, roo_mass.sigma(mass) * 1000)
-
-                        opt_sigma_mc.SetBinContent(shift_bin, eff_index, width_mc*1000)
-                        opt_sigma_mc.SetBinError(shift_bin, eff_index, width_mc_error*1000)
-
-                        opt_fit_shift.SetBinContent(shift_bin, eff_index, (mu_sel-hyp3mass)*1000)
-                        opt_fit_shift.SetBinError(shift_bin, eff_index, mu_sel_error * 1000)
-
-                        xframe = mass.frame(100)
-                        roo_mass.plotOn(xframe)
-                        conv_sig.plotOn(xframe)
-                        conv_sig.paramOn(xframe)
-                        xframe.Write()
-
+                    shift_fit.SetBinContent(shift_bin, eff_index, (mu_sel-HYPERTRITON_MASS)*1000)
+                    shift_fit.SetBinError(shift_bin, eff_index, mu_sel_error * 1000)
 
                     eff_index += 1
                         
                 shift_bin += 1
 
-        del ml_analysis
-        del ml_application
-
-    opt_fit_shift.Write()
-    opt_kernel_shift.Write()
-    opt_shift.SetMarkerStyle(20)
-    opt_shift.SetMarkerColor(2)
-    opt_shift.SetLineColor(2)
-    opt_fit_shift.SetMarkerStyle(20)
-    opt_fit_shift.SetMarkerColor(4)
-    opt_fit_shift.SetLineColor(4)
-    opt_kernel_shift.SetMarkerStyle(20)
-    opt_kernel_shift.SetMarkerColor(4)
-    opt_kernel_shift.SetLineColor(4)
-    opt_sigma_mc.SetMarkerStyle(20)
-    opt_sigma_mc.SetMarkerColor(4)
-    opt_sigma_mc.SetLineColor(4)
-    opt_shift.SetTitle(';'+xlabel+';#delta_{MC} (MeV/c^{2})')
-    opt_shift.Draw()
-    opt_fit_shift.Draw('same')
-    legend = TLegend(0.7, 0.7,1, 1)
-  
-    legend.AddEntry(opt_shift,'#Deltamean[m]', 'lep')
-    legend.AddEntry(opt_fit_shift,'#Delta#mu from gaussian fit', 'lep')
-    legend.Draw()
-
-    mean_shift.Write()
+    shift_fit_nobdt.Write()
+    shift_mean.Write()
+    shift_fit.Write()
     sigma_mc.Write()
-    opt_shift.Write()
-    fit_shift.Write()
-    opt_fit_shift.Write()
-    opt_kernel_shift.Write()

@@ -363,10 +363,8 @@ def ndarray2roo(ndarray, var):
     return array_roo
 
 
-
 def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct_range, split):
     output_dir.cd()
-
     # define working variable 
     mass = ROOT.RooRealVar('m', 'm_{^{3}He+#pi}', 2.975, 3.010, 'GeV/c^{2}')
 
