@@ -16,6 +16,8 @@ from analysis_classes import ModelApplication, TrainingAnalysis
 from hipe4ml import analysis_utils, plot_utils
 from hipe4ml.model_handler import ModelHandler
 
+# TODO: comment code
+
 # avoid pandas warning
 warnings.simplefilter(action='ignore', category=FutureWarning)
 ROOT.gROOT.SetBatch()
@@ -119,7 +121,7 @@ for split in SPLIT_LIST:
         for ptbin in zip(PT_BINS[:-1], PT_BINS[1:]):
             for ctbin in zip(CT_BINS[:-1], CT_BINS[1:]):
                 # data[0]=train_set, data[1]=y_train, data[2]=test_set, data[3]=y_test
-                data = ml_analysis.prepare_dataframe(COLUMNS, cent_class=cclass, ct_range=ctbin, pt_range=ptbin)
+                data = ml_analysis.prepare_dataframe(COLUMNS, cent_class=cclass, ct_range=ctbin, pt_range=ptbin, test_size=0.9999)
 
                 input_model = xgb.XGBClassifier()
                 model_handler = ModelHandler(input_model)
