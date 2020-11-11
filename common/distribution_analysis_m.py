@@ -44,12 +44,13 @@ PT_BINS = params['PT_BINS']
 EFF_MIN, EFF_MAX, EFF_STEP = params['BDT_EFFICIENCY']
 EFF_ARRAY = np.arange(EFF_MIN, EFF_MAX, EFF_STEP)
 
-FIX_EFF = 0.55
+FIX_EFF = 0.40
 
-SYSTEMATICS_COUNTS = 100000
+SYSTEMATICS_COUNTS = 10000
 ###############################################################################
 
 ###############################################################################
+# input/output files
 results_dir = os.environ['HYPERML_RESULTS_{}'.format(params['NBODY'])]
 
 # output file
@@ -101,9 +102,8 @@ def get_measured_width(bkg_model, ptbin, eff):
     return width, width_error
 ###############################################################################
 
-
-# loop for split analysis
 for split in SPLIT_LIST:
+    # fit value -> B_{Lambda}
     pol0 = ROOT.TF1('blfunction', '1115.683 + 1875.61294257 - [0]', 0, 10)
 
     hist_shift_h2 = mass_correction_file.Get('shift_fit' + split)
@@ -111,26 +111,26 @@ for split in SPLIT_LIST:
 
     input_dirname = f'{CENT_CLASS[0]}-{CENT_CLASS[1]}{split}'
 
-    if args.scan:
-        best_sig = np.round(list(sigscan_dict.values()), 2).T[0]
-    else:
-        best_sig = np.full(7, FIX_EFF)
+    # significance-scan/fixed efficiencies switch
+    best_sig = np.round(list(sigscan_dict.values()), 2).T[0] if args.scan else np.full(7, FIX_EFF)
 
-    syst_eff_ranges = (np.hstack([range(int(x*100) - 5, int(x*100) + 6) for x in best_sig])/100).reshape(-1, 7)
+    # efficiency ranges for sampling the systematics
+    syst_eff_ranges = (np.hstack([range(int(x * 100) - 10, int(x * 100) + 11) for x in best_sig]) / 100).reshape(-1, 7)
+    # and related indexes
     syst_eff_idx = get_eff_index(syst_eff_ranges)
         
     results_file.cd()
     out_dir = output_file.mkdir(input_dirname)
 
     for model in BKG_MODELS:
-        # measured mass vs pT vs BDT efficiency
+        # initialize histos for the measured mass vs pT vs BDT efficiency
         MASS_H2[f'{model}'] = hist_shift_h2.Clone(f'mass_{model}{split}')
         MASS_H2[f'{model}'].Reset()
 
         MASS_BEST[f'{model}'] = hist_shift_h2.ProjectionX(f'mass_best_{model}')
         MASS_BEST[f'{model}'].Reset()
 
-        # measured sigma vs pT vs BDT efficiency
+        # initialize histos for the measured sigma vs pT vs BDT efficiency
         WIDTH_H2[f'{model}'] = hist_shift_h2.Clone(f'width_{model}{split}')
         WIDTH_H2[f'{model}'].Reset()
 
@@ -172,41 +172,52 @@ for split in SPLIT_LIST:
         WIDTH_H2[f'{model}'].Write()
 
         for ptbin_idx in range(1, len(PT_BINS)):
+            # get the mass measurements
             m, m_err = get_measured_mass(model, ptbin_idx, best_sig[ptbin_idx-1])
             MASS_BEST[f'{model}'].SetBinContent(ptbin_idx, m)
             MASS_BEST[f'{model}'].SetBinError(ptbin_idx, m_err)
 
+            # get the width measurements
             w, w_err = get_measured_width(model, ptbin_idx, best_sig[ptbin_idx-1])
             WIDTH_BEST[f'{model}'].SetBinContent(ptbin_idx, w)
             WIDTH_BEST[f'{model}'].SetBinError(ptbin_idx, w_err)
 
+        # just histo makeup and canvas generation
         hpu.mass_plot_makeup(MASS_BEST[f'{model}'], pol0, model, PT_BINS, split)
         hpu.sigma_plot_makeup(WIDTH_BEST[f'{model}'], model, PT_BINS, split)
 
-    # systematics
+    # systematics histos
     blambda_dist = ROOT.TH1D('syst_blambda', ';B_{#Lambda} MeV ;counts', 150, -0.15, 0.15)
-    blambda_prob = ROOT.TH1D('prob_blambda', ';prob. ;counts', 100, 0, 1)
+    blambda_prob = ROOT.TH1D('prob_blambda', ';prob. ;counts', 200, 0, 1)
 
     combinations = set()
-    sample_counts = 0
+    sample_counts = 0   # good fits
+    iterations = 0  # total fits
 
+    # stop with SYSTEMATICS_COUNTS good B_{Lambda} fits
     while sample_counts < SYSTEMATICS_COUNTS:
         tmp_mass.Reset()
+
+        iterations += 1
 
         bkg_idx_list = []
         eff_idx_list = []
 
+        # loop over ptbins
         for ptbin_idx in range(1, len(PT_BINS)):
+            # random bkg model
             bkg_index = np.random.randint(0, 2)
             bkg_idx_list.append(bkg_index)
-
+            # randon BDT efficiency in the defined range
             eff_index = np.random.choice(syst_eff_idx[ptbin_idx - 1])
             eff_idx_list.append(eff_index)
 
+        # convert indexes into hash and if already sampled skip this combination
         combo = ''.join(map(str, bkg_idx_list + eff_idx_list))
         if combo in combinations:
             continue
 
+        # if indexes are good measure B_{Lambda}
         ptbin_idx = 1
         for bkg_idx, eff_idx in zip(bkg_idx_list, eff_idx_list):
             model = BKG_MODELS[bkg_index]
@@ -221,6 +232,10 @@ for split in SPLIT_LIST:
 
         tmp_mass.Fit(pol0)
 
+        # if B_{Lambda} fit is good use it for systematics
+        if pol0.GetChisquare() > 3 * pol0.GetNDF():
+            continue
+
         blambda_dist.Fill(pol0.GetParameter(0))
         blambda_prob.Fill(pol0.GetProb())
 
@@ -229,3 +244,7 @@ for split in SPLIT_LIST:
 
     blambda_dist.Write()
     blambda_prob.Write()
+
+    print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
+    print(f'\nGood iterations / Total iterations -> {SYSTEMATICS_COUNTS/iterations:.4f}')
+    print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')

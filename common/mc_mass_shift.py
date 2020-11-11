@@ -16,8 +16,6 @@ from analysis_classes import ModelApplication, TrainingAnalysis
 from hipe4ml import analysis_utils, plot_utils
 from hipe4ml.model_handler import ModelHandler
 
-# TODO: comment code
-
 # avoid pandas warning
 warnings.simplefilter(action='ignore', category=FutureWarning)
 ROOT.gROOT.SetBatch()
@@ -65,6 +63,8 @@ analysis_res_path = os.path.expandvars(params['ANALYSIS_RESULTS_PATH'])
 handlers_path = os.environ['HYPERML_MODELS_{}'.format(N_BODY)] + '/handlers'
 ###############################################################################
 
+###############################################################################
+# input/output files
 results_dir = os.environ['HYPERML_RESULTS_{}'.format(params['NBODY'])]
 
 file_name =  results_dir + '/' + params['FILE_PREFIX'] + '_mass_shift.root'
@@ -74,7 +74,10 @@ file_name = results_dir + f'/Efficiencies/{FILE_PREFIX}_sigscan.npy'
 sigscan_dict = np.load(file_name, allow_pickle=True).item()
 
 results_file.cd()
+###############################################################################
 
+###############################################################################
+# define RooFit objects
 mass = ROOT.RooRealVar('m', 'm_{^{3}He+#pi}', 2.975, 3.01, 'GeV/c^{2}')
 hyp_mass_mc = ROOT.RooRealVar('hyp_mass_mc', 'hyp_mass_mc', 2.989, 2.993, 'GeV^-1')
 width_hyp_mc = ROOT.RooRealVar('width', 'hyp_mass_mc width',0.0005, 0.004, 'GeV/c^2')
@@ -83,6 +86,7 @@ width_res = ROOT.RooRealVar('tails width', 'tails width', 0.002, 0.006, 'GeV')
 hyp_pdf = ROOT.RooGaussian('hyp_mc_sigma', 'hyp_mc_sigma', mass, hyp_mass_mc, width_hyp_mc)
 res_sig_pdf = ROOT.RooGaussian('res_sig', 'signal + resolution', mass, hyp_mass_mc, width_res)
 conv_sig = ROOT.RooAddPdf('conv_sig', 'Double Gaussian', ROOT.RooArgList(hyp_pdf, res_sig_pdf), ROOT.RooArgList(n1))
+###############################################################################
 
 xlabel = '#it{p}_{T} (GeV/#it{c})'
 
@@ -94,23 +98,21 @@ for split in SPLIT_LIST:
     pt_binning = np.array(BINS, 'double')
     n_pt_bins = len(BINS) - 1
     
+    # shift due to reconstruction only
     shift_fit_nobdt = ROOT.TH1D('shift_fit_nobdt' + split, title + ';' + xlabel + '; m_{rec}-m_{gen} (MeV/c^{2})',
                                  n_pt_bins, pt_binning)
     
+    # shift due to reco+BDT with mean MC mass
     shift_mean = ROOT.TH2D('shift_mean' + split, title + ';' + xlabel + ';BDT efficiency; mean[m_{after BDT}-m_{gen}] (MeV/c^{2})',
                             n_pt_bins, pt_binning, len(EFF_ARRAY), EFF_MIN-0.005, EFF_MAX-0.005)
-    shift_mean_opt = ROOT.TH1D('opt_shift_mean' + split, title + ';' + xlabel + '; mean[m_{after BDT}-m_{gen}] (MeV/c^{2})',
-                                n_pt_bins, pt_binning)
-    
+
+    # shift due to reco+BDT with MC mass fit
     shift_fit = ROOT.TH2D('shift_fit' + split, title + ';' + xlabel + ';BDT efficiency; #mu_{after BDT}-m_{gen} (MeV/c^{2})',
                            n_pt_bins, pt_binning, len(EFF_ARRAY), EFF_MIN-0.005, EFF_MAX-0.005)
-    shift_fit_opt = ROOT.TH1D('opt_shift_fit' + split, title + ';' + xlabel + '; #mu_{after BDT}-m_{gen} (MeV/c^{2})',
-                               n_pt_bins, pt_binning)
 
+    # MC sigma after reco+BDT
     sigma_mc = ROOT.TH2D('sigma_mc' + split, title + ';' + xlabel + ';BDT efficiency; #sigma_{after BDT} (MeV/c^{2})',
                           n_pt_bins, pt_binning, len(EFF_ARRAY), EFF_MIN-0.005, EFF_MAX-0.005)
-    sigma_mc_opt=ROOT.TH1D('sigma_mc_opt' + split, title + ';' + xlabel + '; #sigma (MeV/c^{2})',
-                            n_pt_bins, pt_binning)
     
     ml_analysis = TrainingAnalysis(N_BODY, signal_path, bkg_path, split)
     ml_application = ModelApplication(N_BODY, data_path, analysis_res_path, CENT_CLASSES, split)
@@ -120,7 +122,7 @@ for split in SPLIT_LIST:
     for cclass in CENT_CLASSES:
         for ptbin in zip(PT_BINS[:-1], PT_BINS[1:]):
             for ctbin in zip(CT_BINS[:-1], CT_BINS[1:]):
-                # data[0]=train_set, data[1]=y_train, data[2]=test_set, data[3]=y_test
+                # use the whole MC for the shift estimation
                 data = ml_analysis.prepare_dataframe(COLUMNS, cent_class=cclass, ct_range=ctbin, pt_range=ptbin, test_size=0.9999)
 
                 input_model = xgb.XGBClassifier()
@@ -139,6 +141,7 @@ for split in SPLIT_LIST:
                 mass_array = np.array(test_set['m'].values, dtype=np.float64)
                 roo_mass = hau.ndarray2roo(mass_array, mass)
 
+                # actual fit with signal+resolution function
                 conv_sig.fitTo(roo_mass)
 
                 mu_sel = hyp_mass_mc.getVal()
@@ -163,6 +166,7 @@ for split in SPLIT_LIST:
                     mass_array = np.array(test_set.query('score>@tsd')['m'].values, dtype=np.float64)
                     roo_mass = hau.ndarray2roo(mass_array, mass)
 
+                    # actual fit with signal+resolution function
                     conv_sig.fitTo(roo_mass)
                     
                     mu_sel = hyp_mass_mc.getVal()
