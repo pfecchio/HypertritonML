@@ -16,6 +16,7 @@ export HYPERML_UTILS="$PWD/Utils"
 BODY_2=0
 BODY_3=0
 PASS=1
+OTF=''
 
 while [[ $# -gt 0 ]]
 do
@@ -33,6 +34,10 @@ case $key in
     -p|--pass)
     PASS=$2
     shift
+    shift
+    ;;
+    --otf)
+    OTF='_otf'
     shift
     ;;
     *)
@@ -56,6 +61,7 @@ fi
 
 export HYPERML_MC=$MC
 export HYPERML_PASS=$PASS
+export HYPERML_OTF=$OTF
 
 [ ! -d $HYPERML_UTILS ] && mkdir -p $HYPERML_UTILS
 [ ! -f $HYPERML_UTILS/BlastWaveFits.root ] && alien_cp /alice/cern.ch/user/m/mpuccio/hyper_data/BlastWaveFits.root file://$HYPERML_UTILS/BlastWaveFits.root
@@ -76,9 +82,9 @@ if [ $BODY_2 -eq 1 ]; then
       [ ! -d "$HYPERML_EFFICIENCIES_2" ] && mkdir -p $HYPERML_EFFICIENCIES_2
       [ ! -d "$HYPERML_RESULTS_2" ] && mkdir -p $HYPERML_RESULTS_2
       [ ! -d "$HYPERML_UTILS_2" ] && mkdir -p $HYPERML_UTILS_2
-      [ ! -f "$HYPERML_DATA_2/HyperTritonTree_18q_pass${PASS}.root"  ] && scp lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/HyperTritonTree_18q_pass${PASS}.root  $HYPERML_DATA_2/HyperTritonTree_18q_pass${PASS}.root
-      [ ! -f "$HYPERML_DATA_2/HyperTritonTree_18r_pass${PASS}.root"  ] && scp lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/HyperTritonTree_18r_pass${PASS}.root  $HYPERML_DATA_2/HyperTritonTree_18r_pass${PASS}.root
-      [ ! -f "$HYPERML_DATA_2/HyperTritonTree_${MC}.root" ] && scp lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/HyperTritonTree_${MC}.root $HYPERML_DATA_2/HyperTritonTree_${MC}.root
+      [ ! -f "$HYPERML_DATA_2/HyperTritonTree_18q_pass${PASS}${OTF}.root"  ] && scp lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/HyperTritonTree_18q_pass${PASS}${OTF}.root  $HYPERML_DATA_2/HyperTritonTree_18q_pass${PASS}${OTF}.root
+      [ ! -f "$HYPERML_DATA_2/HyperTritonTree_18r_pass${PASS}${OTF}.root"  ] && scp lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/HyperTritonTree_18r_pass${PASS}${OTF}.root  $HYPERML_DATA_2/HyperTritonTree_18r_pass${PASS}${OTF}.root
+      [ ! -f "$HYPERML_DATA_2/HyperTritonTree_${MC}${OTF}.root" ] && scp lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/HyperTritonTree_${MC}${OTF}.root $HYPERML_DATA_2/HyperTritonTree_${MC}${OTF}.root
       [ ! -f "$HYPERML_DATA_2/HyperTritonTree_18qLS_pass${PASS}.root" ] && scp lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/HyperTritonTree_18qLS_pass${PASS}.root $HYPERML_DATA_2/HyperTritonTree_18qLS_pass${PASS}.root
       [ ! -f "$HYPERML_DATA_2/HyperTritonTree_18rLS_pass${PASS}.root" ] && scp lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/HyperTritonTree_18rLS_pass${PASS}.root $HYPERML_DATA_2/HyperTritonTree_18rLS_pass${PASS}.root
       [ ! -f "$HYPERML_UTILS/He3TPCCalibration.root" ] && alien_cp /alice/cern.ch/user/m/mpuccio/hyper_data/He3TPCCalibration.root file://$HYPERML_UTILS/He3TPCCalibration.root

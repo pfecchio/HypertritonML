@@ -31,12 +31,14 @@ void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypT
   string pass = getenv("HYPERML_PASS");
   bool useProposeMasses = (pass == "3");
 
+  string otf = getenv("HYPERML_OTF");
+
   string mcName = getenv("HYPERML_MC");
 
-  string inFileName = string("HyperTritonTree_") + mcName + ".root";
+  string inFileName = string("HyperTritonTree_") + mcName + otf + ".root";
   string inFileArg = hypDataDir + "/" + inFileName;
 
-  string outFileName = string("SignalTable_") + mcName + ".root";
+  string outFileName = string("SignalTable_") + mcName + otf + ".root";
   string outFileArg = hypTableDir + "/" + outFileName;
 
   string absFileName = "absorption.root";

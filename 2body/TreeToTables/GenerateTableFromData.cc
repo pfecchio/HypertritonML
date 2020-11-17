@@ -21,7 +21,8 @@ void GenerateTableFromData(bool likeSign = false, bool kInt7 = false, string dat
   if (tableDir == "") tableDir = getenv("HYPERML_TABLES_2");
 
   string pass = getenv("HYPERML_PASS");
-  string passString = "_pass" + pass + ".root";
+  string otf = getenv("HYPERML_OTF");
+  string passString = "_pass" + pass + otf + ".root";
 
   string kintstring = kInt7 ? "KINT7" : "";
   string lsString = likeSign ? "LS" : "";
