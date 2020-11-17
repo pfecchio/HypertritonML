@@ -51,6 +51,7 @@ COLUMNS = params['TRAINING_COLUMNS']
 SPLIT_MODE = args.split
 UNBINNED_FIT = args.unbinned
 PASS = os.getenv("HYPERML_PASS")
+OTF = os.getenv("HYPERML_OTF")
 
 SPLIT_CUTS = ['']
 SPLIT_LIST = ['']
@@ -72,7 +73,7 @@ results_dir = os.environ['HYPERML_RESULTS_{}'.format(N_BODY)]
 ###############################################################################
 start_time = time.time()                          # for performances evaluation
 
-file_name = results_dir + f'/{FILE_PREFIX}_std_results_pass{PASS}.root'
+file_name = results_dir + f'/{FILE_PREFIX}_std_results_pass{PASS}{OTF}.root'
 results_file = TFile(file_name, 'recreate')
 
 standard_selection = 'V0CosPA > 0.9999 && NpidClustersHe3 > 80 && He3ProngPt > 1.8 && pt > 2 && pt < 10 && PiProngPt > 0.15 && He3ProngPvDCA > 0.05 && PiProngPvDCA > 0.2 && TPCnSigmaHe3 < 3.5 && TPCnSigmaHe3 > -3.5 && ProngsDCA < 1'
@@ -84,7 +85,7 @@ rdfMC = ROOT.RDataFrame("SignalTable",signal_path)
 mass = ROOT.RooRealVar("m","m_{^{3}He+#pi}",2.975, 3.01,"GeV/c^{2}")
 width = ROOT.RooRealVar("width","B0 mass width",0.001,0.002,"GeV/c^2")
 mb0 = ROOT.RooRealVar("mb0","B0 mass",2.989,2.993,"GeV^-1")
-slope = ROOT.RooRealVar("slope","slope mass",-100.,0.,"GeV")
+slope = ROOT.RooRealVar("slope","slope mass",-100.,100,"GeV")
 b0sig = ROOT.RooGaussian("b0sig","B0 sig PDF",mass,mb0,width)
 c0 = ROOT.RooRealVar("c0","constant c0",-100.,100.,"GeV/c^{2}")
 c1 = ROOT.RooRealVar("c1","constant c1",-100.,100.,"GeV/c^{2}")
