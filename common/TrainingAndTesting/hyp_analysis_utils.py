@@ -71,6 +71,7 @@ def expected_signal_counts(bw, cent_range, pt_range, eff, nevents, n_body=2):
 
     if n_body == 2:
         correction *= 0.25
+        
     if n_body == 3:
         correction *= 0.4
 
@@ -341,6 +342,7 @@ def rename_df_columns(df):
     
     df.rename(columns = rename_dict, inplace=True)
 
+
 def ndarray2roo(ndarray, var):
     if isinstance(ndarray, ROOT.RooDataSet):
         print('Already a RooDataSet')
@@ -370,13 +372,13 @@ def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct
 
     # define signal parameters
     hyp_mass = ROOT.RooRealVar('hyp_mass', 'hypertriton mass', 2.989, 2.993, 'GeV/c^{2}')
-    width = ROOT.RooRealVar('width', 'hypertriton width', 0.001, 0.0025, 'GeV/c^{2}')
+    width = ROOT.RooRealVar('width', 'hypertriton width', 0.0001, 0.004, 'GeV/c^{2}')
 
     # define signal component
     signal = ROOT.RooGaussian('signal', 'signal component pdf', mass, hyp_mass, width)
 
     # define background parameters
-    slope = ROOT.RooRealVar('slope', 'exponential slope', -100., 0)
+    slope = ROOT.RooRealVar('slope', 'exponential slope', -100., 100)
 
     c0 = ROOT.RooRealVar('c0', 'constant c0', -100., 100.)
     c1 = ROOT.RooRealVar('c1', 'constant c1', -100., 100.)
@@ -418,6 +420,13 @@ def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct
     mu_error = hyp_mass.getError()
     sigma = width.getVal()
     sigma_error = width.getError()
+
+    # # getting the chi2 by binning the data
+    # hist_tmp = super(roo_data.__class__, roo_data).createHistogram('hist_tmp', mass, ROOT.RooFit.Binning(35))
+    # fit_function.chiSquare(mass, histogram)
+
+    # print(type(hist_tmp))
+    # exit()
 
     # # compute significance
     # mass.setRange('signal region',  mu - (nsigma * sigma), mu + (nsigma * sigma))
@@ -474,16 +483,3 @@ def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct
     frame.Write(f'frame_model_{bkg_model}')
     hyp_mass.Write(f'hyp_mass_model{bkg_model}')
     width.Write(f'width_model{bkg_model}')
-
-
-
-def estimate_maxima(kde):
-    
-    no_samples = 10000
-
-    samples = np.linspace(2.990, 2.992, no_samples)
-    probs = kde.evaluate(samples)
-    maxima_index = probs.argmax()
-    maxima = samples[maxima_index]
-
-    return maxima

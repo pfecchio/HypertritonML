@@ -7,11 +7,11 @@ from concurrent.futures import ThreadPoolExecutor
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import ROOT
 import uproot
 import xgboost as xgb
 from hipe4ml import analysis_utils, plot_utils
 from hipe4ml.model_handler import ModelHandler
-from ROOT import TF1, TH1, TH1D, TH2D, TFile, gDirectory
 from sklearn.model_selection import train_test_split
 
 import hyp_analysis_utils as hau
@@ -20,7 +20,7 @@ import hyp_plot_utils as hpu
 
 class TrainingAnalysis:
 
-    def __init__(self, mode, mc_file_name, bkg_file_name, split, sidebands = False, entrystop=10000000):
+    def __init__(self, mode, mc_file_name, bkg_file_name, split, sidebands=False, entrystop=10000000):
         self.mode = mode
 
         print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
@@ -81,7 +81,7 @@ class TrainingAnalysis:
             path = os.environ['HYPERML_EFFICIENCIES_{}'.format(self.mode)]
 
             filename = path + f'/PreselEff_cent{cent_class[0]}{cent_class[1]}{split}.root'
-            t_file = TFile(filename, 'recreate')
+            t_file = ROOT.TFile(filename, 'recreate')
             
             pres_histo.Write()
             t_file.Close()
@@ -217,14 +217,11 @@ class ModelApplication:
         self.mode = mode
         self.n_events = []
 
-        if isinstance(skimmed_data, pd.DataFrame):
-            self.df_data = skimmed_data
-
-        if skimmed_data is 0:
-                self.df_data = uproot.open(data_filename)['DataTable'].pandas.df()
+        self.df_data = skimmed_data if isinstance(skimmed_data, pd.DataFrame) else uproot.open(data_filename)['DataTable'].pandas.df()
 
         if analysis_res_filename == data_filename:
             self.hist_centrality = uproot.open(data_filename)['EventCounter']
+
         else:
             if self.mode == 2:
                 self.hist_centrality = uproot.open(analysis_res_filename)["AliAnalysisTaskHyperTriton2He3piML_custom_summary"][11]
@@ -250,7 +247,7 @@ class ModelApplication:
         efficiencies_path = os.environ['HYPERML_EFFICIENCIES_{}'.format(self.mode)]
         filename_efficiencies = efficiencies_path + f'/PreselEff_cent{cent_class[0]}{cent_class[1]}{split}.root'
 
-        tfile = TFile(filename_efficiencies)
+        tfile = ROOT.TFile(filename_efficiencies)
 
         self.presel_histo = tfile.Get("PreselEff")
         self.presel_histo.SetDirectory(0)
@@ -319,7 +316,7 @@ class ModelApplication:
         significance_custom = []
         significance_custom_error = []
 
-        bw_file = TFile(os.environ['HYPERML_UTILS'] + '/BlastWaveFits.root', 'read')
+        bw_file = ROOT.TFile(os.environ['HYPERML_UTILS'] + '/BlastWaveFits.root', 'read')
         bw = [bw_file.Get('BlastWave/BlastWave{}'.format(i)) for i in [0, 1, 2]]
         bw_file.Close()
 

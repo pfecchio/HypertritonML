@@ -68,6 +68,8 @@ SPLIT_MODE = args.split
 OPTIMIZE = args.optimize
 APPLICATION = args.application
 SIGNIFICANCE_SCAN = args.significance
+SIDEBANDS = args.side
+UNBINNED_FIT = args.unbinned
 
 if SPLIT_MODE:
     SPLIT_LIST = ['_matter','_antimatter']
@@ -87,7 +89,7 @@ start_time = time.time()                          # for performances evaluation
 
 if TRAIN:
     for split in SPLIT_LIST:
-        ml_analysis = TrainingAnalysis(N_BODY, signal_path, bkg_path, split, sidebands=args.side, entrystop=1000000)
+        ml_analysis = TrainingAnalysis(N_BODY, signal_path, bkg_path, split, sidebands=SIDEBANDS, entrystop=1000000)
         print(f'--- analysis initialized in {((time.time() - start_time) / 60):.2f} minutes ---\n')
 
         for cclass in CENT_CLASSES:
@@ -148,7 +150,7 @@ if APPLICATION:
     if SIGNIFICANCE_SCAN:
         sigscan_results = {}    
     
-    if args.unbinned:
+    if UNBINNED_FIT:
         file_name = results_dir + f'/{FILE_PREFIX}_results_unbinned.root'
         results_unbin_file = TFile(file_name, 'recreate')
 
@@ -182,7 +184,8 @@ if APPLICATION:
                     print('\n==================================================')
                     print('centrality:', cclass, ' ct:', ctbin, ' pT:', ptbin, split)
                     print('Application and signal extraction ...', end='\r')
-                    mass_bins = 40 if ctbin[1] < 16 else 36
+                    # mass_bins = 40 if ctbin[1] < 16 else 36
+                    mass_bins = 80
 
                     presel_eff = ml_application.get_preselection_efficiency(ptbin_index, ctbin_index)
                     eff_score_array, model_handler = ml_application.load_ML_analysis(cclass, ptbin, ctbin, split)
@@ -218,7 +221,7 @@ if APPLICATION:
                         h1_minv = hau.h1_invmass(counts, cclass, ptbin, ctbin, name=histo_name)
                         h1_minv.Write()
 
-                        if args.unbinned:
+                        if UNBINNED_FIT:
                             for bkg_model in BKG_MODELS:
                                 hau.unbinned_mass_fit(mass_array, eff, bkg_model, results_unbin_file, cclass, ptbin, ctbin, split)
                                 
@@ -240,7 +243,7 @@ if APPLICATION:
     
     results_histos_file.Close()
 
-    if args.unbinned:
+    if UNBINNED_FIT:
         results_unbin_file.Close()
 
     print(f'--- analysis time: {((time.time() - start_time) / 60):.2f} minutes ---')

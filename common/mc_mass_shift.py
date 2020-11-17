@@ -51,7 +51,7 @@ EFF_ARRAY = np.arange(EFF_MIN, EFF_MAX, EFF_STEP)
 SPLIT_LIST = ['_matter','_antimatter'] if args.split else ['']
 
 HYPERTRITON_MASS = 2.9913100
-MASS_BINS = 18
+MASS_BINS = 35
 
 ###############################################################################
 # define paths for loading data
@@ -79,10 +79,10 @@ results_file.cd()
 ###############################################################################
 # define RooFit objects
 mass = ROOT.RooRealVar('m', 'm_{^{3}He+#pi}', 2.975, 3.01, 'GeV/c^{2}')
-hyp_mass_mc = ROOT.RooRealVar('hyp_mass_mc', 'hyp_mass_mc', 2.989, 2.993, 'GeV^-1')
-width_hyp_mc = ROOT.RooRealVar('width', 'hyp_mass_mc width',0.0005, 0.004, 'GeV/c^2')
+hyp_mass_mc = ROOT.RooRealVar('hyp_mass_mc', 'hyp_mass_mc', 2.985, 2.995, 'GeV^-1')
+width_hyp_mc = ROOT.RooRealVar('width', 'hyp_mass_mc width',0.0005, 0.005, 'GeV/c^2')
 n1 = ROOT.RooRealVar('n1', 'n1 const', 0., 1., 'GeV')
-width_res = ROOT.RooRealVar('tails width', 'tails width', 0.002, 0.006, 'GeV')
+width_res = ROOT.RooRealVar('tails width', 'tails width', 0.0001, 0.006, 'GeV')
 hyp_pdf = ROOT.RooGaussian('hyp_mc_sigma', 'hyp_mc_sigma', mass, hyp_mass_mc, width_hyp_mc)
 res_sig_pdf = ROOT.RooGaussian('res_sig', 'signal + resolution', mass, hyp_mass_mc, width_res)
 conv_sig = ROOT.RooAddPdf('conv_sig', 'Double Gaussian', ROOT.RooArgList(hyp_pdf, res_sig_pdf), ROOT.RooArgList(n1))
@@ -147,8 +147,8 @@ for split in SPLIT_LIST:
                 mu_sel = hyp_mass_mc.getVal()
                 mu_sel_error = hyp_mass_mc.getError()
 
-                shift_fit_nobdt.SetBinContent(shift_bin, (mu_sel-HYPERTRITON_MASS)*1000)
-                shift_fit_nobdt.SetBinError(shift_bin, mu_sel_error * 1000)
+                shift_fit_nobdt.SetBinContent(shift_bin, (mu_sel-HYPERTRITON_MASS)*1000.)
+                shift_fit_nobdt.SetBinError(shift_bin, mu_sel_error*1000.)
                 
                 # plot for the mc mass fit before the BDT selections
                 xframe = mass.frame(ROOT.RooFit.Name('mass_reco_hyp'), ROOT.RooFit.Bins(MASS_BINS))
@@ -175,14 +175,14 @@ for split in SPLIT_LIST:
                     width_mc = width_hyp_mc.getVal()
                     width_mc_error = width_hyp_mc.getError()
 
-                    shift_mean.SetBinContent(shift_bin, eff_index, (roo_mass.mean(mass)-HYPERTRITON_MASS)*1000)
-                    shift_mean.SetBinError(shift_bin, eff_index, 0)
+                    shift_mean.SetBinContent(shift_bin, eff_index, (roo_mass.mean(mass)-HYPERTRITON_MASS)*1000.)
+                    shift_mean.SetBinError(shift_bin, eff_index, roo_mass.moment(mass, 2)*1000.)
 
-                    sigma_mc.SetBinContent(shift_bin, eff_index, width_mc*1000)
-                    sigma_mc.SetBinError(shift_bin, eff_index, width_mc_error*1000)
+                    sigma_mc.SetBinContent(shift_bin, eff_index, width_mc*1000.)
+                    sigma_mc.SetBinError(shift_bin, eff_index, width_mc_error*1000.)
 
-                    shift_fit.SetBinContent(shift_bin, eff_index, (mu_sel-HYPERTRITON_MASS)*1000)
-                    shift_fit.SetBinError(shift_bin, eff_index, mu_sel_error * 1000)
+                    shift_fit.SetBinContent(shift_bin, eff_index, (mu_sel-HYPERTRITON_MASS)*1000.)
+                    shift_fit.SetBinError(shift_bin, eff_index, mu_sel_error*1000.)
 
                     eff_index += 1
                         
