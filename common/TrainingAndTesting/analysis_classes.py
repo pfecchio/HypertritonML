@@ -209,7 +209,7 @@ class TrainingAnalysis:
 
 class ModelApplication:
 
-    def __init__(self, mode, data_filename, mc_filename, analysis_res_filename, cent_classes, split):
+    def __init__(self, mode, data_filename, analysis_res_filename, cent_classes, split):
 
         print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
         print('\nStarting BDT appplication and signal extraction')

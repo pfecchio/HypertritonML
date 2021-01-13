@@ -57,8 +57,6 @@ BKG_MODELS = params['BKG_MODELS']
 EFF_MIN, EFF_MAX, EFF_STEP = params['BDT_EFFICIENCY']
 FIX_EFF_ARRAY = np.arange(EFF_MIN, EFF_MAX, EFF_STEP)
 
-SIGMA_MC = params['SIGMA_MC']
-
 TRAIN = args.train
 SPLIT_MODE = args.split
 OPTIMIZE = args.optimize
@@ -117,9 +115,6 @@ if TRAIN:
                     score_from_eff_array = analysis_utils.score_from_efficiency_array(data[3], y_pred, FIX_EFF_ARRAY)
                     fixed_eff_array = np.vstack((FIX_EFF_ARRAY, score_from_eff_array))
 
-                    if SIGMA_MC:
-                        ml_analysis.MC_sigma_array(data, fixed_eff_array, cclass, ptbin, ctbin, split)
-
                     ml_analysis.save_ML_analysis(model_handler, fixed_eff_array, cent_class=cclass, pt_range=ptbin, ct_range=ctbin, split=split)
                     ml_analysis.save_ML_plots(model_handler, data, [eff, tsd], cent_class=cclass, pt_range=ptbin, ct_range=ctbin, split=split)
 
@@ -142,6 +137,9 @@ if APPLICATION:
         application_columns = ['score', 'm', 'ct', 'pt', 'centrality', 'ArmenterosAlpha']
 
     for split in SPLIT_LIST:
+        df_applied_mc = hau.get_applied_mc(signal_path, CENT_CLASSES, PT_BINS, CT_BINS, COLUMNS, application_columns, N_BODY, split)
+        df_applied_mc.to_parquet(os.path.dirname(signal_path) + f'/applied_mc_df_{FILE_PREFIX}.parquet.gzip', compression='gzip')
+
         if LARGE_DATA:
             if LOAD_APPLIED_DATA:
                 df_applied = pd.read_parquet(os.path.dirname(data_path) + f'/applied_df_{FILE_PREFIX}.parquet.gzip')
