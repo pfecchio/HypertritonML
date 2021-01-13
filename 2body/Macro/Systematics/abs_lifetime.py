@@ -65,7 +65,7 @@ results_file = TFile(file_name, 'read')
 ind_list = ["", "_1.5", "_2", "_10"]
 abs_hist_list = []
 for ind in ind_list:
-    abs_file_name = os.environ['HYPERML_UTILS_{}'.format(params['NBODY'])] + '/he3abs/absorption_ct/recCtHe3' + ind + ".root"
+    abs_file_name = os.environ['HYPERML_UTILS_{}'.format(params['NBODY'])] + '/he3abs/recCtHe3' + ind + ".root"
     absorp_file = TFile(abs_file_name)
     abs_hist = absorp_file.Get('Reconstructed ct spectrum')
     abs_hist.SetDirectory(0)
@@ -84,13 +84,17 @@ for name, color,ind,absorp_hist in zip( abs_names_list,abs_colors_list, ind_list
 
         h2BDTEff = results_file.Get(f'{inDirName}/BDTeff')
         h1BDTEff = h2BDTEff.ProjectionY("bdteff", 1, 1)
-        best_sig = np.round(np.array(h1BDTEff)[1:-1], 2)
-        sig_ranges = []
-        for i in best_sig:
-            if i== best_sig[0]:
-                sig_ranges.append([i-0.03, i+0.03, 0.01])
-            else:
-                sig_ranges.append([i-0.1, i+0.1, 0.01])
+        # best_sig = np.round(np.array(h1BDTEff)[1:-1], 2)
+        # sig_ranges = []
+        # for i in best_sig:
+        #     if i== best_sig[0]:
+        #         sig_ranges.append([i-0.03, i+0.03, 0.01])
+        #     else:
+        #         sig_ranges.append([i - 0.1, i + 0.1, 0.01])
+        
+        best_sig = [0.25, 0.72, 0.80, 0.80, 0.83, 0.83, 0.81, 0.82, 0.80, 0.66]
+        sig_ranges = [[0.22, 0.28, 0.01], [0.62, 0.82, 0.01], [0.74, 0.94, 0.01], [0.75, 0.95, 0.01], [0.75, 0.95, 0.01], [0.77, 0.97, 0.01], [0.71, 0.91, 0.01], [0.72, 0.92, 0.01], [0.70, 0.90, 0.01], [0.56, 0.76, 0.01]]
+
         ranges = {
                 'BEST': best_sig,
                 'SCAN': sig_ranges
@@ -113,19 +117,15 @@ for name, color,ind,absorp_hist in zip( abs_names_list,abs_colors_list, ind_list
 
             for iBin in range(1, h1RawCounts.GetNbinsX()+1):
                 h2RawCounts = results_file.Get(f'{inDirName}/RawCounts{ranges["BEST"][iBin-1]:.2f}_{model}')
-                h1RawCounts.SetBinContent(iBin, h2RawCounts.GetBinContent(
-                    1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin)/(1-absorp_hist.GetBinContent(iBin)))
-                h1RawCounts.SetBinError(iBin, h2RawCounts.GetBinError(
-                    1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin)/(1-absorp_hist.GetBinContent(iBin)))
+                h1RawCounts.SetBinContent(iBin, h2RawCounts.GetBinContent(1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin)/(1-absorp_hist.GetBinContent(iBin)))
+                h1RawCounts.SetBinError(iBin, h2RawCounts.GetBinError(1, iBin) / h1PreselEff.GetBinContent(iBin) / ranges['BEST'][iBin-1] / h1RawCounts.GetBinWidth(iBin)/(1-absorp_hist.GetBinContent(iBin)))
                 raws.append([])
                 errs.append([])
 
                 for eff in np.arange(ranges['SCAN'][iBin-1][0], ranges['SCAN'][iBin-1][1], ranges['SCAN'][iBin-1][2]):
                     h2RawCounts = results_file.Get(f'{inDirName}/RawCounts{eff:.2f}_{model}')
-                    raws[iBin-1].append(h2RawCounts.GetBinContent(1,
-                                                                iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/(1-absorp_hist.GetBinContent(iBin)))
-                    errs[iBin-1].append(h2RawCounts.GetBinError(1,
-                                                                iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/(1-absorp_hist.GetBinContent(iBin)))
+                    raws[iBin-1].append(h2RawCounts.GetBinContent(1,iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/(1-absorp_hist.GetBinContent(iBin)))
+                    errs[iBin-1].append(h2RawCounts.GetBinError(1,iBin) / h1PreselEff.GetBinContent(iBin) / eff / h1RawCounts.GetBinWidth(iBin)/(1-absorp_hist.GetBinContent(iBin)))
 
 
             out_dir.cd()
@@ -166,7 +166,7 @@ frame.GetXaxis().SetLabelSize(22)
 # gStyle.SetLegendFont(42)
 leg = TLegend(0.4,0.6,0.9,0.85)
 for name, func in zip(abs_names_list, fit_func_list):
-    string = '#tau = {:.0f} #pm {:.0f} ps '.format(func.GetParameter(1), func.GetParError(1))
+    string = '#tau = {:.1f} #pm {:.1f} ps '.format(func.GetParameter(1), func.GetParError(1))
     func.SetTitle(name + " :  " + string)
     func.Draw("same")
     leg.AddEntry(func)
