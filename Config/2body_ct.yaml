@@ -1,22 +1,21 @@
 NBODY: 2
-FILE_PREFIX: 'ct_analysis_new'
+FILE_PREFIX: 'ct_analysis'
+
 
 CENTRALITY_CLASS:
   - [0, 90]
-CT_BINS: [0,1, 2, 4, 6, 8, 10, 14, 18, 23, 35]
+CT_BINS: [0, 1, 2, 4, 6, 8, 10, 14, 18, 23, 35]
 PT_BINS: [2, 10]
 
 BKG_MODELS: ['expo', 'pol1', 'pol2']
 
 BDT_EFFICIENCY: [0.20, 1., 0.01] ##min, max ,step
 
-DEDICATED_BACKGROUND: 0
 
-
-MC_PATH: $HYPERML_TABLES_2/splines_tables/SignalTable.root
-BKG_PATH: $HYPERML_TABLES_2/splines_tables/DataTable_18LS.root
-DATA_PATH: $HYPERML_TABLES_2/splines_tables/DataTable_18.root
-ANALYSIS_RESULTS_PATH: $HYPERML_TABLES_2/splines_tables/DataTable_18.root
+MC_PATH: $HYPERML_TABLES_2/2018/offline/pass3/SignalTable_20g7.root
+BKG_PATH: $HYPERML_TABLES_2/2018/offline/pass3/DataTable_18LS_pass3.root
+DATA_PATH: $HYPERML_TABLES_2/2018/offline/pass3/DataTable_18_pass3.root
+ANALYSIS_RESULTS_PATH: $HYPERML_TABLES_2/2018/offline/pass3/AnalysisResults_18_pass3.root
 
 
 XGBOOST_PARAMS:
@@ -31,8 +30,9 @@ XGBOOST_PARAMS:
 
 
 SIGMA_MC: True
-LARGE_DATA: False
-LOAD_LARGE_DATA: False
+LARGE_DATA: True
+LOAD_LARGE_DATA: True
+
 
 HYPERPARAMS:
   max_depth: 13
@@ -44,7 +44,8 @@ HYPERPARAMS:
   colsample_bytree: 0.57
   seed: 42
 
-HYPERPARAMS_RANGE: #TODO: check if it works without tuples
+
+HYPERPARAMS_RANGE:
   # booster parameters
   max_depth: !!python/tuple [5, 20] # defines the maximum depth of a single tree (regularization)
   learning_rate: !!python/tuple [0.01, 0.3] # learning rate
@@ -55,6 +56,7 @@ HYPERPARAMS_RANGE: #TODO: check if it works without tuples
   colsample_bytree: !!python/tuple [0.5, 0.9] # denotes the fraction of columns to be randomly samples for each tree
   # # lambda: (0,10]  # L2 regularization term on weights
   # # alpha: (0,10]  # L1 regularization term on weight
+
 
 TRAINING_COLUMNS: 
   - V0CosPA

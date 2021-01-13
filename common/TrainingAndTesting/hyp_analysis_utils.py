@@ -160,8 +160,7 @@ def get_ctbin_index(th2, ctbin):
     return th2.GetYaxis().FindBin(0.5 * (ctbin[0] + ctbin[1]))
 
 
-def fit_hist(
-        histo, cent_class, pt_range, ct_range, nsigma=3, model="pol2", fixsigma=-1, sigma_limits=None, mode=3, split =''):
+def fit_hist(histo, cent_class, pt_range, ct_range, nsigma=3, model="pol2", fixsigma=-1, sigma_limits=None, mode=3, split =''):
     # canvas for plotting the invariant mass distribution
     cv = TCanvas(f'cv_{histo.GetName()}')
 
@@ -320,7 +319,6 @@ def fit_hist(
     cv.Write()
 
     return (signal, errsignal, signif, errsignif, mu, muErr, sigma, sigmaErr)
-    return (signal, errsignal, signif, errsignif, sigma, sigmaErr)
 
 
 def load_mcsigma(cent_class, pt_range, ct_range, mode, split=''):
@@ -370,6 +368,9 @@ def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct
     # define working variable 
     mass = ROOT.RooRealVar('m', 'm_{^{3}He+#pi}', 2.975, 3.010, 'GeV/c^{2}')
 
+    mass_set = ROOT.RooArgSet(mass)
+    mass_norm_set = ROOT.RooFit.NormSet(mass_set)
+
     # define signal parameters
     hyp_mass = ROOT.RooRealVar('hyp_mass', 'hypertriton mass', 2.989, 2.993, 'GeV/c^{2}')
     width = ROOT.RooRealVar('width', 'hypertriton width', 0.0001, 0.004, 'GeV/c^{2}')
@@ -395,7 +396,7 @@ def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct
         background = ROOT.RooExponential('bkg', 'expo for bkg', mass, slope)
 
     # define fraction
-    n1 = ROOT.RooRealVar('n1', 'n1 const', 0., 1, 'GeV')
+    n = ROOT.RooRealVar('n1', 'n1 const', 0., 1, 'GeV')
 
     # define the fit funciton -> signal component + background component
     fit_function = ROOT.RooAddPdf(f'{bkg_model}_gaus', 'signal + background', ROOT.RooArgList(signal, background), ROOT.RooArgList(n1))
@@ -404,38 +405,38 @@ def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct
     roo_data = ndarray2roo(data, mass)
 
     # fit data
-    fit_function.fitTo(roo_data, ROOT.RooFit.Range(2.975, 3.01))
+    fit_results = fit_function.fitTo(roo_data, ROOT.RooFit.Range(2.975, 3.01), ROOT.RooFit.Save())
 
     # plot the fit
     frame = mass.frame(35)
 
-    roo_data.plotOn(frame)
-    fit_function.plotOn(frame, ROOT.RooFit.LineColor(ROOT.kBlue))
+    roo_data.plotOn(frame, ROOT.RooFit.Name('data'))
+    fit_function.plotOn(frame, ROOT.RooFit.LineColor(ROOT.kBlue), ROOT.RooFit.Name('model'))
     fit_function.plotOn(frame, ROOT.RooFit.Components('signal'), ROOT.RooFit.LineStyle(ROOT.kDotted), ROOT.RooFit.LineColor(ROOT.kRed))
     fit_function.plotOn(frame, ROOT.RooFit.Components('bkg'), ROOT.RooFit.LineStyle(ROOT.kDashed), ROOT.RooFit.LineColor(ROOT.kRed))
 
-    # add info to plot
+    # compute significance
     nsigma = 3
     mu = hyp_mass.getVal()
     mu_error = hyp_mass.getError()
     sigma = width.getVal()
     sigma_error = width.getError()
 
-    # # getting the chi2 by binning the data
-    # hist_tmp = super(roo_data.__class__, roo_data).createHistogram('hist_tmp', mass, ROOT.RooFit.Binning(35))
-    # fit_function.chiSquare(mass, histogram)
+    mass.setRange('3sigma_reegion', mu - nsigma * sigma, mu + nsigma * sigma)
+    
+    frac_signal_range = signal.createIntegral(mass_set, mass_norm_set, ROOT.RooFit.Range('signal_region'))
+    frac_background_range = background.createIntegral(mass_set, mass_norm_set, ROOT.RooFit.Range('signal_region'))
 
-    # print(type(hist_tmp))
-    # exit()
+    signal_counts = int(roo_data.sumEntries() * n.getVal() * frac_signal_range.getVal())
+    background_counts = int(roo_data.sumEntries() * (1 - n.getVal()) * frac_background_range.getVal())
 
-    # # compute significance
-    # mass.setRange('signal region',  mu - (nsigma * sigma), mu + (nsigma * sigma))
-    # signal_counts = int(round(signal.createIntegral(ROOT.RooArgSet(mass), ROOT.RooArgSet(mass), 'signal region').getVal() * n1.getVal()*normalization))
-    # background_counts = int(round(background.createIntegral(ROOT.RooArgSet(mass), ROOT.RooArgSet(mass), 'signal region').getVal() * (1 - n1.getVal())*normalization))
+    significance = signal_counts / math.sqrt(signal_counts + background_counts + 1e-10)
+    significance_error = hau.significance_error(signal_counts, background_counts)
 
-    # signif = signal_counts / math.sqrt(signal_counts + background_counts + 1e-10)
-    # signif_error = significance_error(signal_counts, background_counts)
+    # compute chi2
+    chi2 = frame.chiSquare('model', 'data', fit_results.floatParsFinal().getSize())
 
+    # add info to plot
     pinfo = ROOT.TPaveText(0.537, 0.474, 0.937, 0.875, 'NDC')
     pinfo.SetBorderSize(0)
     pinfo.SetFillStyle(0)
@@ -457,9 +458,9 @@ def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct
     string_list.append(f'#sigma {sigma*1000:.2f} #pm {sigma_error*1000:.2f} MeV/c^{2}')
 
     if roo_data.sumEntries()>0:
-        string_list.append('#chi^{2} / NDF ' + f'{frame.chiSquare(6 if bkg_model=="pol2" else 5):.2f}')
+        string_list.append('#chi^{2} / NDF ' + f'{chi2:.2f}')
 
-    # string_list.append(f'Significance ({nsigma:.0f}#sigma) {signif:.1f} #pm {signif_error:.1f}')
+    string_list.append(f'Significance ({nsigma:.0f}#sigma) {significance:.1f} #pm {significance_error:.1f}')
     # string_list.append(f'S ({nsigma:.0f}#sigma) {signal_counts} #pm {int(round(math.sqrt(signal_counts)))}')
     # string_list.append(f'B ({nsigma:.0f}#sigma) {background_counts} #pm {int(round(math.sqrt(signal_counts)))}')
 

@@ -56,7 +56,7 @@ class TrainingAnalysis:
         self.df_signal['y'] = 1
         self.df_bkg['y'] = 0
 
-    def preselection_efficiency(self, cent_class, ct_bins, pt_bins, split, save=True):
+    def preselection_efficiency(self, cent_class, ct_bins, pt_bins, split, save=True, prefix=''):
         cent_cut = f'{cent_class[0]}<=centrality<={cent_class[1]}'
 
         if (len(ct_bins)>2):
@@ -80,7 +80,7 @@ class TrainingAnalysis:
         if save:
             path = os.environ['HYPERML_EFFICIENCIES_{}'.format(self.mode)]
 
-            filename = path + f'/PreselEff_cent{cent_class[0]}{cent_class[1]}{split}.root'
+            filename = path + f'/{prefix}_preseleff_cent{cent_class[0]}{cent_class[1]}{split}.root'
             t_file = ROOT.TFile(filename, 'recreate')
             
             pres_histo.Write()
@@ -209,7 +209,7 @@ class TrainingAnalysis:
 
 class ModelApplication:
 
-    def __init__(self, mode, data_filename, analysis_res_filename, cent_classes, split, skimmed_data=0):
+    def __init__(self, mode, data_filename, mc_filename, analysis_res_filename, cent_classes, split):
 
         print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
         print('\nStarting BDT appplication and signal extraction')
@@ -217,16 +217,12 @@ class ModelApplication:
         self.mode = mode
         self.n_events = []
 
-        self.df_data = skimmed_data if isinstance(skimmed_data, pd.DataFrame) else uproot.open(data_filename)['DataTable'].pandas.df()
+        self.df_data = data_filename if isinstance(data_filename, pd.DataFrame) else uproot.open(data_filename)['DataTable'].pandas.df()
 
-        if analysis_res_filename == data_filename:
-            self.hist_centrality = uproot.open(data_filename)['EventCounter']
-
-        else:
-            if self.mode == 2:
-                self.hist_centrality = uproot.open(analysis_res_filename)["AliAnalysisTaskHyperTriton2He3piML_custom_summary"][11]
-            if self.mode == 3:
-                self.hist_centrality = uproot.open(analysis_res_filename)["AliAnalysisTaskHypertriton3_summary"][11]
+        if self.mode == 2:
+            self.hist_centrality = uproot.open(analysis_res_filename)["AliAnalysisTaskHyperTriton2He3piML_custom_summary"][11]
+        if self.mode == 3:
+            self.hist_centrality = uproot.open(analysis_res_filename)["AliAnalysisTaskHypertriton3_summary"][11]
 
         for cent in cent_classes:
             self.n_events.append(sum(self.hist_centrality[cent[0] + 1:cent[1]]))
@@ -243,9 +239,9 @@ class ModelApplication:
 
         print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
 
-    def load_preselection_efficiency(self, cent_class, split):
+    def load_preselection_efficiency(self, cent_class, split, prefix=''):
         efficiencies_path = os.environ['HYPERML_EFFICIENCIES_{}'.format(self.mode)]
-        filename_efficiencies = efficiencies_path + f'/PreselEff_cent{cent_class[0]}{cent_class[1]}{split}.root'
+        filename_efficiencies = efficiencies_path + f'/{prefix}_preseleff_cent{cent_class[0]}{cent_class[1]}{split}.root'
 
         tfile = ROOT.TFile(filename_efficiencies)
 
@@ -275,7 +271,6 @@ class ModelApplication:
         return self.presel_histo.GetBinContent(ptbin_index, ctbin_index)
 
     def load_sigma_array(self, cent_class, pt_range, ct_range, split=''):
-
         info_string = '_{}{}_{}{}_{}{}{}'.format(cent_class[0], cent_class[1], pt_range[0],
                                                  pt_range[1], ct_range[0], ct_range[1], split)
         sigma_path = os.environ['HYPERML_UTILS_{}'.format(
