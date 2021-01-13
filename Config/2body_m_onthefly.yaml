@@ -1,19 +1,27 @@
 NBODY: 2
-FILE_PREFIX: 'm_analysis'
+FILE_PREFIX: 'm_analysis_onthefly'
+
 
 CENTRALITY_CLASS:
   - [0, 90]
 CT_BINS: [0, 90]
-PT_BINS: [2,3,4,5,6,9]
+PT_BINS: [2, 3, 4, 5, 6, 8]
+# PT_BINS: [2, 8] 
 
 BKG_MODELS: ['expo', 'pol1', 'pol2']
 
-BDT_EFFICIENCY: [0.40, 1., 0.01] # min, max, step
+BDT_EFFICIENCY: [0.40, 0.90, 0.01] # min, max, step
 
-MC_PATH: $HYPERML_TABLES_2/SignalTable_20g7.root
-BKG_PATH: $HYPERML_TABLES_2/DataTable_18LS_pass3.root
-DATA_PATH: $HYPERML_TABLES_2/DataTable_18_pass3.root
-ANALYSIS_RESULTS_PATH: $HYPERML_TABLES_2/DataTable_18_pass3.root
+
+LARGE_DATA: True
+LOAD_APPLIED_DATA: False
+
+
+MC_PATH: $HYPERML_TABLES_2/2018/onthefly/SignalTable_20g7_otf.root
+BKG_PATH: $HYPERML_TABLES_2/2018/onthefly/DataTable_18_pass3_otf.root
+DATA_PATH: $HYPERML_TABLES_2/2018/onthefly/DataTable_18_pass3_otf.root
+ANALYSIS_RESULTS_PATH: $HYPERML_TABLES_2/2018/onthefly/AnalysisResults_18_pass3_otf.root
+
 
 XGBOOST_PARAMS:
   # general parameters
@@ -25,9 +33,6 @@ XGBOOST_PARAMS:
   eval_metric: auc
   tree_method: hist
 
-SIGMA_MC: False
-LARGE_DATA: True
-LOAD_LARGE_DATA: True
 
 HYPERPARAMS:
   max_depth: 15
@@ -38,6 +43,7 @@ HYPERPARAMS:
   subsample: 0.7187
   colsample_bytree: 0.5138
   seed: 42
+
 
 HYPERPARAMS_RANGE: #TODO: check if it works without tuples
   # booster parameters
@@ -51,6 +57,7 @@ HYPERPARAMS_RANGE: #TODO: check if it works without tuples
   # # lambda: (0,10]  # L2 regularization term on weights
   # # alpha: (0,10]  # L1 regularization term on weight
 
+
 TRAINING_COLUMNS: 
   - V0CosPA
   - pt
@@ -63,3 +70,9 @@ TRAINING_COLUMNS:
   - TPCnSigmaHe3
   - TPCnSigmaPi
   - NitsClustersHe3
+
+
+MC_PATH: $HYPERML_TABLES_2/2018/onthefly/SignalTable_20g7_otf.root
+BKG_PATH: $HYPERML_TABLES_2/2018/onthefly/DataTable_18_pass3_otf.root
+DATA_PATH: $HYPERML_TABLES_2/2018/onthefly/DataTable_18_pass3_otf.root
+ANALYSIS_RESULTS_PATH: $HYPERML_TABLES_2/2018/onthefly/AnalysisResults_18_pass3_otf.root
