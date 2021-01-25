@@ -1,35 +1,34 @@
-import io
 import math
 import os
 
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-
 import pandas as pd
+import ROOT
 from scipy.stats import norm
 from sklearn.metrics import confusion_matrix
 
-import ROOT
+import hyp_analysis_utils as hau
 
 matplotlib.use('pdf')
 
 ###############################################################################
 # define custom colors
 kBlueC = ROOT.TColor.GetColor('#1f78b4')
-kBlueCT = ROOT.TColor.GetColorTransparent(kBlueC, 0.5)
+kBlueCT = ROOT.TColor.GetColorTransparent(kBlueC, 0.25)
 kRedC = ROOT.TColor.GetColor('#e31a1c')
-kRedCT = ROOT.TColor.GetColorTransparent(kRedC, 0.5)
+kRedCT = ROOT.TColor.GetColorTransparent(kRedC, 0.25)
 kPurpleC = ROOT.TColor.GetColor('#911eb4')
-kPurpleCT = ROOT.TColor.GetColorTransparent(kPurpleC, 0.5)
+kPurpleCT = ROOT.TColor.GetColorTransparent(kPurpleC, 0.25)
 kOrangeC = ROOT.TColor.GetColor('#ff7f00')
-kOrangeCT = ROOT.TColor.GetColorTransparent(kOrangeC, 0.5)
+kOrangeCT = ROOT.TColor.GetColorTransparent(kOrangeC, 0.25)
 kGreenC = ROOT.TColor.GetColor('#33a02c')
-kGreenCT = ROOT.TColor.GetColorTransparent(kGreenC, 0.5)
+kGreenCT = ROOT.TColor.GetColorTransparent(kGreenC, 0.25)
 kMagentaC = ROOT.TColor.GetColor('#f032e6')
-kMagentaCT = ROOT.TColor.GetColorTransparent(kMagentaC, 0.5)
+kMagentaCT = ROOT.TColor.GetColorTransparent(kMagentaC, 0.25)
 kYellowC = ROOT.TColor.GetColor('#ffe119')
-kYellowCT = ROOT.TColor.GetColorTransparent(kYellowC, 0.5)
+kYellowCT = ROOT.TColor.GetColorTransparent(kYellowC, 0.25)
 
 
 def plot_efficiency_significance(mode, tsd, significance, efficiency, data_range_array):
@@ -243,23 +242,29 @@ def plot_confusion_matrix(y_true, df, mode, score,
     return ax
 
 
-def mass_plot_makeup(histo, fit_function, model, ptbin, split):
-    histo.Fit(fit_function)
+def mass_plot_makeup(histo, model, ptbin, split):
+    mass, mass_error = hau.histo_weighted_mean(histo)
 
-    fit_function.SetLineColor(kRedC)
+    mass_low = mass - mass_error
+    mass_up = mass + mass_error
+
+    blambda = 1115.683 + 1875.61294257 - mass
+
+    print(f'B_lambda = {blambda:.3f} +- {mass_error:.3f}')
+
     histo.SetMarkerStyle(20)
     histo.SetMarkerColor(kBlueC)
     histo.SetLineColor(kBlueC)
 
-    canvas = ROOT.TCanvas(f'hyp_mass_{model}_{split}')
+    canvas = ROOT.TCanvas(f'hyp_mass_{model}{split}')
             
-    pad_range = [2990.4, 2992.9]
+    pad_range = [2990.85, 2992.15]
     label = 'm_{ {}^{3}_{#bar{#Lambda}} #bar{H}}' if split is '_antimatter' else 'm_{ {}^{3}_{#Lambda}H}'
     frame = ROOT.gPad.DrawFrame(ptbin[0], pad_range[0], ptbin[-1], pad_range[1], ';#it{p}_{T} (GeV/#it{c});' + label + ' [ MeV/#it{c}^{2} ]')
     frame.GetYaxis().SetTitleSize(22)
     frame.GetYaxis().SetTitleOffset(1.4)
      
-    pinfo = ROOT.TPaveText(0.142, 0.620, 0.522, 0.848, 'NDC')
+    pinfo = ROOT.TPaveText(0.142, 0.652, 0.521, 0.849, 'NDC')
     pinfo.SetBorderSize(0)
     pinfo.SetFillStyle(0)
     pinfo.SetTextAlign(11)
@@ -269,17 +274,28 @@ def mass_plot_makeup(histo, fit_function, model, ptbin, split):
     string_list = []
     string_list.append('#bf{ALICE Internal}')
     string_list.append('Pb-Pb  #sqrt{#it{s}_{NN}} = 5.02 TeV,  0-90%')
-    string_list.append('B_{#Lambda}'+' = {:.3f} #pm {:.3f} '.format(round(fit_function.GetParameter(0), 3), round(fit_function.GetParError(0), 3)) + 'MeV')
+    string_list.append('B_{#Lambda}'+' = {:.3f} #pm {:.3f} '.format(round(blambda, 3), round(mass_error, 3)) + 'MeV')
         
-    if fit_function.GetNDF() is not 0:
-        string_list.append(f'#chi^{{2}} / NDF = {(fit_function.GetChisquare() / fit_function.GetNDF()):.2f}')
     for s in string_list:
         pinfo.AddText(s)
 
-    fit_function.Draw('same')
+    ROOT.gPad.Update()
+    mass_line = ROOT.TLine(ROOT.gPad.GetUxmin(), mass, ROOT.gPad.GetUxmax(), mass)
+    mass_line.SetLineColor(kOrangeC)
+    mass_line.SetLineWidth(1)
+
+    mass_box = ROOT.TBox(ROOT.gPad.GetUxmin(), mass_low, ROOT.gPad.GetUxmax(), mass_up)
+    mass_box.SetFillColor(kOrangeCT)
+    mass_box.SetFillStyle(1001)
+    mass_box.SetLineWidth(1)
+    mass_box.SetLineStyle(2)
+    mass_box.Draw('same')
+
+    mass_line.Draw('same')
     pinfo.Draw('x0same')
     histo.Draw('ex0same')
     canvas.Write()
+    # canvas.SaveAs(f'mass_{model}.pdf')
 
 
 def sigma_plot_makeup(histo, model, ptbin, split):

@@ -12,7 +12,81 @@ import xgboost as xgb
 from hipe4ml.model_handler import ModelHandler
 from ROOT import TF1, TH1D, TH2D, TH3D, TCanvas, TPaveStats, TPaveText, gStyle
 
-import hyp_analysis_utils as hau
+
+def get_applied_mc(mc_path, cent_classes, pt_bins, ct_bins, training_columns, application_columns, mode, split=''):
+    print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
+    print ('\nStarting BDT appplication on MC data')
+
+    if mode == 3:
+        handlers_path = os.environ['HYPERML_MODELS_3'] + '/handlers'
+        efficiencies_path = os.environ['HYPERML_EFFICIENCIES_3']
+
+    if mode == 2:
+        handlers_path = os.environ['HYPERML_MODELS_2'] + '/handlers'
+        efficiencies_path = os.environ['HYPERML_EFFICIENCIES_2']
+
+    df_signal = uproot.open(mc_path)['SignalTable'].pandas.df()
+    df_applied = pd.DataFrame()
+
+    for cclass in cent_classes:
+        for ptbin in zip(pt_bins[:-1], pt_bins[1:]):
+            for ctbin in zip(ct_bins[:-1], ct_bins[1:]):
+                info_string = '_{}{}_{}{}_{}{}'.format(cclass[0], cclass[1], ptbin[0], ptbin[1], ctbin[0], ctbin[1])
+
+                filename_handler = handlers_path + '/model_handler' + info_string + split + '.pkl'
+                filename_efficiencies = efficiencies_path + '/Eff_Score' + info_string + split + '.npy'
+
+                model_handler = ModelHandler()
+                model_handler.load_model_handler(filename_handler)
+
+                eff_score_array = np.load(filename_efficiencies)
+                tsd = eff_score_array[1][-1]
+
+                data_range = f'{ctbin[0]}<ct<{ctbin[1]} and {ptbin[0]}<pt<{ptbin[1]} and {cclass[0]}<=centrality<{cclass[1]}'
+
+                df_tmp = df_signal.query(data_range)
+                df_tmp.insert(0, 'score', model_handler.predict(df_tmp[training_columns]))
+
+                df_tmp = df_tmp.query('score>@tsd')
+                df_tmp = df_tmp.loc[:, application_columns]
+
+                df_applied = df_applied.append(df_tmp, ignore_index=True, sort=False)
+
+    print(df_applied.info(memory_usage='deep'))
+    return df_applied
+
+    for current_file, data in iterator:
+        rename_df_columns(data)
+    
+        print('current file: {}'.format(current_file))
+        print ('start entry chunk: {}, stop entry chunk: {}'.format(data.index[0], data.index[-1]))
+        
+        for cclass in cent_classes:
+            for ptbin in zip(pt_bins[:-1], pt_bins[1:]):
+                for ctbin in zip(ct_bins[:-1], ct_bins[1:]):
+                    info_string = '_{}{}_{}{}_{}{}'.format(cclass[0], cclass[1], ptbin[0], ptbin[1], ctbin[0], ctbin[1])
+
+                    filename_handler = handlers_path + '/model_handler' + info_string + split + '.pkl'
+                    filename_efficiencies = efficiencies_path + '/Eff_Score' + info_string + split + '.npy'
+
+                    model_handler = ModelHandler()
+                    model_handler.load_model_handler(filename_handler)
+
+                    eff_score_array = np.load(filename_efficiencies)
+                    tsd = eff_score_array[1][-1]
+
+                    data_range = f'{ctbin[0]}<ct<{ctbin[1]} and {ptbin[0]}<pt<{ptbin[1]} and {cclass[0]}<=centrality<{cclass[1]}'
+
+                    df_tmp = data.query(data_range)
+                    df_tmp.insert(0, 'score', model_handler.predict(df_tmp[training_columns]))
+
+                    df_tmp = df_tmp.query('score>@tsd')
+                    df_tmp = df_tmp.loc[:, application_columns]
+
+                    df_applied = df_applied.append(df_tmp, ignore_index=True, sort=False)
+
+    print(df_applied.info(memory_usage='deep'))
+    return df_applied
 
 
 def get_skimmed_large_data(data_path, cent_classes, pt_bins, ct_bins, training_columns, application_columns, mode, split=''):
@@ -484,3 +558,17 @@ def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct
     frame.Write(f'frame_model_{bkg_model}')
     hyp_mass.Write(f'hyp_mass_model{bkg_model}')
     width.Write(f'width_model{bkg_model}')
+
+
+def histo_weighted_mean(histo):
+    mass_array = []
+    weight_array = []
+
+    for idx in range(1, histo.GetNbinsX()+1):
+        mass_array.append(histo.GetBinContent(idx))
+        weight_array.append(1. / (histo.GetBinError(idx) ** 2))
+        
+        mass, sum_weights = np.average(mass_array, weights=weight_array, returned=True)
+        mass_error = 1 / math.sqrt(sum_weights)
+
+        return mass, mass_error
