@@ -2,16 +2,28 @@
 import argparse
 import os
 
+def scp_download(origin, destination):
+    if not os.path.exists(file_name):
+        os.system(f'scp {origin} {destination}')
 
 ################################################################################
 # config options
 parser = argparse.ArgumentParser()
-parser.add_argument('-b', '--nbody', type=int, help='')
-parser.add_argument('-p', '--pass', type=int, help='')
+parser.add_argument('-b', '--nbody', type=int, help='Select decay channel <2|3>')
+parser.add_argument('-p', '--pass', type=int, help='Select reco pass <1|3>')
+parser.add_argument('-v', '--vzero', type=str, help='Select V0 for 2-body decay <"otf"|"off">')
+parser.add_argument('-tab', '--tables', action='store_true', help='Download derived tables')
+parser.add_argument('-tr', '--trees', action='store_true', help='Download trees')
 args = vars(parser.parse_args())
 
+################################################################################
+# settings
 NBODY = args['nbody']
 PASS = args['pass']
+TABLES = args['tables']
+TREES = args['trees']
+V0_FINDER = args['vzero'] if 'vzero' in args else 'off'
+MC = '20g7' if PASS == 3 else '19d2'
 
 if NBODY not in [2, 3]:
     print('2 or 3 body decay only in ALICE.'), exit()
@@ -19,74 +31,40 @@ if NBODY not in [2, 3]:
 if PASS not in [1, 3]:
     print('Reco pass1 and pass3 only avalilable.'), exit()
 
+if V0_FINDER not in ['otf', 'off']:
+    V0_FINDER = 'off'
+    print('V0 finder options not valid. Setting default "offline"'), exit()
+
 ################################################################################
-# check weather ROOT is available
-if os.environ['ALICE']
+# check weather AliPhysics is available
+if 'ALICE_PHYSICS' not in os.environ:
+    print('AliPhysics required for downloading data. exit'), exit()
 
+download_2body_trees = [[f'lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/HyperTritonTree_18q_pass{PASS}{V0_FINDER}.root',
+                        os.environ['HYPERML_DATA_2'] + f'HyperTritonTree_18r_pass{PASS}{V0_FINDER}.root'],
+                        [f'lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/HyperTritonTree_18q_pass{PASS}{V0_FINDER}.root',
+                        os.environ['HYPERML_DATA_2'] + f'HyperTritonTree_18r_pass{PASS}{V0_FINDER}.root'],
+                        [f'lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/HyperTritonTree_{MC}{V0_FINDER}.root',
+                        os.environ['HYPERML_DATA_2'] + f'HyperTritonTree_{MC}{V0_FINDER}.root'],
+                        [f'lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/HyperTritonTree_18qLS_pass{PASS}.root',
+                        os.environ['HYPERML_DATA_2'] + f'/HyperTritonTree_18qLS_pass{PASS}.root'],
+                        [f'lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/HyperTritonTree_18rLS_pass{PASS}.root',
+                        os.environ['HYPERML_DATA_2'] + f'/HyperTritonTree_18rLS_pass{PASS}.root']]
+download_2body_tables = []
+download_2body_utils = [['lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/Utils/BlastWaveFits.root',
+                        os.environ['HYPERML_UTILS'] + f'/BlastWaveFit.root'],
+                        ['lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/Utils/He3TPCCalibration.root',
+                        os.environ['HYPERML_UTILS'] + f'/He3TPCCalibration.root'],
+                        ['lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/Utils/AbsorptionHe3.root',
+                        os.environ['HYPERML_UTILS'] + f'/AbsorptionHe3.root']]
+
+download_3body_trees = []
+download_3body_tables = []
+download_3body_utils = []
 
 ################################################################################
-# set environment variables and create dirs
-dir_list = ['Trees', 'Tables', 'Figures', 'Results', 'Models', 'Efficiencies', 'Utils'] 
-base_dir = os.environ['PWD']
+if NBODY == 2:
 
-for d in dir_list:
-    dir_path = base_dir + f'/{d}/{NBODY}Body'
-    os.environ[f'HYPERML_{d.upper()}_{NBODY}'] = dir_path
+    for source, dest in download_2body_utils:
+        scp_download(source, dest)
 
-    if not os.path.exists(dir_path):
-        os.makedirs(dir_path)
-
-os.environ['HYPERML_UTILS'] = base_dir + '/Utils'
-os.environ['HYPERML_CODE'] = base_dir + '/common/TrainingAndTesting'
-
- 
-################################################################################
-# download data if required
-if DOWNLOAD_DATA:
-    if 'ALICE_PHYSICS' not in os.environ:
-        print('AliPhysics environment required! Load it for downloading data.'), exit()
-
-    if NBODY is 2:
-        file_name = os.environ['HYPERML_UTILS'] + '/BlastWaveFit.root'
-        if not os.path.exists(file_name):
-            os.system(f'alien_cp /alice/cern.ch/user/m/mpuccio/hyper_data/BlastWaveFits.root file://{file_name}')
-
-        file_name = os.environ['HYPERML_TREES_2BODY'] + '/HyperTritonTree_18q_pass3.root'
-        if not os.path.exists(file_name):
-            os.system(f'scp lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/HyperTritonTree_18q_pass3.root {file_name}')
-
-        file_name = os.environ['HYPERML_TREES_2BODY'] + '/HyperTritonTree_18r_pass3.root'
-        if not os.path.exists(file_name):
-            os.system(f'scp lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/HyperTritonTree_18r_pass3.root {file_name}')
-
-        file_name = os.environ['HYPERML_TREES_2BODY'] + '/HyperTritonTree_18qLS_pass3.root'
-        if not os.path.exists(file_name):
-            os.system(f'scp lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/HyperTritonTree_18qLS_pass3.root {file_name}')
-
-        file_name = os.environ['HYPERML_TREES_2BODY'] + '/HyperTritonTree_18rLS_pass3.root'
-        if not os.path.exists(file_name):
-            os.system(f'scp lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/HyperTritonTree_18rLS_pass3.root {file_name}')
-
-        file_name = os.environ['HYPERML_TREES_2BODY'] + '/HyperTritonTree_18q_pass3_otf.root'
-        if not os.path.exists(file_name):
-            os.system(f'scp lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/HyperTritonTree_18q_pass3_otf.root {file_name}')
-
-        file_name = os.environ['HYPERML_TREES_2BODY'] + '/HyperTritonTree_18r_pass3_otf.root'
-        if not os.path.exists(file_name):
-            os.system(f'scp lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/HyperTritonTree_18r_pass3_otf.root {file_name}')
-
-        file_name = os.environ['HYPERML_TREES_2BODY'] + '/HyperTritonTree_20g7.root'
-        if not os.path.exists(file_name):
-            os.system(f'scp lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/HyperTritonTree_20g7.root {file_name}')
-
-        file_name = os.environ['HYPERML_TREES_2BODY'] + '/HyperTritonTree_20g7_otf.root'
-        if not os.path.exists(file_name):
-            os.system(f'scp lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/HyperTritonTree_20g7_otf.root {file_name}')
-
-        file_name = os.environ['HYPERML_UTILS'] + '/He3TPCCalibration.root'
-        if not os.path.exists(file_name):
-            os.system(f'alien_cp /alice/cern.ch/user/m/mpuccio/hyper_data/He3TPCCalibration.root file://{file_name}')
-
-        file_name = os.environ['HYPERML_UTILS'] + '/AbsorptionHe3.root'
-        if not os.path.exists(file_name):
-            os.system(f'alien_cp /alice/cern.ch/user/m/mpuccio/hyper_data/AbsorptionHe3.root file://{file_name}')
