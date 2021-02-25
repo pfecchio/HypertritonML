@@ -243,14 +243,17 @@ def plot_confusion_matrix(y_true, df, mode, score,
 
 
 def mass_plot_makeup(histo, model, ptbin, split):
-    mass, mass_error = hau.histo_weighted_mean(histo)
+    pol0 = ROOT.TF1('blfunction', '1115.683 + 1875.61294257 - [0]', 0, 10)
+    histo.Fit(pol0)
+
+    blambda = pol0.GetParameter(0)
+    mass = 1115.683 + 1875.61294257 - blambda
+    mass_error = pol0.GetParError(0)
 
     mass_low = mass - mass_error
     mass_up = mass + mass_error
 
-    blambda = 1115.683 + 1875.61294257 - mass
-
-    print(f'B_lambda = {blambda:.3f} +- {mass_error:.3f}')
+    print(f'B_lambda = {blambda:.3f} +- {mass_error:.3f}, chi2 = {pol0.GetChisquare()/pol0.GetNDF():.3f}')
 
     histo.SetMarkerStyle(20)
     histo.SetMarkerColor(kBlueC)
@@ -260,7 +263,7 @@ def mass_plot_makeup(histo, model, ptbin, split):
             
     pad_range = [2990.85, 2992.15]
     label = 'm_{ {}^{3}_{#bar{#Lambda}} #bar{H}}' if split is '_antimatter' else 'm_{ {}^{3}_{#Lambda}H}'
-    frame = ROOT.gPad.DrawFrame(ptbin[0], pad_range[0], ptbin[-1], pad_range[1], ';#it{p}_{T} (GeV/#it{c});' + label + ' [ MeV/#it{c}^{2} ]')
+    frame = ROOT.gPad.DrawFrame(ptbin[0], pad_range[0], ptbin[-1], pad_range[1], ';#it{c}t (cm);' + label + ' [ MeV/#it{c}^{2} ]')
     frame.GetYaxis().SetTitleSize(22)
     frame.GetYaxis().SetTitleOffset(1.4)
      

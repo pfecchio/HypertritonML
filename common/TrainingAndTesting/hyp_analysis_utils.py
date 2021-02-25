@@ -529,15 +529,14 @@ def unbinned_mass_fit(data, eff, bkg_model, output_dir, cent_class, pt_range, ct
     width.Write(f'width_model{bkg_model}')
 
 
-def histo_weighted_mean(histo):
-    mass_array = []
-    weight_array = []
+def b_form_histo(histo):
+    pol0 = ROOT.TF1('blfunction', '1115.683 + 1875.61294257 - [0]', 0, 10)
+    histo.Fit(pol0)
 
-    for idx in range(1, histo.GetNbinsX()+1):
-        mass_array.append(histo.GetBinContent(idx))
-        weight_array.append(1. / (histo.GetBinError(idx) ** 2))
-        
-        mass, sum_weights = np.average(mass_array, weights=weight_array, returned=True)
-        mass_error = 1 / math.sqrt(sum_weights)
+    blambda = pol0.GetParameter(0)
+    mass = 1115.683 + 1875.61294257 - blambda
+    mass_error = pol0.GetParError(0)
 
-        return mass, mass_error
+    chi2red = pol0.GetChisquare()/pol0.GetNDF()
+
+    return mass, mass_error, chi2red
