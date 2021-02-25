@@ -17,7 +17,7 @@ using namespace std;
 void GenerateTableFromData(bool likeSign = false, bool kInt7 = false, string dataDir = "" , string tableDir = "")
 {
 
-  if (dataDir == "") dataDir = getenv("HYPERML_DATA_2");
+  if (dataDir == "") dataDir = getenv("HYPERML_TREES__2");
   if (tableDir == "") tableDir = getenv("HYPERML_TABLES_2");
 
   string pass = getenv("HYPERML_PASS");

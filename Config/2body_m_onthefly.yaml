@@ -13,7 +13,7 @@ BKG_MODELS: ['expo', 'pol1', 'pol2']
 BDT_EFFICIENCY: [0.40, 0.90, 0.01] # min, max, step
 
 
-LARGE_DATA: True
+LARGE_DATA: False
 LOAD_APPLIED_DATA: False
 
 
@@ -25,7 +25,6 @@ ANALYSIS_RESULTS_PATH: $HYPERML_TABLES_2/2018/onthefly/AnalysisResults_18_pass3_
 
 XGBOOST_PARAMS:
   # general parameters
-  silent: 1 # print message (useful to understand whats happening)
   n_jobs: 8 # number of available threads
   # learning task parameters
   objective: binary:logistic

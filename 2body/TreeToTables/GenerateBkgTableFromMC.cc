@@ -17,7 +17,7 @@
 
 void GenerateBkgTableFromMC() {
 
-  string hypDataDir  = getenv("HYPERML_DATA_2");
+  string hypDataDir  = getenv("HYPERML_TREES__2");
   string hypTableDir = getenv("HYPERML_TABLES_2");
 
   string mcName = getenv("HYPERML_MC");

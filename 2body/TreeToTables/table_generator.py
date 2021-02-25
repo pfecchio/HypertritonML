@@ -9,7 +9,7 @@ gROOT.LoadMacro("GenerateTableFromMC.cc")
 gROOT.LoadMacro("GenerateTableFromData.cc")
 from ROOT import GenerateTableFromMC, GenerateTableFromData
 
-input_dir = os.environ['HYPERML_DATA_2']
+input_dir = os.environ['HYPERML_TREES__2']
 output_dir = os.environ['HYPERML_TABLES_2']
 
 print("++++++++++++++++++++++++++++++++++++++++++")

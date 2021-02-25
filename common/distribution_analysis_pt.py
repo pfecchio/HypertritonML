@@ -50,10 +50,10 @@ unit = 'GeV/#it{c}'
 
 split_list = ['_matter', '_antimatter']
 
-absorption_list_values = [uproot.open(os.environ['HYPERML_UTILS'] + '/absorption.root')[
-                                      'hOssHyp1'].values, uproot.open(os.environ['HYPERML_UTILS'] + "/absorption.root")['hOssAntiHyp1'].values]
-absorption_list_edges = [uproot.open(os.environ['HYPERML_UTILS'] + '/absorption.root')[
-                                     'hOssHyp1'].edges, uproot.open(os.environ['HYPERML_UTILS'] + "/absorption.root")['hOssAntiHyp1'].edges]
+absorption_list_values = [uproot.open(os.environ['HYPERML_UTILS'] + '/AbsorptionHe3.root')[
+                                      'hOssHyp1'].values, uproot.open(os.environ['HYPERML_UTILS'] + "/AbsorptionHe3.root")['hOssAntiHyp1'].values]
+absorption_list_edges = [uproot.open(os.environ['HYPERML_UTILS'] + '/AbsorptionHe3.root')[
+                                     'hOssHyp1'].edges, uproot.open(os.environ['HYPERML_UTILS'] + "/AbsorptionHe3.root")['hOssAntiHyp1'].edges]
 
 
 file_name = resultsSysDir + '/' + params['FILE_PREFIX'] + '_dist.root'

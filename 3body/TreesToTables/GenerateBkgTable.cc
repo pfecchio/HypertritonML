@@ -21,7 +21,7 @@ using namespace std;
 void GenerateBkgTable() {
   gRandom->SetSeed(42);
 
-  string dataDir  = getenv("HYPERML_DATA_3");
+  string dataDir  = getenv("HYPERML_TREES__3");
   string tableDir = getenv("HYPERML_TABLES_3");
 
   string inFileNameQ = "HyperTritonTreeBkg_18q.root";

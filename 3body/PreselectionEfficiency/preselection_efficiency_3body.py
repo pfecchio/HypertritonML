@@ -43,7 +43,7 @@ n_bins = 20
 pt_bin_width = float(10 / n_bins)
 
 # import environment
-input_file_path = os.environ['HYPERML_DATA_3']
+input_file_path = os.environ['HYPERML_TREES__3']
 
 # labels
 label_centrality = ['0-10', '10-30', '30-50', '50-90']

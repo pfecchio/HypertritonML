@@ -278,14 +278,36 @@ class ModelApplication:
         filename_sigma = sigma_path + "/sigma_array" + info_string + '.npy'
         return np.load(filename_sigma)
 
-    def apply_BDT_to_data(self, model_handler, cent_class, pt_range, ct_range, training_columns, application_columns):
+    def apply_BDT_to_data(self, cent_classes, pt_bins, ct_bins, training_columns, application_columns):
         print('\nApplying BDT to data: ...')
 
-        data_range = f'{ct_range[0]}<ct<{ct_range[1]} and {pt_range[0]}<pt<{pt_range[1]} and {cent_class[0]}<=centrality<{cent_class[1]}'
-        df_applied = self.df_data.query(data_range)
+        df_applied = pd.DataFrame()
+        
+        for cclass in cent_classes:
+            for ptbin in zip(pt_bins[:-1], pt_bins[1:]):
+                for ctbin in zip(ct_bins[:-1], ct_bins[1:]):
+                    info_string = '_{}{}_{}{}_{}{}'.format(cclass[0], cclass[1], ptbin[0], ptbin[1], ctbin[0], ctbin[1])
 
-        df_applied.insert(0, 'score', model_handler.predict(df_applied[training_columns]))
-        df_applied = df_applied[application_columns]
+                    filename_handler = handlers_path + '/model_handler' + info_string + split + '.pkl'
+                    filename_efficiencies = efficiencies_path + '/Eff_Score' + info_string + split + '.npy'
+
+                    model_handler = ModelHandler()
+                    model_handler.load_model_handler(filename_handler)
+
+                    eff_score_array = np.load(filename_efficiencies)
+                    tsd = eff_score_array[1][-1]
+
+                    data_range = f'{ctbin[0]}<ct<{ctbin[1]} and {ptbin[0]}<pt<{ptbin[1]} and {cclass[0]}<=centrality<{cclass[1]}'
+
+                    df_tmp = self.df_data.query(data_range)
+                    df_tmp.insert(0, 'score', model_handler.predict(df_tmp[training_columns]))
+
+                    df_tmp = df_tmp.query('score>@tsd')
+                    df_tmp = df_tmp.loc[:, application_columns]
+
+                    df_applied = df_applied.append(df_tmp, ignore_index=True, sort=False)
+
+                    print(df_applied.info(memory_usage='deep'))
 
         print('Application: Done!')
 

@@ -21,7 +21,7 @@ using namespace std;
 void GenerateDataTable() {
   gRandom->SetSeed(42);
 
-  string dataDir  = getenv("HYPERML_DATA_3");
+  string dataDir  = getenv("HYPERML_TREES__3");
   string tableDir = getenv("HYPERML_TABLES_3");
 
   string inFileNameQ = "HyperTritonTreeData_18q.root";

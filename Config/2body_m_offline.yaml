@@ -4,29 +4,28 @@ FILE_PREFIX: 'm_analysis_offline'
 
 CENTRALITY_CLASS:
   - [0, 90]
-CT_BINS: [0, 90]
-PT_BINS: [2, 3, 4, 5, 6, 8]
-# PT_BINS: [2, 8] 
+CT_BINS: [2, 4, 6, 8, 10, 14, 18, 23]
+# PT_BINS: [2, 3, 3.5, 4, 4.5, 5, 5.5, 6, 7, 8]
+PT_BINS: [2, 8]
 
 BKG_MODELS: ['expo', 'pol1', 'pol2']
 
-BDT_EFFICIENCY: [0.40, 0.90, 0.01] # min, max, step
+BDT_EFFICIENCY: [0.40, 0.99, 0.01] # min, max, step
 
 
 LARGE_DATA: True
 LOAD_APPLIED_DATA: False
 
 
-MC_PATH: $HYPERML_TABLES_2/2018/offline/pass3/SignalTable_20g7.root
-BKG_PATH: $HYPERML_TABLES_2/2018/offline/pass3/DataTable_18LS_pass3.root
-DATA_PATH: $HYPERML_TABLES_2/2018/offline/pass3/DataTable_18_pass3.root
-ANALYSIS_RESULTS_PATH: $HYPERML_TABLES_2/2018/offline/pass3/AnalysisResults_18_pass3.root
+MC_PATH: $HYPERML_TABLES_2/SignalTable_20g7.root
+BKG_PATH: $HYPERML_TABLES_2/DataTable_18LS.root
+DATA_PATH: $HYPERML_TABLES_2/DataTable_18.root
+ANALYSIS_RESULTS_PATH: $HYPERML_TABLES_2/AnalysisResults_18.root
 
 
 XGBOOST_PARAMS:
   # general parameters
-  silent: 1 # print message (useful to understand whats happening)
-  n_jobs: 8 # number of available threads
+  n_jobs: -1 # number of available threads
   # learning task parameters
   objective: binary:logistic
   random_state: 42

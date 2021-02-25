@@ -67,7 +67,7 @@ file_name = tables_dir + f'/applied_df_{FILE_PREFIX}.parquet.gzip'
 data_df = pd.read_parquet(file_name)
 
 # output file
-file_name = results_dir + f'/{FILE_PREFIX}_dist_new.root'
+file_name = results_dir + f'/{FILE_PREFIX}.root'
 output_file = ROOT.TFile(file_name, 'recreate')
 
 # preselection eff

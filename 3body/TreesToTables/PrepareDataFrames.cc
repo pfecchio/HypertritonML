@@ -15,7 +15,7 @@ void PrepareDataFrames(std::string dType = "data", std::string hypDataDir = "", 
   ROOT::EnableImplicitMT();
 
   if (hypDataDir == "")
-    hypDataDir = getenv("HYPERML_DATA_3");
+    hypDataDir = getenv("HYPERML_TREES__3");
   if (hypTableDir == "")
     hypTableDir = getenv("HYPERML_TABLES_3");
   

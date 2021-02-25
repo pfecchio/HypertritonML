@@ -59,14 +59,14 @@ template <typename T> double Distance3D(T v1, T v2) {
 }
 
 inline void getDirs2(char *&dataDir, char *&tableDir) {
-  dataDir  = getenv("HYPERML_DATA_2");
+  dataDir  = getenv("HYPERML_TREES__2");
   tableDir = getenv("HYPERML_TABLES_2");
   dataDir  = dataDir == NULL ? new char[2]{'.'} : dataDir;
   tableDir = tableDir == NULL ? new char[2]{'.'} : tableDir;
 }
 
 inline void getDirs3(char *&dataDir, char *&tableDir) {
-  dataDir  = getenv("HYPERML_DATA_3");
+  dataDir  = getenv("HYPERML_TREES__3");
   tableDir = getenv("HYPERML_TABLES_3");
   dataDir  = dataDir == NULL ? new char[2]{'.'} : dataDir;
   tableDir = tableDir == NULL ? new char[2]{'.'} : tableDir;

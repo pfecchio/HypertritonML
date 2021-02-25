@@ -19,7 +19,7 @@ using namespace std;
 void GenerateMCTable(bool reject = true) {
   gRandom->SetSeed(42);
 
-  string hypDataDir  = getenv("HYPERML_DATA_3");
+  string hypDataDir  = getenv("HYPERML_TREES__3");
   string hypTableDir = getenv("HYPERML_TABLES_3");
   string hypUtilsDir = getenv("HYPERML_UTILS");
 
@@ -38,7 +38,7 @@ void GenerateMCTable(bool reject = true) {
   string bwFileName = "BlastWaveFits.root";
   string bwFileArg  = hypUtilsDir + "/" + bwFileName;
 
-  // string absFileName = "absorption.root";
+  // string absFileName = "AbsorptionHe3.root";
   // string absFileArg  = hypUtilsDir + "/" + absFileName;
 
   // TFile absFile(absFileArg.data());

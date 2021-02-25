@@ -20,8 +20,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument('config', help='Path to the YAML configuration file')
 parser.add_argument('-split', '--split', help='Run with matter and anti-matter splitted', action='store_true')
 parser.add_argument('-s', '--significance', help='Use the BDTefficiency selection from the significance scan', action='store_true')
-parser.add_argument('-syst', '--systematics', help='Run systematic uncertanties estimation', action='store_true')
-parser.add_argument('-k', '--skipfits', help='Run systematic uncertanties estimation skipping invariant mass fits', action='store_true')
 args = parser.parse_args()
 
 with open(os.path.expandvars(args.config), 'r') as stream:
@@ -50,11 +48,6 @@ EFF_ARRAY = np.around(np.arange(EFF_MIN, EFF_MAX+EFF_STEP, EFF_STEP), 2)
 SPLIT_MODE = False
 SIGNIFICANCE_SCAN = args.significance
 
-SKIP_FITS = args.skipfits
-SYSTEMATICS = True if SKIP_FITS else args.systematics
-
-SYSTEMATICS_COUNTS = 100000
-
 FIX_EFF = 0.80 if not SIGNIFICANCE_SCAN else 0
 ###############################################################################
 
@@ -77,8 +70,8 @@ file_name = results_dir + f'/Efficiencies/{FILE_PREFIX}_sigscan.npy'
 sigscan_dict = np.load(file_name, allow_pickle=True).item()
 
 # output file
-file_name = results_dir + f'/{FILE_PREFIX}_blambda.root'
-output_file = ROOT.TFile(file_name, 'update' if SKIP_FITS else 'recreate')
+file_name = results_dir + f'/{FILE_PREFIX}_pt_spectrum.root'
+output_file = ROOT.TFile(file_name, 'recreate')
 ###############################################################################
 
 ###############################################################################
@@ -87,8 +80,8 @@ start_time = time.time()
 
 ###############################################################################
 # define support globals and methods for getting hypertriton counts
-MASS_H2 = {}
-MASS_BEST = {}
+COUNTS_H2 = {}
+COUNTS_BEST = {}
 
 MASS_SHIFT_H2 = {}
 MASS_SHIFT_BEST = {}
@@ -101,16 +94,12 @@ BANDWIDTH = 1.905
 for split in SPLIT_LIST:
     for model in BKG_MODELS:
         # initialize histos for the hypertriton counts vs ct vs BDT efficiency
-        if SKIP_FITS:
-            MASS_H2[model] = output_file.Get(f'mass_{model}')
-        else:
-            MASS_H2[model] = ROOT.TH2D(f'mass_{model}{split}', ';#it{p}_{T} (GeV/#it{c});BDT efficiency; m (MeV/c^{2})',
+        COUNTS_H2[model] = ROOT.TH2D(f'counts_{model}{split}', ';#it{p}_{T} (GeV/#it{c});BDT efficiency; counts',
             len(PT_BINS) - 1, np.array(PT_BINS, dtype='double'), len(EFF_ARRAY) - 1, np.array(EFF_ARRAY, dtype='double'))
-            MASS_BEST[model] = MASS_H2[model].ProjectionX(f'mass_best_{model}')
+        COUNTS_BEST[model] = COUNTS_H2[model].ProjectionX(f'counts_best_{model}')
 
-            MASS_SHIFT_H2[model] = MASS_H2[model].Clone(f'mass_shift_{model}{split}')
-            MASS_SHIFT_BEST[model] = MASS_BEST[model].Clone(f'mass_shift_best_{model}{split}')
-
+            # MASS_SHIFT_H2[model] = COUNTS_H2[model].Clone(f'mass_shift_{model}{split}')
+            # MASS_SHIFT_BEST[model] = COUNTS_BEST[model].Clone(f'mass_shift_best_{model}{split}')
 
 def get_eff_index(eff):
     idx = (eff - EFF_MIN + EFF_STEP) * 100
@@ -142,11 +131,11 @@ def fill_histo_best(histo, ptbin, entry, entry_error):
 
 
 def fill_mu(model, ptbin, eff, mass, mass_error):
-    fill_histo(MASS_H2[model], ptbin, eff, mass, mass_error)
+    fill_histo(COUNTS_H2[model], ptbin, eff, mass, mass_error)
     
 
 def fill_mu_best(model, ptbin, mass, mass_error):
-    fill_histo_best(MASS_BEST[model], ptbin, mass, mass_error)
+    fill_histo_best(COUNTS_BEST[model], ptbin, mass, mass_error)
 
 
 def fill_shift(model, ptbin, eff, shift, shift_error):
@@ -158,10 +147,10 @@ def fill_shift_best(model, ptbin, shift, shift_error):
 
 
 def get_measured_mass(bkg, ptbin, eff):
-    bin_idx = MASS_H2[bkg].FindBin((ptbin[0] + ptbin[1]) / 2, eff + 0.005)
+    bin_idx = COUNTS_H2[bkg].FindBin((ptbin[0] + ptbin[1]) / 2, eff + 0.005)
 
-    mass = MASS_H2[bkg].GetBinContent(bin_idx)
-    error = MASS_H2[bkg].GetBinError(bin_idx)
+    mass = COUNTS_H2[bkg].GetBinContent(bin_idx)
+    error = COUNTS_H2[bkg].GetBinError(bin_idx)
 
     return mass, error
     
@@ -177,12 +166,8 @@ syst_eff_ranges = [list(range(int(x * 100) - 10, int(x * 100) + 11)) for x in ef
 
 eff_best_it = iter(eff_best_array)
 
-
 # actual analysis
 for split in SPLIT_LIST:
-    if SKIP_FITS:
-        continue
-
     for ptbin in zip(PT_BINS[:-1], PT_BINS[1:]):
         score_dict = get_effscore_dict(ptbin)
 
@@ -196,9 +181,13 @@ for split in SPLIT_LIST:
 
         eff_best = next(eff_best_it)
         for eff in EFF_ARRAY:
+            if eff != eff_best:
+                continue
+
             # define global RooFit objects
             mass = ROOT.RooRealVar('m', 'm_{^{3}He+#pi}', 2.975, 3.01, 'GeV/c^{2}')
             mass.setVal(MC_MASS)
+            
             delta_mass = ROOT.RooRealVar('delta_m', '#Delta m', -0.005, 0.005, 'GeV/c^{2}')
             shift_mass = ROOT.RooAddition('shift_m', "m + #Delta m", ROOT.RooArgList(mass, delta_mass))
                
@@ -248,6 +237,17 @@ for split in SPLIT_LIST:
                 # compute chi2
                 chi2 = frame.chiSquare('model', 'data', fit_results.floatParsFinal().getSize())
 
+                # compute number of observed hypertritons
+                mass_set = ROOT.RooArgSet(mass)
+                mass_norm_set = ROOT.RooFit.NormSet(mass_set)
+
+                # mass.setRange('signal_region', mu.getVal() - 3*sigma.getVal(), mu.getVal() + 3*sigma.getVal())
+    
+                signal_integral = signal.createIntegral(mass_set, mass_norm_set, ROOT.RooFit.Range('signal_region'))
+
+                n_signal = n.getVal() * signal_integral.getVal() * roo_data_slice.sumEntries()
+                n_signal_error = n.getPropagatedError(fit_results) * signal_integral.getVal() * roo_data_slice.sumEntries()
+
                 # add info to plot
                 pinfo = ROOT.TPaveText(0.537, 0.474, 0.937, 0.875, 'NDC')
                 pinfo.SetBorderSize(0)
@@ -259,6 +259,7 @@ for split in SPLIT_LIST:
         
                 string_list.append('#chi^{2} / NDF ' + f'{chi2:.2f}')
                 string_list.append(f'#Delta m = {delta_mass.getVal()*1e6:.1f} #pm {delta_mass.getError()*1e6:.1f} keV')
+                string_list.append('N_{s} = ' + f'{n_signal} #pm {n_signal_error}')
 
                 for s in string_list:
                     pinfo.AddText(s)
@@ -266,82 +267,21 @@ for split in SPLIT_LIST:
                 frame.addObject(pinfo)
                 frame.Write()
 
-                fill_mu(model, ptbin, eff, shift_mass.getVal()*1000, (shift_mass.getPropagatedError(fit_results))*1000)
-                fill_shift(model, ptbin, eff, delta_mass.getVal()*1000, delta_mass.getError()*1000)
+                # fill_mu(model, ptbin, eff, shift_mass.getVal()*1000, (shift_mass.getPropagatedError(fit_results))*1000)
+                # fill_shift(model, ptbin, eff, delta_mass.getVal()*1000, delta_mass.getError()*1000)
                 if eff == eff_best:
-                    fill_mu_best(model, ptbin, shift_mass.getVal()*1000, (shift_mass.getPropagatedError(fit_results))*1000)
-                    fill_shift_best(model, ptbin, delta_mass.getVal()*1000, delta_mass.getError()*1000)
+                    fill_mu_best(model, ptbin, n_signal, n_signal_error)
+                    # fill_shift_best(model, ptbin, delta_mass.getVal()*1000, delta_mass.getError()*1000)
 
     output_file.cd()
+
     for model in BKG_MODELS:
-        MASS_H2[model].Write()
-        MASS_BEST[model].Write()
+        histo = COUNTS_BEST[model]
 
-        MASS_SHIFT_H2[model].Write()
-        MASS_SHIFT_BEST[model].Write()
+        for bin_idx in range(1, histo.GetNbinsX() + 1):
+            histo.SetBinContent(bin_idx, histo.GetBinContent(bin_idx) / histo.GetBinWidth(bin_idx))
 
-        hpu.mass_plot_makeup(MASS_BEST[model], model, PT_BINS, split)
-
-
-if SYSTEMATICS:
-    # systematics histos
-    blambda_dist = ROOT.TH1D(f'syst_blambda{split}', ';B_{#Lambda} MeV ;counts', 100, -0.5, 0.5)
-
-    tmp_mass = MASS_H2[BKG_MODELS[0]].ProjectionX('tmp_mass')
-
-    combinations = set()
-
-    for _ in range(SYSTEMATICS_COUNTS):
-        tmp_mass.Reset()
-
-        bkg_list = []
-        eff_list = []
-        bkg_idx_list = []
-        eff_idx_list = []
-
-        # loop over ptbins
-        for ptbin_idx in range(len(PT_BINS)-1):
-            # random bkg model
-            bkg_index = np.random.randint(0, len(BKG_MODELS))
-            bkg_idx_list.append(bkg_index)
-            bkg_list.append(BKG_MODELS[bkg_index])
-
-            # randon BDT efficiency in the defined range
-            eff = np.random.choice(syst_eff_ranges[ptbin_idx]) / 100
-            eff_list.append(eff)
-            eff_index = get_eff_index(eff)
-            eff_idx_list.append(eff_index)
-
-        # convert indexes into hash and if already sampled skip this combination
-        combo = ''.join(map(str, bkg_idx_list + eff_idx_list))
-        if combo in combinations:
-            continue
-
-        # if indexes are good measure B_{Lambda}
-        ptbin_idx = 1
-        pt_bins = list(zip(PT_BINS[:-1], PT_BINS[1:]))
-
-        mass_list = []
-
-        for model, eff in zip(bkg_list, eff_list):
-            ptbin = pt_bins[ptbin_idx - 1]
-
-            mass, mass_error = get_measured_mass(model, ptbin, eff)
-
-            tmp_mass.SetBinContent(ptbin_idx, mass)
-            tmp_mass.SetBinError(ptbin_idx, mass_error)
-
-            mass_list.append(mass)
-
-            ptbin_idx += 1
-
-        wmass, _ = hau.histo_weighted_mean(tmp_mass)
-        blambda = 1115.683 + 1875.61294257 - wmass
-
-        blambda_dist.Fill(blambda)
-        combinations.add(combo)
-
-    blambda_dist.Write()
+        histo.Write()
 
 ###############################################################################
 print(f'--- analysis time: {((time.time() - start_time) / 60):.2f} minutes ---')

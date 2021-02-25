@@ -55,7 +55,7 @@ HYPERPARAMS_RANGE = params['HYPERPARAMS_RANGE']
 BKG_MODELS = params['BKG_MODELS']
 
 EFF_MIN, EFF_MAX, EFF_STEP = params['BDT_EFFICIENCY']
-FIX_EFF_ARRAY = np.arange(EFF_MIN, EFF_MAX, EFF_STEP)
+EFF_ARRAY = np.around(np.arange(EFF_MIN, EFF_MAX+EFF_STEP, EFF_STEP), 2)
 
 TRAIN = args.train
 SPLIT_MODE = args.split
@@ -112,8 +112,8 @@ if TRAIN:
                     y_pred = model_handler.predict(data[2])
                     data[2].insert(0, 'score', y_pred)
                     eff, tsd = analysis_utils.bdt_efficiency_array(data[3], y_pred, n_points=1000)
-                    score_from_eff_array = analysis_utils.score_from_efficiency_array(data[3], y_pred, FIX_EFF_ARRAY)
-                    fixed_eff_array = np.vstack((FIX_EFF_ARRAY, score_from_eff_array))
+                    score_from_eff_array = analysis_utils.score_from_efficiency_array(data[3], y_pred, EFF_ARRAY)
+                    fixed_eff_array = np.vstack((EFF_ARRAY, score_from_eff_array))
 
                     ml_analysis.save_ML_analysis(model_handler, fixed_eff_array, cent_class=cclass, pt_range=ptbin, ct_range=ctbin, split=split)
                     ml_analysis.save_ML_plots(model_handler, data, [eff, tsd], cent_class=cclass, pt_range=ptbin, ct_range=ctbin, split=split)
@@ -126,9 +126,6 @@ if TRAIN:
 if APPLICATION:
     app_time = time.time()
 
-    file_name = results_dir + f'/{FILE_PREFIX}_results.root'
-    results_histos_file = ROOT.TFile(file_name, 'recreate')
-
     sigscan_results = {}    
 
     if (N_BODY==3):
@@ -136,70 +133,51 @@ if APPLICATION:
     else:
         application_columns = ['score', 'm', 'ct', 'pt', 'centrality', 'ArmenterosAlpha']
 
+    print('\n==================================================')
+    print('Application and signal extraction ...', end='\r')
+
+    compression_opts = dict(method='zip', archive_name='df.csv')
     for split in SPLIT_LIST:
         df_applied_mc = hau.get_applied_mc(signal_path, CENT_CLASSES, PT_BINS, CT_BINS, COLUMNS, application_columns, N_BODY, split)
-        df_applied_mc.to_parquet(os.path.dirname(signal_path) + f'/applied_mc_df_{FILE_PREFIX}.parquet.gzip', compression='gzip')
+        df_applied_mc.to_csv(os.path.dirname(signal_path) + f'/applied_mc_df_{FILE_PREFIX}.zip', index=False, compression=compression_opts)
 
-        if LARGE_DATA:
-            if LOAD_APPLIED_DATA:
-                df_applied = pd.read_parquet(os.path.dirname(data_path) + f'/applied_df_{FILE_PREFIX}.parquet.gzip')
-            else:
-                df_applied = hau.get_skimmed_large_data(data_path, CENT_CLASSES, PT_BINS, CT_BINS, COLUMNS, application_columns, N_BODY, split)
-                df_applied.to_parquet(os.path.dirname(data_path) + f'/applied_df_{FILE_PREFIX}.parquet.gzip', compression='gzip')
-
-            ml_application = ModelApplication(N_BODY, df_applied, analysis_res_path, CENT_CLASSES, split)
-
+        if LOAD_APPLIED_DATA:
+            df_applied = pd.read_parquet(os.path.dirname(data_path) + f'/applied_df_{FILE_PREFIX}.parquet.gzip')
         else:
-            ml_application = ModelApplication(N_BODY, data_path, analysis_res_path, CENT_CLASSES, split)
+            df_applied = hau.get_skimmed_data(data_path, CENT_CLASSES, PT_BINS, CT_BINS, COLUMNS, application_columns, N_BODY, split, LARGE_DATA)
+            df_applied.to_csv(os.path.dirname(data_path) + f'/applied_df_{FILE_PREFIX}.zip', index=False, compression=compression_opts)
+            
+        ml_application = ModelApplication(N_BODY, df_applied, analysis_res_path, CENT_CLASSES, split)
 
-        for cclass in CENT_CLASSES:
-            # create output structure
-            cent_dir_histos = results_histos_file.mkdir(f'{cclass[0]}-{cclass[1]}{split}')
+        print('Application and signal extraction: Done!\n')
+        
+        if SIGNIFICANCE_SCAN:
+            for cclass in CENT_CLASSES:
+                th2_efficiency = ml_application.load_preselection_efficiency(cclass, split, prefix=FILE_PREFIX)
 
-            th2_efficiency = ml_application.load_preselection_efficiency(cclass, split, prefix=FILE_PREFIX)
+                for ptbin in zip(PT_BINS[:-1], PT_BINS[1:]):
+                    ptbin_index = ml_application.presel_histo.GetXaxis().FindBin(0.5 * (ptbin[0] + ptbin[1]))
 
-            df_sign = pd.DataFrame()
+                    for ctbin in zip(CT_BINS[:-1], CT_BINS[1:]):
+                        ctbin_index = ml_application.presel_histo.GetYaxis().FindBin(0.5 * (ctbin[0] + ctbin[1]))
 
-            for ptbin in zip(PT_BINS[:-1], PT_BINS[1:]):
-                ptbin_index = ml_application.presel_histo.GetXaxis().FindBin(0.5 * (ptbin[0] + ptbin[1]))
+                        # mass_bins = 40 if ctbin[1] < 16 else 36
+                        mass_bins = 70
 
-                for ctbin in zip(CT_BINS[:-1], CT_BINS[1:]):
-                    ctbin_index = ml_application.presel_histo.GetYaxis().FindBin(0.5 * (ctbin[0] + ctbin[1]))
+                        presel_eff = ml_application.get_preselection_efficiency(ptbin_index, ctbin_index)
+                        eff_score_array, model_handler = ml_application.load_ML_analysis(cclass, ptbin, ctbin, split)
 
-                    print('\n==================================================')
-                    print('centrality:', cclass, ' ct:', ctbin, ' pT:', ptbin, split)
-                    print('Application and signal extraction ...', end='\r')
-                    # mass_bins = 40 if ctbin[1] < 16 else 36
-                    mass_bins = 80
-
-                    presel_eff = ml_application.get_preselection_efficiency(ptbin_index, ctbin_index)
-                    eff_score_array, model_handler = ml_application.load_ML_analysis(cclass, ptbin, ctbin, split)
-
-                    if LARGE_DATA:
                         data_slice = ml_application.get_data_slice(cclass, ptbin, ctbin, application_columns)
-                    else: 
-                        data_slice = ml_application.apply_BDT_to_data(model_handler, cclass, ptbin, ctbin, model_handler.get_training_columns(), application_columns)
 
-                    if SIGNIFICANCE_SCAN:
                         sigscan_eff, sigscan_tsd = ml_application.significance_scan(data_slice, presel_eff, eff_score_array, cclass, ptbin, ctbin, split, mass_bins)
                         eff_score_array = np.append(eff_score_array, [[sigscan_eff], [sigscan_tsd]], axis=1)
 
                         sigscan_results[f'ct{ctbin[0]}{ctbin[1]}pt{ptbin[0]}{ptbin[1]}{split}'] = [sigscan_eff, sigscan_tsd]
 
-                    print('Application and signal extraction: Done!\n')
-
-            cent_dir_histos.cd()
-            th2_efficiency.Write()
-
-    try:
-        sigscan_results = np.asarray(sigscan_results)
-        filename_sigscan = results_dir + f'/Efficiencies/{FILE_PREFIX}_sigscan.npy'
-        np.save(filename_sigscan, sigscan_results)
-    except:
-        print('No sigscan, no sigscan results!')
+            sigscan_results = np.asarray(sigscan_results)
+            filename_sigscan = results_dir + f'/Efficiencies/{FILE_PREFIX}_sigscan.npy'
+            np.save(filename_sigscan, sigscan_results)
 
     print (f'--- ML application time: {((time.time() - app_time) / 60):.2f} minutes ---')
-    
-    results_histos_file.Close()
 
     print(f'--- analysis time: {((time.time() - start_time) / 60):.2f} minutes ---')

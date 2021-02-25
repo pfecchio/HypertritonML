@@ -32,7 +32,7 @@ void PrintProgress(double percentage) {
 }
 
 void GenerateDataTable() {
-  string hypDataDir  = getenv("HYPERML_DATA_3");
+  string hypDataDir  = getenv("HYPERML_TREES__3");
   string hypTableDir = getenv("HYPERML_TABLES_3");
   string hypUtilsDir = getenv("HYPERML_UTILS");
 

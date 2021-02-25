@@ -10,7 +10,7 @@ import aghast
 gROOT.LoadMacro('../TreeToTables/GenerateTableFromMC.cc')
 from ROOT import GenerateTableFromMC
 
-input_dir = os.environ['HYPERML_DATA_2']
+input_dir = os.environ['HYPERML_TREES__2']
 output_dir = os.environ['HYPERML_TABLES_2']
 
 ct_bins = np.array([0,1,2,4,6,8,10,14,18,23,35], 'd')
