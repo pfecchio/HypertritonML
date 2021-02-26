@@ -44,6 +44,3 @@ export HYPERML_RESULTS_${N_BODY}="$HYPERML_CODE/Results/${N_BODY}Body"
 export HYPERML_EFFICIENCIES_${N_BODY}="$HYPERML_RESULTS/${N_BODY}Body/Efficiencies"
 
 export HYPERML_UTILS="$HYPERML_CODE/Utils"
-
-# BlastWaveFits.root is required
-[ ! -f $HYPERML_UTILS/BlastWaveFits.root ] && echo "$HYPERML_UTILS/BlastWaveFits.root not found, but required!" 

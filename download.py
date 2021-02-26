@@ -26,9 +26,8 @@ PASS = args['pass']
 TABLES = args['tables']
 TREES = args['trees']
 UTILS = args['utils']
-V0_FINDER = ''
-if args['vzero'] == 'otf':
-    V0_FINDER = '_otf'
+V0_FINDER = args['vzero'] if 'vzero' in args else 'off'
+MC = '20g7' if PASS == 3 else '19d2'
 
 if NBODY not in [2, 3, None]:
     print('2 or 3 body decay only in ALICE.'), exit()
@@ -92,13 +91,13 @@ if NBODY == 2:
         for source, dest in download_2body_utils:
             scp_download(source, dest)
     
-    if TREES:
-        for source, dest in download_2body_utils:
-            scp_download(source, dest)
+    # if TREES:
+    #     for source, dest in download_2body_utils:
+    #         scp_download(source, dest)
 
-    if TABLES:
-        for source, dest in download_2body_utils:
-            scp_download(source, dest)
+    # if TABLES:
+    #     for source, dest in download_2body_utils:
+    #         scp_download(source, dest)
 
 
 # if NBODY == 3:
