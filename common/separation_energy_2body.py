@@ -104,8 +104,8 @@ for split in SPLIT_LIST:
         if SKIP_FITS:
             MASS_H2[model] = output_file.Get(f'mass_{model}')
         else:
-            MASS_H2[model] = ROOT.TH2D(f'mass_{model}{split}', ';#it{p}_{T} (GeV/#it{c});BDT efficiency; m (MeV/c^{2})',
-            len(PT_BINS) - 1, np.array(PT_BINS, dtype='double'), len(EFF_ARRAY) - 1, np.array(EFF_ARRAY, dtype='double'))
+            MASS_H2[model] = ROOT.TH2D(f'mass_{model}{split}', ';#it{c}t cm;BDT efficiency; m (MeV/c^{2})',
+            len(CT_BINS) - 1, np.array(CT_BINS, dtype='double'), len(EFF_ARRAY) - 1, np.array(EFF_ARRAY, dtype='double'))
             MASS_BEST[model] = MASS_H2[model].ProjectionX(f'mass_best_{model}')
 
             MASS_SHIFT_H2[model] = MASS_H2[model].Clone(f'mass_shift_{model}{split}')
@@ -122,7 +122,7 @@ def get_eff_index(eff):
 
 
 def get_effscore_dict(ptbin):
-    info_string = f'090_{ptbin[0]}{ptbin[1]}_090'
+    info_string = f'090_210_{ptbin[0]}{ptbin[1]}'
     file_name = efficiency_dir + f'/Eff_Score_{info_string}.npy'
 
     return {round(e[0], 2): e[1] for e in np.load(file_name).T}
@@ -168,34 +168,35 @@ def get_measured_mass(bkg, ptbin, eff):
 
 # significance-scan/fixed efficiencies switch
 if not SIGNIFICANCE_SCAN:
-    eff_best_array = np.full(len(PT_BINS) - 1, FIX_EFF)
+    eff_best_array = np.full(len(CT_BINS) - 1, FIX_EFF)
 else:
-    eff_best_array = [round(sigscan_dict[f'ct090pt{ptbin[0]}{ptbin[1]}'][0], 2) for ptbin in zip(PT_BINS[:-1], PT_BINS[1:])]
+    eff_best_array = [round(sigscan_dict[f'ct{ptbin[0]}{ptbin[1]}pt210'][0], 2) for ptbin in zip(CT_BINS[:-1], CT_BINS[1:])]
 
 # efficiency ranges for sampling the systematics
-syst_eff_ranges = [list(range(int(x * 100) - 10, int(x * 100) + 11)) for x in eff_best_array]
+syst_eff_ranges = np.asarray([list(range(int(x * 100) - 10, int(x * 100) + 11)) for x in eff_best_array]) / 100
 
 eff_best_it = iter(eff_best_array)
-
+eff_range_it = iter(syst_eff_ranges)
 
 # actual analysis
 for split in SPLIT_LIST:
     if SKIP_FITS:
         continue
 
-    for ptbin in zip(PT_BINS[:-1], PT_BINS[1:]):
+    for ptbin in zip(CT_BINS[:-1], CT_BINS[1:]):
         score_dict = get_effscore_dict(ptbin)
 
         # get data slice for this ct bin
-        data_slice = data_df.query('@ptbin[0]<pt<@ptbin[1]')
-        mc_slice = mc_df.query('@ptbin[0]<pt<@ptbin[1]')
+        data_slice = data_df.query('@ptbin[0]<ct<@ptbin[1]')
+        mc_slice = mc_df.query('@ptbin[0]<ct<@ptbin[1]')
 
-        subdir_name = f'pt{ptbin[0]}{ptbin[1]}'
+        subdir_name = f'ct{ptbin[0]}{ptbin[1]}'
         pt_dir = output_file.mkdir(subdir_name)
         pt_dir.cd()
 
         eff_best = next(eff_best_it)
-        for eff in EFF_ARRAY:
+        eff_range = next(eff_range_it)
+        for eff in eff_range:
             # define global RooFit objects
             mass = ROOT.RooRealVar('m', 'm_{^{3}He+#pi}', 2.975, 3.01, 'GeV/c^{2}')
             mass.setVal(MC_MASS)
@@ -235,7 +236,7 @@ for split in SPLIT_LIST:
 
                 # define the fit funciton and perform the actual fit
                 fit_function = ROOT.RooAddPdf(f'{model}_gaus', 'signal + background', ROOT.RooArgList(signal, background), ROOT.RooArgList(n))
-                fit_results = fit_function.fitTo(roo_data_slice, ROOT.RooFit.Range(2.975, 3.01), ROOT.RooFit.NumCPU(8), ROOT.RooFit.Save())
+                fit_results = fit_function.fitTo(roo_data_slice, ROOT.RooFit.Range(2.975, 3.01), ROOT.RooFit.NumCPU(32), ROOT.RooFit.Save())
 
                 frame = mass.frame(140)
                 frame.SetName(f'eff{eff:.2f}_{model}')
@@ -280,8 +281,8 @@ for split in SPLIT_LIST:
         MASS_SHIFT_H2[model].Write()
         MASS_SHIFT_BEST[model].Write()
 
-        hpu.mass_plot_makeup(MASS_BEST[model], model, PT_BINS, split)
-
+        hpu.mass_plot_makeup(MASS_BEST[model], model, CT_BINS, split)
+        
 
 if SYSTEMATICS:
     # systematics histos
@@ -300,14 +301,14 @@ if SYSTEMATICS:
         eff_idx_list = []
 
         # loop over ptbins
-        for ptbin_idx in range(len(PT_BINS)-1):
+        for ptbin_idx in range(len(CT_BINS)-1):
             # random bkg model
             bkg_index = np.random.randint(0, len(BKG_MODELS))
             bkg_idx_list.append(bkg_index)
             bkg_list.append(BKG_MODELS[bkg_index])
 
             # randon BDT efficiency in the defined range
-            eff = np.random.choice(syst_eff_ranges[ptbin_idx]) / 100
+            eff = np.random.choice(syst_eff_ranges[ptbin_idx])
             eff_list.append(eff)
             eff_index = get_eff_index(eff)
             eff_idx_list.append(eff_index)
@@ -319,7 +320,7 @@ if SYSTEMATICS:
 
         # if indexes are good measure B_{Lambda}
         ptbin_idx = 1
-        pt_bins = list(zip(PT_BINS[:-1], PT_BINS[1:]))
+        pt_bins = list(zip(CT_BINS[:-1], CT_BINS[1:]))
 
         mass_list = []
 
@@ -335,10 +336,11 @@ if SYSTEMATICS:
 
             ptbin_idx += 1
 
-        wmass, _ = hau.histo_weighted_mean(tmp_mass)
-        blambda = 1115.683 + 1875.61294257 - wmass
+        mass, _, chi2red = hau.b_form_histo(tmp_mass)
+        blambda = 1115.683 + 1875.61294257 - mass
 
-        blambda_dist.Fill(blambda)
+        if chi2red < 3:
+            blambda_dist.Fill(blambda)
         combinations.add(combo)
 
     blambda_dist.Write()

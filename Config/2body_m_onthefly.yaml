@@ -25,7 +25,7 @@ ANALYSIS_RESULTS_PATH: $HYPERML_TABLES_2/2018/onthefly/AnalysisResults_18_pass3_
 
 XGBOOST_PARAMS:
   # general parameters
-  n_jobs: 8 # number of available threads
+  n_jobs: 32 # number of available threads
   # learning task parameters
   objective: binary:logistic
   random_state: 42

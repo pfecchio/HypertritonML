@@ -4,18 +4,18 @@ FILE_PREFIX: 'ct_analysis'
 
 CENTRALITY_CLASS:
   - [0, 90]
-CT_BINS: [0, 1, 2, 4, 6, 8, 10, 14, 18, 23, 35]
+CT_BINS: [0, 2, 4, 6, 8, 10, 14, 18, 23, 35]
 PT_BINS: [2, 10]
 
 BKG_MODELS: ['expo', 'pol1', 'pol2']
 
-BDT_EFFICIENCY: [0.20, 1., 0.01] ##min, max ,step
+BDT_EFFICIENCY: [0.20, 0.99, 0.01] ##min, max ,step
 
 
-MC_PATH: $HYPERML_TABLES_2/2018/offline/pass3/SignalTable_20g7.root
-BKG_PATH: $HYPERML_TABLES_2/2018/offline/pass3/DataTable_18LS_pass3.root
-DATA_PATH: $HYPERML_TABLES_2/2018/offline/pass3/DataTable_18_pass3.root
-ANALYSIS_RESULTS_PATH: $HYPERML_TABLES_2/2018/offline/pass3/AnalysisResults_18_pass3.root
+MC_PATH: $HYPERML_TABLES_2/SignalTable_20g7.root
+BKG_PATH: $HYPERML_TABLES_2/DataTable_18LS.root
+DATA_PATH: $HYPERML_TABLES_2/DataTable_18.root
+ANALYSIS_RESULTS_PATH: $HYPERML_TABLES_2/AnalysisResults_18.root
 
 
 XGBOOST_PARAMS:

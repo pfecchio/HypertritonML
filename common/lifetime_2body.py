@@ -252,9 +252,9 @@ else:
 
 # efficiency ranges for sampling the systematics
 syst_eff_ranges = [list(range(int(x * 100) - 10, int(x * 100) + 11)) for x in eff_best_array]
-# syst_eff_ranges[-1] = syst_eff_ranges[-1][5:-5]
 
 eff_best_it = iter(eff_best_array)
+eff_range_it = iter(syst_eff_ranges)
 
 # actual analysis
 for split in SPLIT_LIST:
@@ -270,7 +270,8 @@ for split in SPLIT_LIST:
         ct_dir.cd()
 
         eff_best = next(eff_best_it)
-        for eff in EFF_ARRAY:
+        eff_range = next(eff_range_it)
+        for eff in eff_range:
             # define global RooFit objects
             mass = ROOT.RooRealVar('m', 'm_{^{3}He+#pi}', 2.960, 3.040, 'GeV/c^{2}')
                
