@@ -72,7 +72,7 @@ def get_skimmed_data(data_path, cent_classes, pt_bins, ct_bins, training_columns
         executor = ThreadPoolExecutor()
         data_iterator = uproot.pandas.iterate(data_path, 'DataTable', executor=executor)
     else:
-        data_iterator = [uproot.open(data_filename)['DataTable'].pandas.df()]
+        data_iterator = [uproot.open(data_path)['DataTable'].pandas.df()]
 
     results = []
     for data in data_iterator:

@@ -65,12 +65,12 @@ tables_dir = os.path.dirname(DATA_PATH)
 efficiency_dir = os.environ['HYPERML_EFFICIENCIES_{}'.format(params['NBODY'])]
 
 # input data file
-file_name = tables_dir + f'/applied_df_{FILE_PREFIX}.zip'
-data_df = pd.read_csv(file_name, compression='zip')
+file_name = tables_dir + f'/applied_df_{FILE_PREFIX}.parquet.gzip'
+data_df = pd.read_parquet(file_name, engine='fastparquet')
 
 # mc file
-file_name = tables_dir + f'/applied_mc_df_{FILE_PREFIX}.zip'
-mc_df = pd.read_csv(file_name, compression='zip')
+file_name = tables_dir + f'/applied_mc_df_{FILE_PREFIX}.parquet.gzip'
+mc_df = pd.read_parquet(file_name, engine='fastparquet')
 
 # significance scan output
 file_name = results_dir + f'/Efficiencies/{FILE_PREFIX}_sigscan.npy'
@@ -102,11 +102,12 @@ for split in SPLIT_LIST:
     for model in BKG_MODELS:
         # initialize histos for the hypertriton counts vs ct vs BDT efficiency
         if SKIP_FITS:
-            MASS_H2[model] = output_file.Get(f'mass_{model}')
+            MASS_H2[model] = output_file.Get(f'mass_{model}{split}')
+            
         else:
             MASS_H2[model] = ROOT.TH2D(f'mass_{model}{split}', ';#it{c}t cm;BDT efficiency; m (MeV/c^{2})',
             len(CT_BINS) - 1, np.array(CT_BINS, dtype='double'), len(EFF_ARRAY) - 1, np.array(EFF_ARRAY, dtype='double'))
-            MASS_BEST[model] = MASS_H2[model].ProjectionX(f'mass_best_{model}')
+            MASS_BEST[model] = MASS_H2[model].ProjectionX(f'mass_best_{model}{split}')
 
             MASS_SHIFT_H2[model] = MASS_H2[model].Clone(f'mass_shift_{model}{split}')
             MASS_SHIFT_BEST[model] = MASS_BEST[model].Clone(f'mass_shift_best_{model}{split}')
@@ -114,7 +115,6 @@ for split in SPLIT_LIST:
 
 def get_eff_index(eff):
     idx = (eff - EFF_MIN + EFF_STEP) * 100
-
     if isinstance(eff, np.ndarray):
         return idx.astype(int)
 
@@ -158,7 +158,7 @@ def fill_shift_best(model, ptbin, shift, shift_error):
 
 
 def get_measured_mass(bkg, ptbin, eff):
-    bin_idx = MASS_H2[bkg].FindBin((ptbin[0] + ptbin[1]) / 2, eff + 0.005)
+    bin_idx = MASS_H2[bkg].FindBin((ptbin[0] + ptbin[1]) / 2, round(eff + 0.005, 3))
 
     mass = MASS_H2[bkg].GetBinContent(bin_idx)
     error = MASS_H2[bkg].GetBinError(bin_idx)
@@ -216,10 +216,10 @@ for split in SPLIT_LIST:
                 signal = ROOT.RooKeysPdf('signal', 'signal', shift_mass, mass, roo_mc_slice, ROOT.RooKeysPdf.NoMirror, BANDWIDTH)
 
                 # define background parameters
-                slope = ROOT.RooRealVar('slope', 'exponential slope', -100., 100)
+                slope = ROOT.RooRealVar('slope', 'exponential slope', -100., 100.)
 
-                c0 = ROOT.RooRealVar('c0', 'constant c0', -1, 1)
-                c1 = ROOT.RooRealVar('c1', 'constant c1', -1, 1)
+                c0 = ROOT.RooRealVar('c0', 'constant c0', -1., 1.)
+                c1 = ROOT.RooRealVar('c1', 'constant c1', -1., 1.)
 
                 # define background component depending on background model required
                 if model == 'pol1':
@@ -238,7 +238,7 @@ for split in SPLIT_LIST:
                 fit_function = ROOT.RooAddPdf(f'{model}_gaus', 'signal + background', ROOT.RooArgList(signal, background), ROOT.RooArgList(n))
                 fit_results = fit_function.fitTo(roo_data_slice, ROOT.RooFit.Range(2.975, 3.01), ROOT.RooFit.NumCPU(32), ROOT.RooFit.Save())
 
-                frame = mass.frame(140)
+                frame = mass.frame(60)
                 frame.SetName(f'eff{eff:.2f}_{model}')
 
                 roo_data_slice.plotOn(frame, ROOT.RooFit.Name('data'))

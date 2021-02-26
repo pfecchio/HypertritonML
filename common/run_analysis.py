@@ -140,8 +140,8 @@ if APPLICATION:
 
 
         if LOAD_APPLIED_DATA:
-            df_applied = pd.read_parquet(os.path.dirname(data_path) + f'/applied_df_{FILE_PREFIX}.parquet.gzip')
-            df_applied_mc = pd.read_parquet(os.path.dirname(signal_path) + f'/applied_mc_df_{FILE_PREFIX}.parquet.gzip')
+            df_applied = pd.read_parquet(os.path.dirname(data_path) + f'/applied_df_{FILE_PREFIX}.parquet.gzip', engine='fastparquet')
+            df_applied_mc = pd.read_parquet(os.path.dirname(signal_path) + f'/applied_mc_df_{FILE_PREFIX}.parquet.gzip', engine='fastparquet')
         else:
             df_applied = hau.get_skimmed_data(data_path, CENT_CLASSES, PT_BINS, CT_BINS, COLUMNS, application_columns, N_BODY, split, LARGE_DATA)
             df_applied.to_parquet(os.path.dirname(data_path) + f'/applied_df_{FILE_PREFIX}.parquet.gzip', compression='gzip')

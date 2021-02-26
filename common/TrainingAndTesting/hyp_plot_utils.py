@@ -261,9 +261,9 @@ def mass_plot_makeup(histo, model, ptbin, split):
 
     canvas = ROOT.TCanvas(f'hyp_mass_{model}{split}')
             
-    pad_range = [2990.85, 2992.15]
+    pad_range = [2990.65, 2992.55]
     label = 'm_{ {}^{3}_{#bar{#Lambda}} #bar{H}}' if split is '_antimatter' else 'm_{ {}^{3}_{#Lambda}H}'
-    frame = ROOT.gPad.DrawFrame(ptbin[0], pad_range[0], ptbin[-1], pad_range[1], ';#it{c}t (cm);' + label + ' [ MeV/#it{c}^{2} ]')
+    frame = ROOT.gPad.DrawFrame(ptbin[0], pad_range[0], ptbin[-1], pad_range[1], ';#it{c}t (cm);' + label + ' ( MeV/#it{c}^{2} )')
     frame.GetYaxis().SetTitleSize(22)
     frame.GetYaxis().SetTitleOffset(1.4)
      
@@ -277,6 +277,7 @@ def mass_plot_makeup(histo, model, ptbin, split):
     string_list = []
     string_list.append('#bf{ALICE Internal}')
     string_list.append('Pb-Pb  #sqrt{#it{s}_{NN}} = 5.02 TeV,  0-90%')
+    string_list.append(label + f'{mass:.3f} #pm {mass_error:.3f} MeV')
     string_list.append('B_{#Lambda}'+' = {:.3f} #pm {:.3f} '.format(round(blambda, 3), round(mass_error, 3)) + 'MeV')
         
     for s in string_list:
