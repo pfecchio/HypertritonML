@@ -136,16 +136,18 @@ if APPLICATION:
     print('\n==================================================')
     print('Application and signal extraction ...', end='\r')
 
-    compression_opts = dict(method='zip', archive_name='df.csv')
     for split in SPLIT_LIST:
-        df_applied_mc = hau.get_applied_mc(signal_path, CENT_CLASSES, PT_BINS, CT_BINS, COLUMNS, application_columns, N_BODY, split)
-        df_applied_mc.to_csv(os.path.dirname(signal_path) + f'/applied_mc_df_{FILE_PREFIX}.zip', index=False, compression=compression_opts)
+
 
         if LOAD_APPLIED_DATA:
             df_applied = pd.read_parquet(os.path.dirname(data_path) + f'/applied_df_{FILE_PREFIX}.parquet.gzip')
+            df_applied_mc = pd.read_parquet(os.path.dirname(signal_path) + f'/applied_mc_df_{FILE_PREFIX}.parquet.gzip')
         else:
             df_applied = hau.get_skimmed_data(data_path, CENT_CLASSES, PT_BINS, CT_BINS, COLUMNS, application_columns, N_BODY, split, LARGE_DATA)
-            df_applied.to_csv(os.path.dirname(data_path) + f'/applied_df_{FILE_PREFIX}.zip', index=False, compression=compression_opts)
+            df_applied.to_parquet(os.path.dirname(data_path) + f'/applied_df_{FILE_PREFIX}.parquet.gzip', compression='gzip')
+
+            df_applied_mc = hau.get_applied_mc(signal_path, CENT_CLASSES, PT_BINS, CT_BINS, COLUMNS, application_columns, N_BODY, split)
+            df_applied_mc.to_parquet(os.path.dirname(signal_path) + f'/applied_mc_df_{FILE_PREFIX}.parquet.gzip', compression='gzip')
             
         ml_application = ModelApplication(N_BODY, df_applied, analysis_res_path, CENT_CLASSES, split)
 
@@ -161,7 +163,6 @@ if APPLICATION:
                     for ctbin in zip(CT_BINS[:-1], CT_BINS[1:]):
                         ctbin_index = ml_application.presel_histo.GetYaxis().FindBin(0.5 * (ctbin[0] + ctbin[1]))
 
-                        # mass_bins = 40 if ctbin[1] < 16 else 36
                         mass_bins = 70
 
                         presel_eff = ml_application.get_preselection_efficiency(ptbin_index, ctbin_index)
