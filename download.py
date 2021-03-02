@@ -4,8 +4,12 @@ import os
 from pathlib import Path 
 
 def scp_download(origin, destination):
-    if not os.path.exists(destination):
-        print(f'Downloading "{Path(origin).name}" into "{destination}"')
+    dest_path = Path(destination)
+    if dest_path.exists():
+        print(f'"{dest_path.name}" already there, not downloading it again')
+    else:
+        print(f'Downloading "{Path(origin).name}" into "{dest_path.absolute()}"')
+        dest_path.parent.mkdir(parents=True, exist_ok=True)
         os.system(f'scp {origin} {destination}')
 
 ################################################################################
@@ -26,7 +30,7 @@ PASS = args['pass']
 TABLES = args['tables']
 TREES = args['trees']
 UTILS = args['utils']
-V0_FINDER = args['vzero'] if 'vzero' in args else 'off'
+V0_FINDER = args['vzero'] if args['vzero'] is not None else 'off'
 MC = '20g7' if PASS == 3 else '19d2'
 
 if NBODY not in [2, 3, None]:
@@ -46,10 +50,12 @@ if not TREES and not TABLES:
     TABLES = True
 
 if NBODY is 2:
-    if args['vzero'] not in ['otf', 'off']:
+    if V0_FINDER not in ['otf', 'off']:
         print('V0 finder option not valid.'), exit()
     if args['vzero'] is None:
         print('V0 finder not selected, setting default "offline".')
+    if V0_FINDER is 'off':
+        V0_FINDER = ''
 
 MC = '20g7' if PASS == 3 else '19d2'
 
@@ -67,17 +73,17 @@ download_2body_trees = [[f'lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/Hy
                         os.environ['HYPERML_TREES_2'] + f'/HyperTritonTree_18rLS_pass{PASS}.root']]
 
 download_2body_tables = [[f'lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/Tables/DataTable_18_pass{PASS}{V0_FINDER}.root',
-                        os.environ['HYPERML_TABLES_2'] + f'DataTable_18_pass{PASS}{V0_FINDER}.root'],
+                        os.environ['HYPERML_TABLES_2'] + f'/DataTable_18_pass{PASS}{V0_FINDER}.root'],
                         [f'lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/Tables/DataTable_18LS_pass{PASS}{V0_FINDER}.root',
-                        os.environ['HYPERML_TABLES_2'] + f'DataTable_18LS_pass{PASS}{V0_FINDER}.root'],
-                        [f'lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/Tables/SignalTable_{MC{V0_FINDER}.root',
-                        os.environ['HYPERML_TABLES_2'] + f'SignalTable_{MC}{V0_FINDER}.root']]
+                        os.environ['HYPERML_TABLES_2'] + f'/DataTable_18LS_pass{PASS}{V0_FINDER}.root'],
+                        [f'lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/Tables/SignalTable_{MC}{V0_FINDER}.root',
+                        os.environ['HYPERML_TABLES_2'] + f'/SignalTable_{MC}{V0_FINDER}.root']]
 
 download_2body_utils = [['lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/Utils/BlastWaveFits.root',
                         os.environ['HYPERML_UTILS'] + f'/BlastWaveFit.root'],
                         ['lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/Utils/He3TPCCalibration.root',
                         os.environ['HYPERML_UTILS'] + f'/He3TPCCalibration.root'],
-                        ['lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/Utils/AbsorptionHe3.root',
+                        ['lxplus.cern.ch:/eos/user/h/hypertriton/trees/2Body/Utils/absorption.root',
                         os.environ['HYPERML_UTILS'] + f'/AbsorptionHe3.root']]
 
 download_3body_trees = []
@@ -91,13 +97,13 @@ if NBODY == 2:
         for source, dest in download_2body_utils:
             scp_download(source, dest)
     
-    # if TREES:
-    #     for source, dest in download_2body_utils:
-    #         scp_download(source, dest)
+    if TREES:
+        for source, dest in download_2body_trees:
+            scp_download(source, dest)
 
-    # if TABLES:
-    #     for source, dest in download_2body_utils:
-    #         scp_download(source, dest)
+    if TABLES:
+        for source, dest in download_2body_tables:
+            scp_download(source, dest)
 
 
 # if NBODY == 3:
