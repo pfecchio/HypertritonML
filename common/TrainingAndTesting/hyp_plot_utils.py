@@ -175,10 +175,7 @@ def plot_significance_scan(
     plt.close()
 
 
-def plot_confusion_matrix(y_true, df, mode, score,
-                          normalize=False,
-                          title=None,
-                          cmap=plt.cm.Blues, fig_name='confusion.pdf'):
+def plot_confusion_matrix(y_true, df, mode, score, normalize=False, title=None, cmap=plt.cm.Blues, fig_name='confusion.pdf'):
     """
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
@@ -253,7 +250,9 @@ def mass_plot_makeup(histo, model, ptbin, split):
     mass_low = mass - mass_error
     mass_up = mass + mass_error
 
-    print(f'B_lambda = {blambda:.3f} +- {mass_error:.3f}, chi2 = {pol0.GetChisquare()/pol0.GetNDF():.3f}')
+    chi2_red = pol0.GetChisquare()/pol0.GetNDF()
+
+    print(f'B_lambda = {blambda:.3f} +- {mass_error:.3f}, chi2 = {chi2_red:.3f}')
 
     histo.SetMarkerStyle(20)
     histo.SetMarkerColor(kBlueC)
@@ -267,7 +266,7 @@ def mass_plot_makeup(histo, model, ptbin, split):
     frame.GetYaxis().SetTitleSize(22)
     frame.GetYaxis().SetTitleOffset(1.4)
      
-    pinfo = ROOT.TPaveText(0.142, 0.652, 0.521, 0.849, 'NDC')
+    pinfo = ROOT.TPaveText(0.142, 0.6, 0.520, 0.850, 'NDC')
     pinfo.SetBorderSize(0)
     pinfo.SetFillStyle(0)
     pinfo.SetTextAlign(11)
@@ -277,8 +276,9 @@ def mass_plot_makeup(histo, model, ptbin, split):
     string_list = []
     string_list.append('#bf{ALICE Internal}')
     string_list.append('Pb-Pb  #sqrt{#it{s}_{NN}} = 5.02 TeV,  0-90%')
-    string_list.append(label + f'{mass:.3f} #pm {mass_error:.3f} MeV')
-    string_list.append('B_{#Lambda}'+' = {:.3f} #pm {:.3f} '.format(round(blambda, 3), round(mass_error, 3)) + 'MeV')
+    string_list.append(label + f' = {mass:.3f} #pm {mass_error:.3f} MeV')
+    string_list.append('B_{#Lambda}' + ' = {:.3f} #pm {:.3f} '.format(round(blambda, 3), round(mass_error, 3)) + 'MeV')
+    string_list.append('#chi^{2} / n.d.f. = ' + f'{chi2_red:.3f}')
         
     for s in string_list:
         pinfo.AddText(s)
@@ -299,7 +299,7 @@ def mass_plot_makeup(histo, model, ptbin, split):
     pinfo.Draw('x0same')
     histo.Draw('ex0same')
     canvas.Write()
-    # canvas.SaveAs(f'mass_{model}.pdf')
+    canvas.SaveAs(f'mass_{model}.pdf')
 
 
 def sigma_plot_makeup(histo, model, ptbin, split):

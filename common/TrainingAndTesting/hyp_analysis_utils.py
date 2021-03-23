@@ -537,6 +537,9 @@ def b_form_histo(histo):
     mass = 1115.683 + 1875.61294257 - blambda
     mass_error = pol0.GetParError(0)
 
-    chi2red = pol0.GetChisquare()/pol0.GetNDF()
+    if pol0.GetNDF() == 0:
+        chi2red = 100
+    else:
+        chi2red = pol0.GetChisquare()/pol0.GetNDF()
 
     return mass, mass_error, chi2red
