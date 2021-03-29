@@ -213,7 +213,7 @@ for split in SPLIT_LIST:
             # mc slice for the kde
             mc_array = np.array(mc_slice.query('score>@tsd')['m'].values, dtype=np.float64)
             np.random.shuffle(mc_array)
-            roo_mc_slice = hau.ndarray2roo(mc_array if len(mc_array) > 5e4 else mc_array[:50000], mass)
+            roo_mc_slice = hau.ndarray2roo(mc_array if len(mc_array) < 5e4 else mc_array[:50000], mass)
 
             # kde for the signal component
             signal = ROOT.RooKeysPdf('signal', 'signal', shift_mass, mass, roo_mc_slice, ROOT.RooKeysPdf.NoMirror, 2.)
@@ -244,6 +244,7 @@ for split in SPLIT_LIST:
 
             # loop over the possible background models
             for model in BKG_MODELS:
+                # define background parameters
                 slope = ROOT.RooRealVar('slope', 'exponential slope', -100., 100.)
 
                 c0 = ROOT.RooRealVar('c0', 'constant c0', -1., 1.)
@@ -349,12 +350,12 @@ if SYSTEMATICS:
 
         # if indexes are good measure B_{Lambda}
         ctbin_idx = 1
-        ct_bins = list(zip(CT_BINS[:-1], CT_BINS[1:]))
+        ct_bin_it = iter(zip(CT_BINS[:-1], CT_BINS[1:]))
 
         mass_list = []
 
         for model, eff in zip(bkg_list, eff_list):
-            ctbin = ct_bins[ctbin_idx - 1]
+            ctbin = next(ct_bin_it)
 
             mass, mass_error = get_measured_mass(model, ctbin, eff)
 
@@ -365,10 +366,10 @@ if SYSTEMATICS:
 
             ctbin_idx += 1
 
-        mass, _, chi2red = hau.b_form_histo(tmp_mass)
+        mass, mass_error, chi2red = hau.b_form_histo(tmp_mass)
         blambda = 1115.683 + 1875.61294257 - mass
 
-        if chi2red < 3:
+        if chi2red < 3. and mass_error > 0.04:
             blambda_dist.Fill(blambda)
         combinations.add(combo)
 

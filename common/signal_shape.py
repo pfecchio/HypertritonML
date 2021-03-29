@@ -106,7 +106,7 @@ for ctbin in zip(CT_BINS[:-1], CT_BINS[1:]):
     delta_mass = ROOT.RooRealVar('delta_m', '#Delta m', -0.0005, 0.0005, 'GeV/c^{2}')
     shift_mass = ROOT.RooAddition('shift_m', "m + #Delta m", ROOT.RooArgList(mass, delta_mass))
 
-        # get mc slice for this ct bin
+    # get mc slice for this ct bin
     mc_slice = mc_df.query('@ctbin[0]<ct<@ctbin[1] and 2.960<m<3.040')
     mc_array = np.array(mc_slice.query('score>@tsd')['m'].values, dtype=np.float64)
     np.random.shuffle(mc_array)
@@ -146,8 +146,6 @@ for ctbin in zip(CT_BINS[:-1], CT_BINS[1:]):
     pinfo.AddText(f'BDT efficiency = {eff_best:.2f}')
 
     leg = ROOT.TLegend(0.67, 0.72, 0.99, 0.87)
-    # leg.SetFillColor(ROOT.kWhite)
-    # leg.SetLineColor(ROOT.kWhite)
     leg.SetBorderSize(0)
     leg.SetFillStyle(0)
     leg.AddEntry(xframe.findObject('MC data'), 'MC data', 'P')
