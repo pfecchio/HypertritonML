@@ -19,6 +19,8 @@ ROOT.gROOT.SetBatch()
 ROOT.ROOT.EnableImplicitMT()
 ROOT.RooMsgService.instance().setSilentMode(True)
 
+np.random.seed(42)
+
 ###############################################################################
 parser = argparse.ArgumentParser()
 parser.add_argument('-split', '--split', help='Run with matter and anti-matter splitted', action='store_true')
@@ -50,8 +52,11 @@ if SPLIT_MODE:
     SPLIT_LIST = ['_matter','_antimatter']
     SPLIT_CUTS = ['&& ArmenterosAlpha > 0', '&& ArmenterosAlpha < 0']
 
-NBINS = len(PT_BINS) - 1
-BINS = np.asarray(PT_BINS, dtype=np.float64)
+NBINS = len(CT_BINS) - 1
+BINS = np.asarray(CT_BINS, dtype=np.float64)
+
+MC_MASS = 2.99131
+
 ###############################################################################
 # define paths for loading data
 signal_path = os.path.expandvars(params['MC_PATH'])
@@ -75,10 +80,10 @@ start_time = time.time()
 rdf_data = ROOT.RDataFrame('DataTable', data_path)
 rdf_mc = ROOT.RDataFrame('SignalTable', signal_path)
 
-mass = ROOT.RooRealVar('m', 'm_{^{3}He+#pi}', 2.975, 3.01, 'GeV/c^{2}')
+mass = ROOT.RooRealVar('m', 'm_{^{3}He+#pi}', 2.960, 3.040, 'GeV/c^{2}')
 mass_set = ROOT.RooArgSet(mass)
 
-delta_mass = ROOT.RooRealVar('delta_m', '#Delta m', -0.005, 0.005, 'GeV/c^{2}')
+delta_mass = ROOT.RooRealVar('delta_m', '#Delta m', -0.0005, 0.0005, 'GeV/c^{2}')
 shift_mass = ROOT.RooAddition('shift_m', "m + #Delta m", ROOT.RooArgList(mass, delta_mass))
 ###############################################################################
 
@@ -87,8 +92,6 @@ for split, splitcut in zip(SPLIT_LIST, SPLIT_CUTS):
     HIST_MASS = {}
     HIST_SHIFT = {}
 
-    MC_MASS = 2.99131
-
     for model in BKG_MODELS:
         HIST_MASS[model] = ROOT.TH1D(f'mass_{model}{split}', ';#it{p}_{T} (GeV/#it{c});#it{c}t (cm);m (MeV/#it{c}^{2})', NBINS, BINS)
         HIST_SHIFT[model] = ROOT.TH1D(f'shift_{model}{split}', ';#it{p}_{T} (GeV/#it{c});#it{c}t (cm);m (MeV/#it{c}^{2})', NBINS, BINS)
@@ -96,42 +99,42 @@ for split, splitcut in zip(SPLIT_LIST, SPLIT_CUTS):
     df_data = rdf_data.Filter(standard_selection + splitcut)
     df_mc = rdf_mc.Filter(standard_selection + splitcut)
 
-    # define global RooFit objects
-    mass = ROOT.RooRealVar('m', 'm_{^{3}He+#pi}', 2.975, 3.01, 'GeV/c^{2}')
-    delta_mass = ROOT.RooRealVar('delta_m', '#Delta m', -0.005, 0.005, 'GeV/c^{2}')
-    shift_mass = ROOT.RooAddition('shift_m', "m + #Delta m", ROOT.RooArgList(mass, delta_mass))
-
-    for ptbin in zip(PT_BINS[:-1], PT_BINS[1:]):
-        subdir_name = f'pt{ptbin[0]}{ptbin[1]}'
-        pt_dir = output_file.mkdir(subdir_name)
-        pt_dir.cd()
+    for ctbin in zip(CT_BINS[:-1], CT_BINS[1:]):
+        subdir_name = f'ct{ctbin[0]}{ctbin[1]}'
+        ct_dir = output_file.mkdir(subdir_name)
+        ct_dir.cd()
 
         # get data slice as NumPy array
-        mass_array_data = df_data.Filter(f'pt<{ptbin[1]} && pt>{ptbin[0]}').AsNumpy(['m'])['m']
-        mass_array_mc = df_mc.Filter(f'pt<{ptbin[1]} && pt>{ptbin[0]}').AsNumpy(['m'])['m']
+        mass_array_data = df_data.Filter(f'ct<{ctbin[1]} && ct>{ctbin[0]} && m>2.960 && m<3.040').AsNumpy(['m'])['m']
+        mass_array_mc = df_mc.Filter(f'ct<{ctbin[1]} && ct>{ctbin[0]} && m>2.960 && m<3.040').AsNumpy(['m'])['m']
 
         np.random.shuffle(mass_array_mc)
 
         roo_data_slice = hau.ndarray2roo(mass_array_data, mass)
         roo_mc_slice = hau.ndarray2roo(mass_array_mc[:50000], mass)
 
-        for model in BKG_MODELS:
-            # define signal component
-            signal = ROOT.RooKeysPdf('signal', 'signal', shift_mass, mass, roo_mc_slice, ROOT.RooKeysPdf.MirrorBoth, 2.)
+        # define signal component
+        signal = ROOT.RooKeysPdf('signal', 'signal', shift_mass, mass, roo_mc_slice, ROOT.RooKeysPdf.NoMirror, 2.)
 
+        # fit the kde to the MC for systematic estimate
+        fit_results_mc = signal.fitTo(roo_mc_slice, ROOT.RooFit.Range(2.960, 3.040), ROOT.RooFit.NumCPU(32), ROOT.RooFit.Save())
+
+        mass_shift = delta_mass.getVal()
+        mass_shift_err = delta_mass.getError()
+
+        for model in BKG_MODELS:
             # define background parameters
             slope = ROOT.RooRealVar('slope', 'exponential slope', -100., 100)
 
-            c0 = ROOT.RooRealVar('c0', 'constant c0', -100., 100.)
-            c1 = ROOT.RooRealVar('c1', 'constant c1', -100., 100.)
-            c2 = ROOT.RooRealVar('c2', 'constant c2', -100., 100.)
+            c0 = ROOT.RooRealVar('c0', 'constant c0', -1., 1.)
+            c1 = ROOT.RooRealVar('c1', 'constant c1', -1., 1.)
 
             # define background component depending on background model required
             if model == 'pol1':
-                background = ROOT.RooPolynomial('bkg', 'pol1 bkg', mass, ROOT.RooArgList(c0, c1))
+                background = ROOT.RooPolynomial('bkg', 'pol1 bkg', mass, ROOT.RooArgList(c0))
 
             if model == 'pol2':
-                background = ROOT.RooPolynomial('bkg', 'pol2 bkg', mass, ROOT.RooArgList(c0, c1, c2))
+                background = ROOT.RooPolynomial('bkg', 'pol2 bkg', mass, ROOT.RooArgList(c0, c1))
 
             if model == 'expo':
                 background = ROOT.RooExponential('bkg', 'expo bkg', mass, slope)
@@ -141,9 +144,9 @@ for split, splitcut in zip(SPLIT_LIST, SPLIT_CUTS):
 
             # define the fit funciton and perform the actual fit
             fit_function = ROOT.RooAddPdf(f'{model}_gaus', 'signal + background', ROOT.RooArgList(signal, background), ROOT.RooArgList(n))
-            fit_results = fit_function.fitTo(roo_data_slice, ROOT.RooFit.Range(2.975, 3.01), ROOT.RooFit.NumCPU(8), ROOT.RooFit.Save())
+            fit_results = fit_function.fitTo(roo_data_slice, ROOT.RooFit.Range(2.960, 3.040), ROOT.RooFit.NumCPU(8), ROOT.RooFit.Save())
 
-            frame = mass.frame(35)
+            frame = mass.frame(70)
             frame.SetName(f'{model}')
 
             roo_data_slice.plotOn(frame, ROOT.RooFit.Name('data'))
@@ -172,26 +175,26 @@ for split, splitcut in zip(SPLIT_LIST, SPLIT_CUTS):
             frame.addObject(pinfo)
             frame.Write()
 
-            ll_frame = delta_mass.frame(ROOT.RooFit.Bins(10), ROOT.RooFit.Range(-0.005, 0.005))
+            # ll_frame = delta_mass.frame(ROOT.RooFit.Bins(10), ROOT.RooFit.Range(-0.005, 0.005))
 
-            nll = fit_function.createNLL(roo_data_slice, ROOT.RooFit.NumCPU(8))
-            ROOT.RooMinimizer(nll).migrad()
+            # nll = fit_function.createNLL(roo_data_slice, ROOT.RooFit.NumCPU(8))
+            # ROOT.RooMinimizer(nll).migrad()
 
-            # pll = nll.createProfile(ROOT.RooArgSet(delta_mass))
+            # # pll = nll.createProfile(ROOT.RooArgSet(delta_mass))
  
-            nll.plotOn(ll_frame, ROOT.RooFit.ShiftToZero())
-            # pll.plotOn(ll_frame, ROOT.RooFit.LineColor(ROOT.kRed))
+            # nll.plotOn(ll_frame, ROOT.RooFit.ShiftToZero())
+            # # pll.plotOn(ll_frame, ROOT.RooFit.LineColor(ROOT.kRed))
 
-            ll_frame.SetMinimum(-1)
-            ll_frame.Write()
+            # ll_frame.SetMinimum(-1)
+            # ll_frame.Write()
 
-            bin_idx = HIST_MASS[model].FindBin((ptbin[0] + ptbin[1]) / 2)
+            bin_idx = HIST_MASS[model].FindBin((ctbin[0] + ctbin[1]) / 2)
             
-            HIST_MASS[model].SetBinContent(bin_idx, (MC_MASS-delta_mass.getVal())*1000)
+            HIST_MASS[model].SetBinContent(bin_idx, (MC_MASS-delta_mass.getVal()-mass_shift)*1000)
             HIST_MASS[model].SetBinError(bin_idx, delta_mass.getError() * 1000)
             
-            HIST_SHIFT[model].SetBinContent(bin_idx, delta_mass.getVal()*1000)
-            HIST_SHIFT[model].SetBinError(bin_idx, delta_mass.getError() * 1000)
+            # HIST_SHIFT[model].SetBinContent(bin_idx, delta_mass.getVal()*1000)
+            # HIST_SHIFT[model].SetBinError(bin_idx, delta_mass.getError() * 1000)
 
 
     output_file.cd()
@@ -199,7 +202,7 @@ for split, splitcut in zip(SPLIT_LIST, SPLIT_CUTS):
         HIST_MASS[model].Write()
         HIST_SHIFT[model].Write()
 
-        hpu.mass_plot_makeup(HIST_MASS[model], model, PT_BINS, split)
+        # hpu.mass_plot_makeup(HIST_MASS[model], model, CT_BINS, split)
 
 
 ###############################################################################

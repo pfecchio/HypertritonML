@@ -13,6 +13,9 @@ import yaml
 
 import math
 
+ROOT.gSystem.Load('RooCustomPdfs/libRooDSCBShape.so')
+from ROOT import RooDSCBShape
+
 ROOT.gROOT.SetBatch()
 
 np.random.seed(42)
@@ -55,7 +58,7 @@ SIGNIFICANCE_SCAN = args.significance
 SKIP_FITS = args.skipfits
 SYSTEMATICS = True if SKIP_FITS else args.systematics
 
-SYSTEMATICS_COUNTS = 100000
+SYSTEMATICS_COUNTS = 10000
 
 FIX_EFF = 0.80 if not SIGNIFICANCE_SCAN else 0
 ###############################################################################
@@ -200,6 +203,9 @@ for split in SPLIT_LIST:
         eff_range = next(eff_range_it)
 
         for eff in eff_range:
+            if eff != eff_best:
+                continue
+
             # define global RooFit objects
             mass = ROOT.RooRealVar('m', 'm_{^{3}He+#pi}', 2.960, 3.040, 'GeV/c^{2}')
             mass.setVal(MC_MASS)
@@ -218,12 +224,30 @@ for split in SPLIT_LIST:
             # kde for the signal component
             signal = ROOT.RooKeysPdf('signal', 'signal', shift_mass, mass, roo_mc_slice, ROOT.RooKeysPdf.NoMirror, 2.)
 
+            # mu = ROOT.RooRealVar('mu', 'hypertriton mass', 2.989, 2.993, 'GeV/c^{2}')
+            # sigma = ROOT.RooRealVar('sigma', 'hypertriton width', 0.0001, 0.004, 'GeV/c^{2}') \
+
+            # a1 = ROOT.RooRealVar('a1', 'a1', 0, 5.)
+            # a2 = ROOT.RooRealVar('a2', 'a2', 0, 10.)
+            # n1 = ROOT.RooRealVar('n1', 'n1', 1, 10.)
+            # n2 = ROOT.RooRealVar('n2', 'n2', 1, 10.)
+
+            # signal_dscb = ROOT.RooDSCBShape('cb', 'cb', mass, mu, sigma, a1, n1, a2, n2)
+
             # fit the kde to the MC for systematic estimate
             fit_results_mc = signal.fitTo(roo_mc_slice, ROOT.RooFit.Range(2.960, 3.040), ROOT.RooFit.NumCPU(32), ROOT.RooFit.Save())
 
             mass_shift = delta_mass.getVal()
             mass_shift_err = delta_mass.getError()
 
+            # fit_results_mc_dscb = signal_dscb.fitTo(roo_mc_slice, ROOT.RooFit.Range(2.960, 3.040), ROOT.RooFit.NumCPU(32), ROOT.RooFit.Save())
+
+            # sigma.setConstant(ROOT.kTRUE)
+            # a1.setConstant(ROOT.kTRUE)
+            # a2.setConstant(ROOT.kTRUE)
+            # n1.setConstant(ROOT.kTRUE)
+            # n2.setConstant(ROOT.kTRUE)
+            
             frame = mass.frame(80)
             frame.SetName(f'mc_eff{eff:.2f}_{model}')
 
@@ -237,7 +261,7 @@ for split in SPLIT_LIST:
             pinfo.SetTextAlign(30+3)
             pinfo.SetTextFont(42)
 
-            pinfo.AddText(f'shift = {mass_shift*1e6:.1f} #pm {mass_shift_err*1e6:.1f} keV')
+            # pinfo.AddText(f'shift = {shift*1e6:.1f} #pm {shift_error*1e6:.1f} keV')
 
             frame.addObject(pinfo)
             frame.Write()
@@ -261,11 +285,17 @@ for split in SPLIT_LIST:
                     background = ROOT.RooExponential('bkg', 'expo bkg', mass, slope)
 
                 # define fraction
-                n = ROOT.RooRealVar('n1', 'n1 const', 0., 1, 'GeV')
+                n = ROOT.RooRealVar('n', 'n const', 0., 1, 'GeV')
 
                 # define the fit funciton and perform the actual fit
-                fit_function = ROOT.RooAddPdf(f'{model}_gaus', 'signal + background', ROOT.RooArgList(signal, background), ROOT.RooArgList(n))
+                fit_function = ROOT.RooAddPdf(f'{model}_kde', 'signal + background', ROOT.RooArgList(signal, background), ROOT.RooArgList(n))
                 fit_results = fit_function.fitTo(roo_data_slice, ROOT.RooFit.Range(2.960, 3.040), ROOT.RooFit.NumCPU(32), ROOT.RooFit.Save())
+
+                # data_kde = signal.generate(mass, 100000)
+                # fit_results_dscb = signal_dscb.fitTo(data_kde, ROOT.RooFit.Range(2.960, 3.040), ROOT.RooFit.NumCPU(32), ROOT.RooFit.Save())
+
+                # shift = (MC_MASS - mu.getVal()) * 1e6
+                # shift_err = mu.getError() * 1e6
 
                 frame = mass.frame(80)
                 frame.SetName(f'eff{eff:.2f}_{model}')
@@ -288,8 +318,8 @@ for split in SPLIT_LIST:
                 string_list = []
         
                 string_list.append('#chi^{2} / NDF ' + f'{chi2:.2f}')
-                string_list.append(f'#Delta m = {delta_mass.getVal()*1e6:.1f} #pm {delta_mass.getError()*1e6:.1f} keV')
-                string_list.append(f'shift = {mass_shift*1e6:.1f} #pm {mass_shift_err*1e6:.1f} keV')
+                # string_list.append(f'#Delta m = {delta_mass.getVal()*1e6:.1f} #pm {delta_mass.getError()*1e6:.1f} keV')
+                # string_list.append(f'shift = {mass_shift*1e6:.1f} #pm {mass_shift_err*1e6:.1f} keV')
 
                 for s in string_list:
                     pinfo.AddText(s)
@@ -297,11 +327,18 @@ for split in SPLIT_LIST:
                 frame.addObject(pinfo)
                 frame.Write()
 
-                fill_mu(model, ctbin, eff, (MC_MASS-delta_mass.getVal()-mass_shift)*1e3, delta_mass.getError()*1e3)
+                fill_mu(model, ctbin, eff, (MC_MASS-delta_mass.getVal()-mass_shift)*1e3, math.sqrt(delta_mass.getError()**2+mass_shift_err**2)*1e3)
                 fill_shift(model, ctbin, eff, mass_shift*1e3, mass_shift_err*1e3)
                 if eff == eff_best:
-                    fill_mu_best(model, ctbin, (MC_MASS-delta_mass.getVal()-mass_shift)*1e3, delta_mass.getError()*1e3)
+                    fill_mu_best(model, ctbin, (MC_MASS-delta_mass.getVal()-mass_shift) * 1e3, math.sqrt(delta_mass.getError()**2+mass_shift_err**2)*1e3)
                     fill_shift_best(model, ctbin, mass_shift*1e3, mass_shift_err*1e3)
+
+
+                # fill_mu(model, ctbin, eff, (mu.getVal() + shift)*1e3, math.sqrt(mu.getError()**2+shift_error**2)*1e3)
+                # fill_shift(model, ctbin, eff, mass_shift*1e3, mass_shift_err*1e3)
+                # if eff == eff_best:
+                #     fill_mu_best(model, ctbin, (mu.getVal() + shift)*1e3, math.sqrt(mu.getError()**2+shift_error**2)*1e3)
+                #     fill_shift_best(model, ctbin, shift*1e3, shift_error*1e3)
 
     output_file.cd()
     for model in BKG_MODELS:

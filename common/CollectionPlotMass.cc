@@ -21,11 +21,10 @@
   const Int_t kFont=42;
 
 
-void CollectionPlotSeparation(){
+void CollectionPlotMass(){
 
   gROOT->SetStyle("Plain");
   gStyle->SetOptStat(0);
-
 
   const int N=5;
   Float_t point[N] = {1,2,3,4,5};
@@ -74,14 +73,12 @@ void CollectionPlotSeparation(){
   TGraphAsymmErrors *gSpect2; //syst. err.
   gSpect2 = new TGraphAsymmErrors(N,point,bind,errsyst_x,errsyst_x,errsyst_y,errsyst_y);
 
-
-
   Float_t point_a[1]={6};
-  Float_t bind_a[1]={0.02};
+  Float_t bind_a[1]={0.049};
   Float_t err_x_a[1]={0};
-  Float_t err_y_low_a[1]={0.10};
-  Float_t err_y_high_a[1]={0.10};
-  Float_t errsyst_y_a[1]={0.05};
+  Float_t err_y_low_a[1]={0.061};
+  Float_t err_y_high_a[1]={0.061};
+  Float_t errsyst_y_a[1]={0.046};
   Float_t errsyst_x_a[1]={0.1};
   TGraphAsymmErrors *gSpect_alice = new TGraphAsymmErrors(1,point_a,bind_a,err_x_a,err_x_a,err_y_low_a,err_y_high_a);
   TGraphAsymmErrors *gSpect2_alice = new TGraphAsymmErrors(1,point_a,bind_a,errsyst_x_a,errsyst_x_a,errsyst_y_a,errsyst_y_a);
@@ -94,8 +91,6 @@ void CollectionPlotSeparation(){
   //Fcn1->SetLineWidth(1);
   //Fcn1->SetLineStyle(2);
   //Fcn1->SetLineColor(kBlue-3);
-
-
 
   TCanvas *c1=new TCanvas("rawyield","rawyields",20,20,1600,1024);
   //c1->SetTopMargin(0.03); c1->SetBottomMargin(0.145);
@@ -146,18 +141,18 @@ void CollectionPlotSeparation(){
 
   gSpect->SetMarkerStyle(kMarkTyp); gSpect->SetMarkerSize(1.4);
   gSpect->SetMarkerColor(kMarkCol); gSpect->SetLineColor(kMarkCol);
-  gSpect->SetLineWidth(1.4);
+  gSpect->SetLineWidth(1);
 
   gSpect2->SetMarkerStyle(0);gSpect2->SetMarkerColor(kMarkCol); gSpect2->SetMarkerSize(0.1);
-  gSpect2->SetLineStyle(1); gSpect2->SetLineColor(kMarkCol); gSpect2->SetLineWidth(1.4);
+  gSpect2->SetLineStyle(1); gSpect2->SetLineColor(kMarkCol); gSpect2->SetLineWidth(1);
   gSpect2->SetFillColor(0); gSpect2->SetFillStyle(0);
 
   gSpect_alice->SetMarkerStyle(kFullDiamond); gSpect_alice->SetMarkerSize(2.8);
   gSpect_alice->SetMarkerColor(kRed); gSpect_alice->SetLineColor(kRed);
-  gSpect_alice->SetLineWidth(1.4);
+  gSpect_alice->SetLineWidth(1);
 
   gSpect2_alice->SetMarkerStyle(0);gSpect2_alice->SetMarkerColor(kRed); gSpect2_alice->SetMarkerSize(0.1);
-  gSpect2_alice->SetLineStyle(1); gSpect2_alice->SetLineColor(kRed); gSpect2_alice->SetLineWidth(1.4);
+  gSpect2_alice->SetLineStyle(1); gSpect2_alice->SetLineColor(kRed); gSpect2_alice->SetLineWidth(1);
   gSpect2_alice->SetFillColor(0); gSpect2_alice->SetFillStyle(0);
 
 
@@ -274,12 +269,12 @@ void collection_CPT_nuclei(){
 
   graph->SetMarkerStyle(kMarkTyp); graph->SetMarkerSize(1.4);
   graph->SetMarkerColor(kMarkCol); graph->SetLineColor(kMarkCol);
-  graph->SetLineWidth(1.4);
+  graph->SetLineWidth(1);
 
 
   graph_a->SetMarkerStyle(kFullDiamond); graph_a->SetMarkerSize(2.8);
   graph_a->SetMarkerColor(kRed); graph_a->SetLineColor(kRed);
-  graph_a->SetLineWidth(1.4);
+  graph_a->SetLineWidth(1);
   //systgraph->SetMarkerColorAlpha(kBlue,0.);
   TCanvas cv("","");
 

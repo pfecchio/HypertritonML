@@ -1,0 +1,36 @@
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+*.so.1.0
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# CINT Dictionaries
+*Dict.cxx
+*_rdict.pcm
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# emacs compatibility
+*~
