@@ -17,6 +17,8 @@
 *.so
 *.dylib
 *.dll
+*.d
+*ACLiC*
 
 # Fortran module files
 *.mod

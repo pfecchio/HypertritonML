@@ -5,7 +5,7 @@ FILE_PREFIX: '2body_analysis'
 CENTRALITY_CLASS:
   - [0, 90]
 # CT_BINS: [2, 4]
-CT_BINS: [0, 2, 4, 6, 8, 10, 14, 18, 23, 35]
+CT_BINS: [1, 2, 4, 6, 8, 10, 14, 18, 23, 35]
 PT_BINS: [2, 10]
 
 BKG_MODELS: ['pol2', 'pol1', 'expo']
@@ -18,8 +18,8 @@ LOAD_APPLIED_DATA: False
 
 
 MC_PATH: $HYPERML_TABLES_2/SignalTable_20g7.root
-BKG_PATH: $HYPERML_TABLES_2/DataTable_18LS.root
-DATA_PATH: $HYPERML_TABLES_2/DataTable_18.root
+BKG_PATH: $HYPERML_TABLES_2/DataTable_18LS_pass3.root
+DATA_PATH: $HYPERML_TABLES_2/DataTable_18_pass3.root
 ANALYSIS_RESULTS_PATH: $HYPERML_TABLES_2/AnalysisResults_18.root
 
 

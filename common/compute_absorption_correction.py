@@ -9,7 +9,7 @@ import yaml
 import argparse
 
 HE_3_MASS = 2.809230089
-ct_bins = np.array([0, 2, 4, 6, 8, 10, 14, 18, 23, 35], dtype=float)
+ct_bins = np.array([1, 2, 4, 6, 8, 10, 14, 18, 23, 35], dtype=float)
 cent_bins = [0, 90]
 ##################################################################
 
@@ -143,5 +143,8 @@ for key in h_rec_ct.keys():
     h_abs_ct[key].Write("fAbsCt_" + key)
     h_abs_radius[key].Write("fAbsRadius_" + key)
 
+
+h_rec_ct["matter_cent_0_90_func_BGBW"].Divide(h_rec_ct["antimatter_cent_0_90_func_BGBW"])
+h_rec_ct["matter_cent_0_90_func_BGBW"].Write('matter_antimatter_ratio')
 
 outfile.Close()

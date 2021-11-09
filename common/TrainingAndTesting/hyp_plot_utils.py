@@ -280,8 +280,8 @@ def mass_plot_makeup(histo, model, ptbin, split):
     string_list = []
     string_list.append('#bf{ALICE Preliminary}')
     string_list.append('Pb-Pb  #sqrt{#it{s}_{NN}} = 5.02 TeV,  0-90%')
-    # string_list.append(label + f' = {mass:.3f} #pm {mass_error:.3f} MeV')
-    # string_list.append('B_{#Lambda}' + ' = {:.3f} #pm {:.3f} '.format(round(blambda, 3), round(mass_error, 3)) + 'MeV')
+    string_list.append(label + f' = {mass:.3f} #pm {mass_error:.3f} MeV')
+    string_list.append('B_{#Lambda}' + ' = {:.3f} #pm {:.3f} '.format(round(blambda, 3), round(mass_error, 3)) + 'MeV')
     string_list.append('#chi^{2} / n.d.f. = ' + f'{chi2_red:.3f}')
         
     for s in string_list:
@@ -303,9 +303,6 @@ def mass_plot_makeup(histo, model, ptbin, split):
     pinfo.Draw('x0same')
     histo.Draw('ex0same')
     canvas.Write()
-    canvas.SaveAs(f'mass_{model}.pdf')
-    canvas.SaveAs(f'mass_{model}.eps')
-
 
 def sigma_plot_makeup(histo, model, ptbin, split):
     histo.SetMarkerStyle(20)

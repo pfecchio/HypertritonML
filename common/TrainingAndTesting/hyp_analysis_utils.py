@@ -25,7 +25,7 @@ def get_applied_mc(mc_path, cent_classes, pt_bins, ct_bins, training_columns, ap
         handlers_path = os.environ['HYPERML_MODELS_2'] + '/handlers'
         efficiencies_path = os.environ['HYPERML_EFFICIENCIES_2']
 
-    df_signal = uproot.open(mc_path)['SignalTable'].pandas.df()
+    df_signal = uproot.open(mc_path)['SignalTable'].arrays(library='pd')
     df_applied = pd.DataFrame()
 
     for cclass in cent_classes:
@@ -70,9 +70,9 @@ def get_skimmed_data(data_path, cent_classes, pt_bins, ct_bins, training_columns
 
     if chunks:
         executor = ThreadPoolExecutor()
-        data_iterator = uproot.pandas.iterate(data_path, 'DataTable', executor=executor)
+        data_iterator = uproot.iterate(f'{data_path}:DataTable', library='pd', executor=executor)
     else:
-        data_iterator = [uproot.open(data_path)['DataTable'].pandas.df()]
+        data_iterator = [uproot.open(data_path)['DataTable'].arrays(library='pd')]
 
     results = []
     for data in data_iterator:

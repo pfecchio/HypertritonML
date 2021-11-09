@@ -28,18 +28,11 @@ class TrainingAnalysis:
         print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
 
         sidebands_selection = 'not (2.970<m<3.015)'
-
-        if self.mode == 3:
-            self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df().query('bw_accept and cos_pa > 0 and pt > 2')
-            self.df_generated = uproot.open(mc_file_name)['SignalTable'].pandas.df().query('bw_accept')
-            self.df_bkg = uproot.open(bkg_file_name)['DataTable'].pandas.df(entrystop=entrystop)
-
-            hau.rename_df_columns(self.df_bkg)
                 
         if self.mode == 2:
-            self.df_signal = uproot.open(mc_file_name)['SignalTable'].pandas.df()
-            self.df_generated = uproot.open(mc_file_name)['GenTable'].pandas.df()
-            self.df_bkg = uproot.open(bkg_file_name)['DataTable'].pandas.df(entrystop=entrystop)
+            self.df_signal = uproot.open(mc_file_name)['SignalTable'].arrays(library='pd')
+            self.df_generated = uproot.open(mc_file_name)['GenTable'].arrays(library='pd')
+            self.df_bkg = uproot.open(bkg_file_name)['DataTable'].arrays(library='pd', entry_stop=entrystop)
             if sidebands:
                 self.df_bkg = self.df_bkg.query(sidebands_selection)
 
@@ -217,18 +210,19 @@ class ModelApplication:
         self.mode = mode
         self.n_events = []
 
-        self.df_data = data_filename if isinstance(data_filename, pd.DataFrame) else uproot.open(data_filename)['DataTable'].pandas.df()
+        self.df_data = data_filename if isinstance(data_filename, pd.DataFrame) else uproot.open(data_filename)['DataTable'].arrays(library='pd')
 
-        if self.mode == 2:
-            self.hist_centrality = uproot.open(analysis_res_filename)["AliAnalysisTaskHyperTriton2He3piML_custom_summary"][11]
-        if self.mode == 3:
-            self.hist_centrality = uproot.open(analysis_res_filename)["AliAnalysisTaskHypertriton3_summary"][11]
+        cent_counts, cent_edges = uproot.open(analysis_res_filename)["AliAnalysisTaskHyperTriton2He3piML_custom_summary;1"][11].to_numpy()
+
+        self.hist_centrality = cent_counts
+        cent_bin_centers = (cent_edges[:-1]+cent_edges[1:])/2
 
         for cent in cent_classes:
-            self.n_events.append(sum(self.hist_centrality[cent[0] + 1:cent[1]]))
+            cent_range_map = np.logical_and(cent_bin_centers > cent[0], cent_bin_centers < cent[1])
+            counts_cent_range = cent_counts[cent_range_map]
+            self.n_events.append(sum(counts_cent_range))
 
         print('\nNumber of events: ', int(sum(self.hist_centrality[:])))
-
         if split == '_antimatter':
             self.df_data = self.df_data.query('ArmenterosAlpha < 0')
             print(f'\nNumber of anti-hyper-candidates: {len(self.df_data)}')
