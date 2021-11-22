@@ -13,7 +13,7 @@ constexpr double kHyperMass{2.99131};
 
 constexpr float kDeuMass{1.87561};
 constexpr float kPMass{0.938272};
-constexpr float kPiMass{0.13957};
+constexpr float kPiMass{0.13957039};
 
 constexpr char kLetter[2]{'A', 'M'};
 

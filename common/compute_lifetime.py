@@ -51,7 +51,7 @@ SIGNIFICANCE_SCAN = args.significance
 SYSTEMATICS = args.systematics
 DBSHAPE = args.dbshape
 
-SYSTEMATICS_COUNTS = 10000
+SYSTEMATICS_COUNTS = 1000
 FIX_EFF = 0.70 if not SIGNIFICANCE_SCAN else 0
 ###############################################################################
 
@@ -73,6 +73,7 @@ output_file = ROOT.TFile(file_name, 'recreate')
 ###############################################################################
 
 file_name = results_dir + f'/{FILE_PREFIX}_signal_extraction{suffix}.root'
+print(file_name)
 input_file = ROOT.TFile(file_name)
 
 ###############################################################################
@@ -83,13 +84,13 @@ EFFICIENCY = efficiency_file.Get('PreselEff').ProjectionY()
 EFFICIENCY.SetDirectory(0)
 
 
-file_name = results_dir + '/He3_abs_1.5.root'
+file_name = results_dir + '/He3_abs_nominal.root'
 abs_file = ROOT.TFile(file_name, 'read')
 ABSORPTION = abs_file.Get('0_90/fEffCt_antimatter_cent_0_90_func_BGBW')
 ABSORPTION.SetDirectory(0)
 
 
-file_name = results_dir + '/He3_abs_test.root'
+file_name = results_dir + '/He3_abs_try.root'
 abs_file = ROOT.TFile(file_name, 'read')
 MATTER_ABSORPTION = abs_file.Get('0_90/matter_antimatter_ratio')
 MATTER_ABSORPTION.SetDirectory(0)
@@ -124,7 +125,7 @@ def get_absorption_correction(ctbin):
     abso = ABSORPTION.GetBinContent(ABSORPTION.FindBin((ctbin[0] + ctbin[1]) / 2))
     matter_abso = abso*MATTER_ABSORPTION.GetBinContent(MATTER_ABSORPTION.FindBin((ctbin[0] + ctbin[1]) / 2))
     abso = (abso + matter_abso)/2
-    return abso 
+    return abso
 
 
 def fill_raw(bkg, ctbin, counts, counts_err, eff):
@@ -282,7 +283,7 @@ if SYSTEMATICS:
 
             ctbin_idx += 1
 
-        tmp_ctdist.Fit(expo, 'MEI0+', '', 0, 35)
+        tmp_ctdist.Fit(expo, 'QRMIS+', '', 1, 35)
 
         # if ct fit is good use it for systematics
         if expo.GetChisquare() > 2. * expo.GetNDF():
@@ -322,7 +323,7 @@ for model in BKG_MODELS:
     CORRECTED_COUNTS_BEST[model].Write()
 
     CORRECTED_COUNTS_BEST[model].UseCurrentStyle()
-    CORRECTED_COUNTS_BEST[model].Fit(expo, 'MEI0+', '', 0, 35)
+    CORRECTED_COUNTS_BEST[model].Fit(expo, 'QRMIS+', '', 0, 35)
 
     fit_function = CORRECTED_COUNTS_BEST[model].GetFunction('myexpo')
     fit_function.SetLineColor(kRedC)
@@ -357,13 +358,9 @@ for model in BKG_MODELS:
     CORRECTED_COUNTS_BEST[model].SetMaximum(1000)
     CORRECTED_COUNTS_BEST[model].SetStats(0)
 
-    frame.GetYaxis().SetTitleSize(26)
-    frame.GetYaxis().SetLabelSize(22)
-    frame.GetXaxis().SetTitleSize(26)
-    frame.GetXaxis().SetLabelSize(22)
+
     frame.GetYaxis().SetRangeUser(7, 5000)
     frame.GetXaxis().SetRangeUser(0.5, 35.5)
-
     pinfo.Draw('x0same')
 
     canvas.Write()

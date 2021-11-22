@@ -41,6 +41,8 @@ with open(os.path.expandvars(args.config), 'r') as stream:
 FILE_PREFIX = params['FILE_PREFIX']
 
 DATA_PATH = os.path.expandvars(params['DATA_PATH'])
+MC_PATH = os.path.expandvars(params['MC_PATH'])
+
 
 BKG_MODELS = params['BKG_MODELS'] if 'BKG_MODELS' in params else ['expo']
 
@@ -68,7 +70,9 @@ file_name = tables_dir + f'/applied_df_{FILE_PREFIX}.parquet.gzip'
 data_df = pd.read_parquet(file_name, engine='fastparquet')
 
 # mc file
+tables_dir = os.path.dirname(MC_PATH)
 file_name = tables_dir + f'/applied_mc_df_{FILE_PREFIX}.parquet.gzip'
+print(file_name)
 mc_df = pd.read_parquet(file_name, engine='fastparquet')
 
 # significance scan output
@@ -197,7 +201,7 @@ for ctbin in zip(CT_BINS[:-1], CT_BINS[1:]):
         # mc slice for the kde
         mc_array = np.array(mc_slice.query('score>@tsd')['m'].values, dtype=np.float64)
 
-        roo_mc_slice = hau.ndarray2roo(mc_array if len(mc_array) < 5e4 else mc_array[:1000], mass)
+        roo_mc_slice = hau.ndarray2roo(mc_array[:10000], mass)
         # roo_mc_slice_test = hau.ndarray2roo(np.random.choice(mc_array, size=1000, replace=False), mass)
 
         # kde for the signal component
@@ -210,7 +214,7 @@ for ctbin in zip(CT_BINS[:-1], CT_BINS[1:]):
                 'signal', 'signal', shift_mass, mass, roo_mc_slice, ROOT.RooKeysPdf.NoMirror, 2.)
             print("Fitting MC with RooKeysPDF")
             fit_results_mc = signal.fitTo(roo_mc_slice, ROOT.RooFit.Range(
-                2.960, 3.040), ROOT.RooFit.NumCPU(32), ROOT.RooFit.Save())
+                2.960, 3.040), ROOT.RooFit.NumCPU(64), ROOT.RooFit.Save())
             mc_mass_shift = delta_mass.getVal()
             mc_mass_shift_err = delta_mass.getError()
 
@@ -226,7 +230,7 @@ for ctbin in zip(CT_BINS[:-1], CT_BINS[1:]):
             signal = ROOT.RooDSCBShape(
                 'cb', 'cb', mass, mu, sigma, a1, n1, a2, n2)
             fit_results_mc_dscb = signal.fitTo(roo_mc_slice, ROOT.RooFit.Range(
-                2.960, 3.040), ROOT.RooFit.NumCPU(32), ROOT.RooFit.Save())
+                2.960, 3.040), ROOT.RooFit.NumCPU(64), ROOT.RooFit.Save())
             reco_shift = MC_MASS - mu.getVal()
             reco_shift_err = mu.getError()
 
@@ -282,7 +286,7 @@ for ctbin in zip(CT_BINS[:-1], CT_BINS[1:]):
             fit_function = ROOT.RooAddPdf(
                 f'{model}_total_pdf', 'signal + background', ROOT.RooArgList(signal, background), ROOT.RooArgList(n))
             fit_results = fit_function.fitTo(roo_data_slice, ROOT.RooFit.Range(
-                2.960, 3.040), ROOT.RooFit.NumCPU(32), ROOT.RooFit.Save())
+                2.960, 3.040), ROOT.RooFit.NumCPU(64), ROOT.RooFit.Save())
 
             frame = mass.frame(80)
             frame.SetName(f'eff{eff:.2f}_{model}')
@@ -295,40 +299,45 @@ for ctbin in zip(CT_BINS[:-1], CT_BINS[1:]):
             fit_function.plotOn(frame, ROOT.RooFit.Components(
                 'bkg'), ROOT.RooFit.LineStyle(ROOT.kDashed), ROOT.RooFit.LineColor(ROOT.kRed))
 
+            signal_counts = n.getVal()*roo_data_slice.sumEntries()
+            signal_counts_error = (n.getError()/n.getVal())*n.getVal()*roo_data_slice.sumEntries()
+
+            fill_raw_counts(model, ctbin, eff, signal_counts, signal_counts_error)
+
+            if not DBSHAPE:
+                m =  (MC_MASS-delta_mass.getVal())* 1e3
+                m_error = delta_mass.getError()*1e3
+                significance, significance_error = hau.compute_significance(roo_data_slice, mass, signal, background, n, mu = None, sigma = None)
+                fill_mu(model, ctbin, eff, m, m_error)
+                fill_mc_mass_shift(model, ctbin, eff, mc_mass_shift*1e3, mc_mass_shift_err*1e3)                
+            else:
+                m =  mu.getVal() * 1e3
+                m_error = mu.getError()*1e3
+                significance, significance_error = hau.compute_significance(roo_data_slice, mass, signal, background, n, mu = mu, sigma = sigma)
+
+                fill_mu(model, ctbin, eff, m , m_error)
+                fill_reco_shift(model, ctbin, eff, reco_shift *1e3, reco_shift_err*1e3)
+
+
             # compute chi2
             chi2 = frame.chiSquare(
                 'model', 'data', fit_results.floatParsFinal().getSize())
-
             # add info to plot
             pinfo = ROOT.TPaveText(0.737, 0.674, 0.937, 0.875, 'NDC')
             pinfo.SetBorderSize(0)
             pinfo.SetFillStyle(0)
             pinfo.SetTextAlign(30+3)
             pinfo.SetTextFont(42)
-
             string_list = []
-
             string_list.append('#chi^{2} / NDF ' + f'{chi2:.2f}')
-
+            string_list.append(f'S (3 #sigma) {signal_counts:.1f} #pm {signal_counts_error:.1f}')
+            string_list.append(f'Significance (3 #sigma) {significance:.1f} #pm {significance_error:.1f}')
+            string_list.append('m_{ {}^{3}_{#Lambda}H} = ' + f'{m:.3f} #pm {m_error:.3f}')
             for s in string_list:
                 pinfo.AddText(s)
-
             frame.addObject(pinfo)
             frame.Write()
 
-            fill_raw_counts(model, ctbin, eff, n.getVal()*roo_data_slice.sumEntries(), (n.getError()/n.getVal())*n.getVal()*roo_data_slice.sumEntries())
-
-            if not DBSHAPE:
-                fill_mu(model, ctbin, eff, (MC_MASS-delta_mass.getVal())
-                        * 1e3, delta_mass.getError()*1e3)
-                fill_mc_mass_shift(model, ctbin, eff,
-                                   mc_mass_shift*1e3, mc_mass_shift_err*1e3)
-
-            else:
-                fill_mu(model, ctbin, eff, (mu.getVal())
-                        * 1e3, mu.getError()*1e3)
-                fill_reco_shift(model, ctbin, eff, reco_shift *
-                                1e3, reco_shift_err*1e3)
 
 output_file.cd()
 for model in BKG_MODELS:

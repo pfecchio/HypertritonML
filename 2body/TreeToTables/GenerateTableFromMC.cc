@@ -23,28 +23,30 @@ using std::string;
 void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypTableDir = "", string ptShape = "bw")
 {
   gRandom->SetSeed(1989);
-
-  if (hypDataDir == "") hypDataDir = getenv("HYPERML_TREES__2");
-  if (hypTableDir == "") hypTableDir = getenv("HYPERML_TABLES_2");
+  if (hypDataDir == "")
+    hypDataDir = getenv("HYPERML_TREES__2");
+  if (hypTableDir == "")
+    hypTableDir = getenv("HYPERML_TABLES_2");
   string hypUtilsDir = getenv("HYPERML_UTILS");
 
-  string pass = getenv("HYPERML_PASS");
+  string pass = "3";
+
   bool useProposeMasses = (pass == "3");
 
-  string otf = getenv("HYPERML_OTF");
+  string otf = "";
 
-  string mcName = getenv("HYPERML_MC");
+  string mcName = "20g7";
 
   string inFileName = string("HyperTritonTree_") + mcName + otf + ".root";
   string inFileArg = hypDataDir + "/" + inFileName;
 
-  string outFileName = string("SignalTable_") + mcName + otf + ".root";
+  string outFileName = string("SignalTable_new_") + mcName + otf + ".root";
   string outFileArg = hypTableDir + "/" + outFileName;
 
   string absFileName = "AbsorptionHe3.root";
   string absFileArg = hypUtilsDir + "/" + absFileName;
 
-  string bwFileName = "BlastWaveFits.root";
+  string bwFileName = "Anti_fits.root";
   string bwFileArg = hypUtilsDir + "/" + bwFileName;
 
   TFile absFile(absFileArg.data());
@@ -54,34 +56,28 @@ void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypT
   // get the bw functions for the pt rejection
   TFile bwFile(bwFileArg.data());
 
-  TF1 *hypPtShape{nullptr}; TF1 *hypPtShape0{nullptr}; TF1 *hypPtShape1{nullptr}; TF1 *hypPtShape2{nullptr};
+  TF1 *hypPtShape{nullptr};
+  TF1 *hypPtShape0{nullptr};
+  TF1 *hypPtShape1{nullptr};
+  TF1 *hypPtShape2{nullptr};
+  TF1 *hypPtShape3{nullptr};
+  TF1 *hypPtShape4{nullptr};
+
   if (ptShape == "bw")
-    {
-      hypPtShape0 = (TF1 *)bwFile.Get("BlastWave/BlastWave0");
-      hypPtShape1 = (TF1 *)bwFile.Get("BlastWave/BlastWave1");
-      hypPtShape2 = (TF1 *)bwFile.Get("BlastWave/BlastWave2");
-    }
-
-  else if (ptShape == "bol")
   {
-    hypPtShape0 = (TF1 *)bwFile.Get("Boltzmann/Boltzmann0");
-    hypPtShape1 = (TF1 *)bwFile.Get("Boltzmann/Boltzmann1");
-    hypPtShape2 = (TF1 *)bwFile.Get("Boltzmann/Boltzmann2");
+    hypPtShape0 = (TF1 *)bwFile.Get("BGBW/0/BGBW0");
+    hypPtShape1 = (TF1 *)bwFile.Get("BGBW/1/BGBW1");
+    hypPtShape2 = (TF1 *)bwFile.Get("BGBW/2/BGBW2");
+    hypPtShape3 = (TF1 *)bwFile.Get("BGBW/3/BGBW3");
+    hypPtShape4 = (TF1 *)bwFile.Get("BGBW/4/BGBW4");
   }
-
-    else if (ptShape == "mtexp")
-  {
-    hypPtShape0 = (TF1 *)bwFile.Get("Mt-exp/Mt-exp0");
-    hypPtShape1 = (TF1 *)bwFile.Get("Mt-exp/Mt-exp1");
-    hypPtShape2 = (TF1 *)bwFile.Get("Mt-exp/Mt-exp2");
-  }
-
-
 
   float max = 0.0;
   float max0 = hypPtShape0->GetMaximum();
   float max1 = hypPtShape1->GetMaximum();
   float max2 = hypPtShape2->GetMaximum();
+  float max3 = hypPtShape3->GetMaximum();
+  float max4 = hypPtShape4->GetMaximum();
 
   // read the tree
   TFile *inFile = new TFile(inFileArg.data(), "READ");
@@ -109,28 +105,40 @@ void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypT
   {
     auto cent = RColl->fCent;
 
-    if (cent <= 10)
+    if (cent <= 5)
     {
       hypPtShape = hypPtShape0;
       max = max0;
     }
-    else if (cent <= 40.)
+    if (cent <= 10)
     {
       hypPtShape = hypPtShape1;
       max = max1;
     }
-    else if (cent <= 100)
+    else if (cent <= 30.)
     {
       hypPtShape = hypPtShape2;
       max = max2;
     }
+
+    else if (cent <= 50)
+    {
+      hypPtShape = hypPtShape3;
+      max = max3;
+    }
+    else if (cent <= 90)
+    {
+      hypPtShape = hypPtShape4;
+      max = max4;
+    }
+
     for (auto &SHyper : SHyperVec)
     {
 
       bool matter = SHyper.fPdgCode > 0;
 
       double pt = std::hypot(SHyper.fPxHe3 + SHyper.fPxPi, SHyper.fPyHe3 + SHyper.fPyPi);
-      
+
       if (reject)
       {
         float hypPtShapeNum = hypPtShape->Eval(pt) / max;
@@ -171,6 +179,4 @@ void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypT
   absHA.Divide(&genHA);
   absHA.Write();
   outFile.Close();
-
-
 }

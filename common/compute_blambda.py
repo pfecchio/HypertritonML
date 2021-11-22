@@ -77,8 +77,11 @@ output_file = ROOT.TFile(file_name, 'recreate')
 file_name = results_dir + f'/{FILE_PREFIX}_signal_extraction{suffix}.root'
 input_file = ROOT.TFile(file_name)
 
-
-
+##load dbshape in any case for systematics
+if not DBSHAPE:
+    file_name_dbshape = results_dir + f'/{FILE_PREFIX}_signal_extraction_dscb.root'
+    input_file_dbshape = ROOT.TFile(file_name_dbshape)
+    
 
 ###############################################################################
 start_time = time.time()
@@ -95,6 +98,10 @@ MASS_BEST = {}
 MASS_SHIFT_BEST = {}
 RECO_SHIFT_BEST = {}
 
+# support for systematics
+MASS_H2_DBSHAPE = {}
+RECO_SHIFT_H2_DBSHAPE = {}
+
 
 MC_MASS = 2.99131
 
@@ -104,7 +111,14 @@ for model in BKG_MODELS:
         MASS_BEST[model] = MASS_H2[model].ProjectionX(f'mass_best_{model}')
         if not DBSHAPE:
             MASS_SHIFT_H2[model] = input_file.Get(f'mass_shift_{model}')
+            MASS_SHIFT_H2[model].SetDirectory(0)
             MASS_SHIFT_BEST[model] = MASS_BEST[model].Clone("mass_shift_best")
+            MASS_H2_DBSHAPE[model] = input_file_dbshape.Get(f'mass_{model}')
+            MASS_H2_DBSHAPE[model].SetDirectory(0)
+            RECO_SHIFT_H2_DBSHAPE[model] = input_file_dbshape.Get(f'reco_shift_{model}')
+            RECO_SHIFT_H2_DBSHAPE[model].SetDirectory(0)
+
+
         else:
             RECO_SHIFT_H2[model] = input_file.Get(f'reco_shift_{model}')
             RECO_SHIFT_BEST[model] = MASS_BEST[model].Clone("reco_shift_best") 
@@ -154,8 +168,7 @@ for ctbin in zip(CT_BINS[:-1], CT_BINS[1:]):
         else:
             reco_shift, reco_shift_error = get_measured_h2(RECO_SHIFT_H2, model, ctbin, eff)
             fill_histo_best(RECO_SHIFT_BEST[model], ctbin, reco_shift, reco_shift_error)
-            fill_histo_best(MASS_BEST[model], ctbin, mass, mass_error)
-    
+            fill_histo_best(MASS_BEST[model], ctbin, mass, mass_error)    
 
 
 
@@ -216,7 +229,6 @@ if SYSTEMATICS:
 
         for model, eff in zip(bkg_list, eff_list):
             ctbin = next(ct_bin_it)
-
             mass, mass_error = get_measured_h2(MASS_H2, model, ctbin, eff)
             if DBSHAPE:
                 reco_shift, reco_shift_error = get_measured_h2(RECO_SHIFT_H2, model, ctbin, eff)
@@ -226,6 +238,13 @@ if SYSTEMATICS:
                 fit_shift, fit_shift_error = get_measured_h2(MASS_SHIFT_H2, model, ctbin, eff)
                 mass += fit_shift
                 mass_error = np.sqrt(mass_error**2 + fit_shift_error**2)
+                switch_to_db = np.random.randint(2)
+                if switch_to_db:
+                    mass, mass_error = get_measured_h2(MASS_H2_DBSHAPE, model, ctbin, eff)
+                    reco_shift, reco_shift_error = get_measured_h2(RECO_SHIFT_H2_DBSHAPE, model, ctbin, eff)
+                    mass += reco_shift
+                    mass_error = np.sqrt(mass_error**2 + reco_shift_error**2)
+
 
             tmp_mass.SetBinContent(ctbin_idx, mass)
             tmp_mass.SetBinError(ctbin_idx, mass_error)
@@ -237,7 +256,7 @@ if SYSTEMATICS:
         mass, mass_error, chi2red = hau.b_form_histo(tmp_mass)
         blambda = 1115.683 + 1875.61294257 - mass
 
-        if chi2red < 3. and mass_error > 0.04:
+        if chi2red < 3.:
             blambda_dist.Fill(blambda)
             combinations.add(combo)
 

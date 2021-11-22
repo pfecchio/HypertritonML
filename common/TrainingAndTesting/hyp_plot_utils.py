@@ -240,35 +240,34 @@ def plot_confusion_matrix(y_true, df, mode, score, normalize=False, title=None, 
 
 
 def mass_plot_makeup(histo, model, ptbin, split):
-    pol0 = ROOT.TF1('blfunction', '1115.683 + 1875.61294257 - [0]', 0, 10)
-    histo.Fit(pol0)
+    blam_histo = histo.Clone()
+    for iBin in range(1, histo.GetNbinsX() + 1):
+        blam_histo.SetBinContent(iBin, 1115.683 + 1875.61294257 - histo.GetBinContent(iBin))
+    pol0 = ROOT.TF1('blfunction', '[0]', 0, 10)
+    blam_histo.Fit(pol0, "0")
 
     blambda = pol0.GetParameter(0)
-    mass = 1115.683 + 1875.61294257 - blambda
-    mass_error = pol0.GetParError(0)
+    blambda_error = pol0.GetParError(0)
 
-    mass_low = mass - mass_error
-    mass_up = mass + mass_error
+    mass = 1115.683 + 1875.61294257 - blambda
+    mass_error = blambda_error
+
+    blam_low = blambda - mass_error
+    blam_up = blambda + mass_error
 
     chi2_red = pol0.GetChisquare()/pol0.GetNDF()
 
-    print(f'B_lambda = {blambda:.3f} +- {mass_error:.3f}, chi2 = {chi2_red:.3f}')
+    print(f'B_lambda = {blambda:.3f} +- {blambda_error:.3f}, chi2 = {chi2_red:.3f}')
 
-    histo.SetMarkerStyle(20)
-    histo.SetMarkerColor(kBlueC)
-    histo.SetLineColor(kBlueC)
+    blam_histo.SetMarkerStyle(20)
+    blam_histo.SetMarkerColor(kBlueC)
+    blam_histo.SetLineColor(kBlueC)
 
     canvas = ROOT.TCanvas(f'hyp_mass_{model}{split}')
             
-    pad_range = [2990.65, 2992.55]
-    label = 'm_{ {}^{3}_{#bar{#Lambda}} #bar{H}}' if split is '_antimatter' else 'm_{ {}^{3}_{#Lambda}H}'
+    pad_range = [-1.2, 1.2]
+    label = 'B_{#Lambda}'
     frame = ROOT.gPad.DrawFrame(ptbin[0], pad_range[0], ptbin[-1], pad_range[1], ';#it{c}t (cm);' + label + ' ( MeV/#it{c}^{2} )')
-    frame.GetYaxis().SetTitleSize(26)
-    frame.GetYaxis().SetTitleOffset(1.3)
-    frame.GetYaxis().SetLabelSize(22)
-    frame.GetXaxis().SetTitleSize(26)
-    frame.GetXaxis().SetLabelSize(22)
-    frame.GetYaxis().SetNdivisions(505)
      
     pinfo = ROOT.TPaveText(0.142, 0.666, 0.520, 0.850, 'NDC')
     pinfo.SetBorderSize(0)
@@ -278,30 +277,30 @@ def mass_plot_makeup(histo, model, ptbin, split):
     pinfo.SetTextSize(26)
 
     string_list = []
-    string_list.append('#bf{ALICE Preliminary}')
+    string_list.append('#bf{ALICE Internal}')
     string_list.append('Pb-Pb  #sqrt{#it{s}_{NN}} = 5.02 TeV,  0-90%')
-    string_list.append(label + f' = {mass:.3f} #pm {mass_error:.3f} MeV')
+    string_list.append('m_{ {}^{3}_{#Lambda}H}' + f' = {mass:.3f} #pm {mass_error:.3f} MeV')
     string_list.append('B_{#Lambda}' + ' = {:.3f} #pm {:.3f} '.format(round(blambda, 3), round(mass_error, 3)) + 'MeV')
     string_list.append('#chi^{2} / n.d.f. = ' + f'{chi2_red:.3f}')
         
     for s in string_list:
         pinfo.AddText(s)
 
-    ROOT.gPad.Update()
-    mass_line = ROOT.TLine(ROOT.gPad.GetUxmin(), mass, ROOT.gPad.GetUxmax(), mass)
-    mass_line.SetLineColor(kOrangeC)
-    mass_line.SetLineWidth(1)
+    mass_line = ROOT.TLine(ROOT.gPad.GetUxmin(), blambda, ROOT.gPad.GetUxmax(), blambda)
+    mass_line.SetLineColor(kRedC)
+    # mass_line.SetLineWidth(1.5)
 
-    mass_box = ROOT.TBox(ROOT.gPad.GetUxmin(), mass_low, ROOT.gPad.GetUxmax(), mass_up)
-    mass_box.SetFillColor(kOrangeCT)
-    mass_box.SetFillStyle(1001)
+    mass_box = ROOT.TBox(ROOT.gPad.GetUxmin(), blam_low, ROOT.gPad.GetUxmax(), blam_up)
+    mass_box.SetFillColor(ROOT.kOrange)
+    mass_box.SetFillStyle(3004)
     mass_box.SetLineWidth(0)
-    # mass_box.SetLineStyle(2)
     mass_box.Draw('same')
 
     mass_line.Draw('same')
     pinfo.Draw('x0same')
-    histo.Draw('ex0same')
+    blam_histo.Draw('ex0same')
+    # ROOT.gPad.Update()
+
     canvas.Write()
 
 def sigma_plot_makeup(histo, model, ptbin, split):

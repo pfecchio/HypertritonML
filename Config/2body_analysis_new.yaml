@@ -1,0 +1,70 @@
+
+NBODY: 2
+FILE_PREFIX: '2body_analysis_new'
+
+
+CENTRALITY_CLASS:
+  - [0, 90]
+# CT_BINS: [2, 4]
+CT_BINS: [1, 2, 4, 6, 8, 10, 14, 18, 23, 35]
+PT_BINS: [2, 10]
+
+BKG_MODELS: ['pol2', 'pol1', 'expo']
+
+BDT_EFFICIENCY: [0.30, 0.99, 0.01] ##min, max ,step
+
+
+LARGE_DATA: False
+LOAD_APPLIED_DATA: False
+
+
+MC_PATH: $HYPERML_TABLES_2/SignalTable_new_20g7.root
+BKG_PATH: "/data/fmazzasc/PbPb_2body/DataTable_18qr_pass3_LS.root"
+DATA_PATH: "/data/fmazzasc/PbPb_2body/no_pt_cut/DataTable_18qr.parquet.gzip"
+ANALYSIS_RESULTS_PATH: "/data/fmazzasc/PbPb_2body/no_pt_cut/AnalysisResults_18qr.root"
+
+
+XGBOOST_PARAMS:
+  # general parameters
+  n_jobs: 32 # number of available threads
+  # learning task parameters
+  objective: binary:logistic
+  random_state: 42
+  eval_metric: auc
+  tree_method: hist
+
+
+HYPERPARAMS:
+  max_depth: 13
+  learning_rate: 0.0982
+  n_estimators: 181
+  gamma: 0.4467
+  min_child_weight: 5.75
+  subsample: 0.74
+  colsample_bytree: 0.57
+  seed: 42
+
+
+HYPERPARAMS_RANGE:
+  # booster parameters
+  max_depth: !!python/tuple [5, 20] # defines the maximum depth of a single tree (regularization)
+  learning_rate: !!python/tuple [0.01, 0.3] # learning rate
+  n_estimators: !!python/tuple [50, 500] # number of boosting trees
+  gamma: !!python/tuple [0.3, 1.1] # specifies the minimum loss reduction required to make a split
+  min_child_weight: !!python/tuple [1, 12]
+  subsample: !!python/tuple [0.5, 0.9] # denotes the fraction of observations to be randomly samples for each tree
+  colsample_bytree: !!python/tuple [0.5, 0.9] # denotes the fraction of columns to be randomly samples for each tree
+
+
+TRAINING_COLUMNS: 
+  - V0CosPA
+  - pt
+  - ProngsDCA
+  - PiProngPvDCAXY
+  - He3ProngPvDCAXY
+  - He3ProngPvDCA
+  - PiProngPvDCA
+  - NpidClustersHe3
+  - TPCnSigmaHe3
+  - TPCnSigmaPi
+  # - NitsClustersHe3

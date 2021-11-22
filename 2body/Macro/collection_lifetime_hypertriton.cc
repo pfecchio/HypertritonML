@@ -70,11 +70,11 @@ void collection_lifetime_hypertriton() {
   gSpect2 = new TGraphAsymmErrors(N - 1, point, lifetau, errsyst_x, errsyst_x, errsyst_y, errsyst_y);
 
   Float_t point_a[1]      = {12};
-  Float_t lifetau_a[1]    = {253};
+  Float_t lifetau_a[1]    = {261};
   Float_t err_x_a[1]      = {0};
   Float_t err_y_low_a[1]  = {11};
   Float_t err_y_high_a[1] = {11};
-  Float_t errsyst_y_a[1]  = {6.5};
+  Float_t errsyst_y_a[1]  = {6};
   Float_t errsyst_x_a[1]  = {0.1};
 
   TGraphAsymmErrors *gSpect_alice =
@@ -327,7 +327,7 @@ void collection_lifetime_hypertriton() {
   lat10->SetTextColor(2);
   lat10->SetTextFont(42);
   lat10->SetTextSize(.02);
-  lat10->DrawLatex(0.820, 0.540, Form("#bf{This work}"));
+  lat10->DrawLatex(0.820, 0.540, Form("#bf{ALICE Internal}"));
 
   leg1->Draw();
   leg2->Draw();
@@ -350,6 +350,8 @@ void collection_lifetime_hypertriton() {
 
   c1->SaveAs("Fig7.eps");
   c1->SaveAs("Fig7.pdf");
+  c1->SaveAs("Fig7.png");
+
   /*c1->SaveAs("Lifetime_hypertriton_newprel.gif");
   c1->SaveAs("Lifetime_hypertriton_newprel.pdf");
   c1->SaveAs("Lifetime_hypertriton_newprel.eps");

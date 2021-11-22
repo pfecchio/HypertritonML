@@ -37,13 +37,13 @@ class TrainingAnalysis:
                 self.df_bkg = self.df_bkg.query(sidebands_selection)
 
         if split == '_antimatter':
-            self.df_bkg = self.df_bkg.query('ArmenterosAlpha < 0')
-            self.df_signal = self.df_signal.query('ArmenterosAlpha < 0')
+            self.df_bkg = self.df_bkg.query('Matter < 0.5')
+            self.df_signal = self.df_signal.query('Matter < 0.5')
             self.df_generated = self.df_generated.query('matter < 0.5')
 
         if split == '_matter':
-            self.df_bkg = self.df_bkg.query('ArmenterosAlpha > 0')
-            self.df_signal = self.df_signal.query('ArmenterosAlpha > 0')
+            self.df_bkg = self.df_bkg.query('Matter > 0.5')
+            self.df_signal = self.df_signal.query('Matter > 0.5')
             self.df_generated = self.df_generated.query('matter > 0.5')
 
         self.df_signal['y'] = 1
@@ -224,11 +224,11 @@ class ModelApplication:
 
         print('\nNumber of events: ', int(sum(self.hist_centrality[:])))
         if split == '_antimatter':
-            self.df_data = self.df_data.query('ArmenterosAlpha < 0')
+            self.df_data = self.df_data.query('Matter < 0.5')
             print(f'\nNumber of anti-hyper-candidates: {len(self.df_data)}')
 
         if split == '_matter':
-            self.df_data = self.df_data.query('ArmenterosAlpha > 0')
+            self.df_data = self.df_data.query('Matter > 0')
             print(f'Number of hyper-candidates: {len(self.df_data)}')
 
         print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')

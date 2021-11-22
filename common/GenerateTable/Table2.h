@@ -81,7 +81,7 @@ Table2::Table2(std::string name, std::string title)
   tree->Branch("PiProngPvDCAXY", &PiProngPvDCAXY);
   tree->Branch("NpidClustersHe3", &NpidClustersHe3);
   tree->Branch("NpidClustersPion", &NpidClustersPion);
-  tree->Branch("NitsClustersHe3", &NitsClustersHe3);  
+  tree->Branch("NitsClustersHe3", &NitsClustersHe3);
   tree->Branch("TPCnSigmaPi", &TPCnSigmaPi);
   tree->Branch("Lrec", &Lrec);
   tree->Branch("centrality", &centrality);
@@ -90,10 +90,10 @@ Table2::Table2(std::string name, std::string title)
   tree->Branch("PseudoRapidityHe3", &PseudoRapidityHe3);
   tree->Branch("PseudoRapidityPion", &PseudoRapidityPion);
   tree->Branch("Matter", &Matter);
-  tree->Branch("TOFnSigmaHe3",&TOFnSigmaHe3);
-  tree->Branch("TOFnSigmaPi",&TOFnSigmaPi);
-  tree->Branch("TPCmomHe3",&TPCmomHe3);
-  tree->Branch("TPCsignalHe3",&TPCsignalHe3);
+  tree->Branch("TOFnSigmaHe3", &TOFnSigmaHe3);
+  tree->Branch("TOFnSigmaPi", &TOFnSigmaPi);
+  tree->Branch("TPCmomHe3", &TPCmomHe3);
+  tree->Branch("TPCsignalHe3", &TPCsignalHe3);
 };
 
 void Table2::Fill(const RHyperTritonHe3pi &RHyper, const RCollision &RColl, bool properHe3Mass)
@@ -155,11 +155,7 @@ void Table2::Fill(const RHyperTritonHe3pi &RHyper, const RCollision &RColl, bool
   PseudoRapidityPion = piVector.PseudoRapidity();
   TPCsignalHe3 = RHyper.fTPCsignalHe3;
   TPCmomHe3 = RHyper.fTPCmomHe3;
-  if (He3ProngPt > 1.2 && ProngsDCA < 1.6 && NpidClustersHe3>30)
-    tree->Fill();
-  else
-  {
-  }
+  tree->Fill();
 }
 
 #endif

@@ -131,7 +131,7 @@ if APPLICATION:
     if (N_BODY==3):
         application_columns = ['score', 'm', 'ct', 'pt', 'centrality', 'positive', 'mppi_vert', 'mppi', 'mdpi', 'tpc_ncls_de', 'tpc_ncls_pr', 'tpc_ncls_pi']
     else:
-        application_columns = ['score', 'm', 'ct', 'pt', 'centrality', 'ArmenterosAlpha']
+        application_columns = ['score', 'm', 'ct', 'pt', 'centrality', 'Matter']
 
     print('\n==================================================')
     print('Application and signal extraction ...', end='\r')
