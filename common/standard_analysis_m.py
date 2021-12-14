@@ -9,6 +9,8 @@ import yaml
 
 import hyp_analysis_utils as hau
 import hyp_plot_utils as hpu
+import pandas as pd
+import uproot
 
 import ROOT
 
@@ -16,7 +18,6 @@ import ROOT
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 ROOT.gROOT.SetBatch()
-ROOT.ROOT.EnableImplicitMT()
 ROOT.RooMsgService.instance().setSilentMode(True)
 
 np.random.seed(42)
@@ -32,6 +33,8 @@ with open(os.path.expandvars(args.config), 'r') as stream:
         params = yaml.full_load(stream)
     except yaml.YAMLError as exc:
         print(exc)
+
+
 ###############################################################################
 
 ###############################################################################
@@ -50,7 +53,7 @@ SPLIT_CUTS = ['']
 SPLIT_LIST = ['']
 if SPLIT_MODE:
     SPLIT_LIST = ['_matter','_antimatter']
-    SPLIT_CUTS = ['&& ArmenterosAlpha > 0', '&& ArmenterosAlpha < 0']
+    SPLIT_CUTS = ['and ArmenterosAlpha > 0', 'and ArmenterosAlpha < 0']
 
 NBINS = len(CT_BINS) - 1
 BINS = np.asarray(CT_BINS, dtype=np.float64)
@@ -70,15 +73,17 @@ results_dir = os.environ['HYPERML_RESULTS_{}'.format(N_BODY)]
 file_name = results_dir + f'/{FILE_PREFIX}_std_results.root'
 output_file = ROOT.TFile(file_name, 'recreate')
 
-standard_selection = f'V0CosPA > 0.9999 && NpidClustersHe3 > 80 && He3ProngPt > 1.8 && pt > 2 && pt < 10 && PiProngPt > 0.15 && He3ProngPvDCA > 0.05 && PiProngPvDCA > 0.2 && TPCnSigmaHe3 < 3.5 && TPCnSigmaHe3 > -3.5 && ProngsDCA < 1 && centrality >= {CENT_CLASSES[0][0]} && centrality < {CENT_CLASSES[0][1]} && ct<{CT_BINS[-1]} && ct>{CT_BINS[0]}'
+standard_selection = f'V0CosPA > 0.9999 and NpidClustersHe3 > 80 and He3ProngPt > 1.8 and pt > 2 and pt < 10 and PiProngPt > 0.15 and He3ProngPvDCA > 0.05 and PiProngPvDCA > 0.2 and TPCnSigmaHe3 < 3.5 and TPCnSigmaHe3 > -3.5 and ProngsDCA < 1 and centrality >= {CENT_CLASSES[0][0]} and centrality < {CENT_CLASSES[0][1]} and ct<{CT_BINS[-1]} and ct>{CT_BINS[0]}'
 
 ###############################################################################
 start_time = time.time()
 ###############################################################################
 
 ###############################################################################
-rdf_data = ROOT.RDataFrame('DataTable', data_path)
-rdf_mc = ROOT.RDataFrame('SignalTable', signal_path)
+# print(data_path)
+rdf_data = pd.read_parquet(data_path, engine='fastparquet')
+
+rdf_mc = uproot.open(signal_path)['SignalTable'].arrays(library='pd')
 
 mass = ROOT.RooRealVar('m', 'm_{^{3}He+#pi}', 2.960, 3.040, 'GeV/c^{2}')
 mass_set = ROOT.RooArgSet(mass)
@@ -96,8 +101,8 @@ for split, splitcut in zip(SPLIT_LIST, SPLIT_CUTS):
         HIST_MASS[model] = ROOT.TH1D(f'mass_{model}{split}', ';#it{p}_{T} (GeV/#it{c});#it{c}t (cm);m (MeV/#it{c}^{2})', NBINS, BINS)
         HIST_SHIFT[model] = ROOT.TH1D(f'shift_{model}{split}', ';#it{p}_{T} (GeV/#it{c});#it{c}t (cm);m (MeV/#it{c}^{2})', NBINS, BINS)
 
-    df_data = rdf_data.Filter(standard_selection + splitcut)
-    df_mc = rdf_mc.Filter(standard_selection + splitcut)
+    df_data = rdf_data.query(standard_selection + splitcut)
+    df_mc = rdf_mc.query(standard_selection + splitcut)
 
     for ctbin in zip(CT_BINS[:-1], CT_BINS[1:]):
         subdir_name = f'ct{ctbin[0]}{ctbin[1]}'
@@ -105,13 +110,12 @@ for split, splitcut in zip(SPLIT_LIST, SPLIT_CUTS):
         ct_dir.cd()
 
         # get data slice as NumPy array
-        mass_array_data = df_data.Filter(f'ct<{ctbin[1]} && ct>{ctbin[0]} && m>2.960 && m<3.040').AsNumpy(['m'])['m']
-        mass_array_mc = df_mc.Filter(f'ct<{ctbin[1]} && ct>{ctbin[0]} && m>2.960 && m<3.040').AsNumpy(['m'])['m']
-
-        np.random.shuffle(mass_array_mc)
+        mass_array_data = np.array(df_data.query(f'ct<{ctbin[1]} and ct>{ctbin[0]} and m>2.960 and m<3.040')['m'])
+        mass_array_mc = np.array(df_mc.query(f'ct<{ctbin[1]} and ct>{ctbin[0]} and m>2.960 and m<3.040')['m'])
+        print(mass_array_mc)
 
         roo_data_slice = hau.ndarray2roo(mass_array_data, mass)
-        roo_mc_slice = hau.ndarray2roo(mass_array_mc[:50000], mass)
+        roo_mc_slice = hau.ndarray2roo(mass_array_mc[:1000], mass)
 
         # define signal component
         signal = ROOT.RooKeysPdf('signal', 'signal', shift_mass, mass, roo_mc_slice, ROOT.RooKeysPdf.NoMirror, 2.)
@@ -175,22 +179,9 @@ for split, splitcut in zip(SPLIT_LIST, SPLIT_CUTS):
             frame.addObject(pinfo)
             frame.Write()
 
-            # ll_frame = delta_mass.frame(ROOT.RooFit.Bins(10), ROOT.RooFit.Range(-0.005, 0.005))
-
-            # nll = fit_function.createNLL(roo_data_slice, ROOT.RooFit.NumCPU(8))
-            # ROOT.RooMinimizer(nll).migrad()
-
-            # # pll = nll.createProfile(ROOT.RooArgSet(delta_mass))
- 
-            # nll.plotOn(ll_frame, ROOT.RooFit.ShiftToZero())
-            # # pll.plotOn(ll_frame, ROOT.RooFit.LineColor(ROOT.kRed))
-
-            # ll_frame.SetMinimum(-1)
-            # ll_frame.Write()
-
             bin_idx = HIST_MASS[model].FindBin((ctbin[0] + ctbin[1]) / 2)
             
-            HIST_MASS[model].SetBinContent(bin_idx, (MC_MASS-delta_mass.getVal()-mass_shift)*1000)
+            HIST_MASS[model].SetBinContent(bin_idx, (MC_MASS-delta_mass.getVal()+mass_shift)*1000)
             HIST_MASS[model].SetBinError(bin_idx, delta_mass.getError() * 1000)
             
             # HIST_SHIFT[model].SetBinContent(bin_idx, delta_mass.getVal()*1000)
@@ -202,7 +193,7 @@ for split, splitcut in zip(SPLIT_LIST, SPLIT_CUTS):
         HIST_MASS[model].Write()
         HIST_SHIFT[model].Write()
 
-        # hpu.mass_plot_makeup(HIST_MASS[model], model, CT_BINS, split)
+        hpu.mass_plot_makeup(HIST_MASS[model], model, CT_BINS, split)
 
 
 ###############################################################################

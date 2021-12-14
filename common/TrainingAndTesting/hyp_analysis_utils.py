@@ -138,6 +138,18 @@ def expo(x, tau):
     return np.exp(-x / (tau * 0.029979245800))
 
 
+def h_weighted_average(histo):
+    aver = 0    
+    weights = 0
+    for iBin in range(1,histo.GetNbinsX()+1):
+        counts = histo.GetBinContent(iBin)
+        err = histo.GetBinError(iBin)
+        aver += counts*(1/err**2)
+        weights += (1/err**2)
+    aver = aver/weights
+    error = np.sqrt(1/weights)
+    return aver, error
+
 def h2_preselection_efficiency(ptbins, ctbins, name='PreselEff'):
     th2 = TH2D(name, ';#it{p}_{T} (GeV/#it{c});c#it{t} (cm);Preselection efficiency',
                len(ptbins) - 1, np.array(ptbins, 'double'), len(ctbins) - 1, np.array(ctbins, 'double'))

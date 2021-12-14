@@ -51,7 +51,7 @@ SIGNIFICANCE_SCAN = args.significance
 SYSTEMATICS = args.systematics
 DBSHAPE = args.dbshape
 
-SYSTEMATICS_COUNTS = 1000
+SYSTEMATICS_COUNTS = 10000
 FIX_EFF = 0.70 if not SIGNIFICANCE_SCAN else 0
 ###############################################################################
 
@@ -84,7 +84,7 @@ EFFICIENCY = efficiency_file.Get('PreselEff').ProjectionY()
 EFFICIENCY.SetDirectory(0)
 
 
-file_name = results_dir + '/He3_abs_nominal.root'
+file_name = results_dir + '/He3_abs_1.5.root'
 abs_file = ROOT.TFile(file_name, 'read')
 ABSORPTION = abs_file.Get('0_90/fEffCt_antimatter_cent_0_90_func_BGBW')
 ABSORPTION.SetDirectory(0)
@@ -323,7 +323,7 @@ for model in BKG_MODELS:
     CORRECTED_COUNTS_BEST[model].Write()
 
     CORRECTED_COUNTS_BEST[model].UseCurrentStyle()
-    CORRECTED_COUNTS_BEST[model].Fit(expo, 'QRMIS+', '', 0, 35)
+    CORRECTED_COUNTS_BEST[model].Fit(expo, 'QRMIS+', '', 1, 35)
 
     fit_function = CORRECTED_COUNTS_BEST[model].GetFunction('myexpo')
     fit_function.SetLineColor(kRedC)

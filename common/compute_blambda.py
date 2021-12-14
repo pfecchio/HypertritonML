@@ -254,9 +254,9 @@ if SYSTEMATICS:
             ctbin_idx += 1
 
         mass, mass_error, chi2red = hau.b_form_histo(tmp_mass)
-        blambda = 1115.683 + 1875.61294257 - mass
+        blambda = 1115.683 + 0.036 + 1875.61294257 - mass
 
-        if chi2red < 3.:
+        if chi2red < 2.:
             blambda_dist.Fill(blambda)
             combinations.add(combo)
 

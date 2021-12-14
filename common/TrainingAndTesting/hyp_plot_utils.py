@@ -242,14 +242,16 @@ def plot_confusion_matrix(y_true, df, mode, score, normalize=False, title=None, 
 def mass_plot_makeup(histo, model, ptbin, split):
     blam_histo = histo.Clone()
     for iBin in range(1, histo.GetNbinsX() + 1):
-        blam_histo.SetBinContent(iBin, 1115.683 + 1875.61294257 - histo.GetBinContent(iBin))
+        blam_histo.SetBinContent(iBin, 1115.68 + 0.036 + 1875.61294257 - histo.GetBinContent(iBin))
     pol0 = ROOT.TF1('blfunction', '[0]', 0, 10)
     blam_histo.Fit(pol0, "0")
 
     blambda = pol0.GetParameter(0)
     blambda_error = pol0.GetParError(0)
 
-    mass = 1115.683 + 1875.61294257 - blambda
+    # blambda, blambda_error = hau.h_weighted_average(blam_histo)
+
+    mass = 1115.68 + 0.036 + 1875.61294257 - blambda
     mass_error = blambda_error
 
     blam_low = blambda - mass_error
@@ -265,7 +267,7 @@ def mass_plot_makeup(histo, model, ptbin, split):
 
     canvas = ROOT.TCanvas(f'hyp_mass_{model}{split}')
             
-    pad_range = [-1.2, 1.2]
+    pad_range = [-1.1, 1.3]
     label = 'B_{#Lambda}'
     frame = ROOT.gPad.DrawFrame(ptbin[0], pad_range[0], ptbin[-1], pad_range[1], ';#it{c}t (cm);' + label + ' ( MeV/#it{c}^{2} )')
      
