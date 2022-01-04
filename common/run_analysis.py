@@ -25,7 +25,10 @@ parser.add_argument('-o', '--optimize', help='Run the optimization', action='sto
 parser.add_argument('-a', '--application', help='Apply ML predictions on data', action='store_true')
 parser.add_argument('-s', '--significance', help='Run the significance optimisation studies', action='store_true')
 parser.add_argument('-side', '--side', help='Use the sideband as background', action='store_true')
-parser.add_argument('-split', '--split', help='Run with matter and anti-matter splitted', action='store_true')
+parser.add_argument('-matter', '--matter', help='Run with matter', action='store_true')
+parser.add_argument('-antimatter', '--antimatter', help='Run with antimatter', action='store_true')
+
+
 parser.add_argument('config', help='Path to the YAML configuration file')
 args = parser.parse_args()
 
@@ -58,13 +61,18 @@ EFF_MIN, EFF_MAX, EFF_STEP = params['BDT_EFFICIENCY']
 EFF_ARRAY = np.around(np.arange(EFF_MIN, EFF_MAX+EFF_STEP, EFF_STEP), 2)
 
 TRAIN = args.train
-SPLIT_MODE = args.split
 OPTIMIZE = args.optimize
 APPLICATION = args.application
 SIGNIFICANCE_SCAN = args.significance
 SIDEBANDS = args.side
 
-SPLIT_LIST = ['_matter','_antimatter'] if SPLIT_MODE else ['']
+SPLIT_LIST = ['']
+
+if args.matter:
+    SPLIT_LIST = ['_matter']
+
+if args.antimatter:
+    SPLIT_LIST = ['_antimatter']
 
 ###############################################################################
 # define paths for loading data
@@ -140,14 +148,22 @@ if APPLICATION:
 
 
         if LOAD_APPLIED_DATA:
-            df_applied = pd.read_parquet(os.path.dirname(data_path) + f'/applied_df_{FILE_PREFIX}.parquet.gzip', engine='fastparquet')
-            df_applied_mc = pd.read_parquet(os.path.dirname(signal_path) + f'/applied_mc_df_{FILE_PREFIX}.parquet.gzip', engine='fastparquet')
+            df_applied = pd.read_parquet(os.path.dirname(data_path) + f'/applied_df_{FILE_PREFIX}{split}.parquet.gzip', engine='fastparquet')
+            df_applied_mc = pd.read_parquet(os.path.dirname(signal_path) + f'/applied_mc_df_{FILE_PREFIX}{split}.parquet.gzip', engine='fastparquet')
         else:
             df_applied = hau.get_skimmed_data(data_path, CENT_CLASSES, PT_BINS, CT_BINS, COLUMNS, application_columns, N_BODY, split, LARGE_DATA)
-            df_applied.to_parquet(os.path.dirname(data_path) + f'/applied_df_{FILE_PREFIX}.parquet.gzip', compression='gzip')
-
             df_applied_mc = hau.get_applied_mc(signal_path, CENT_CLASSES, PT_BINS, CT_BINS, COLUMNS, application_columns, N_BODY, split)
-            df_applied_mc.to_parquet(os.path.dirname(signal_path) + f'/applied_mc_df_{FILE_PREFIX}.parquet.gzip', compression='gzip')
+
+            if split == '_antimatter':
+                df_applied = df_applied.query('Matter < 0.5')
+                df_applied_mc = df_applied_mc.query('Matter < 0.5')
+            
+            if split == '_matter':
+                df_applied = df_applied.query('Matter > 0.5')
+                df_applied_mc = df_applied_mc.query('Matter > 0.5')
+
+            df_applied.to_parquet(os.path.dirname(data_path) + f'/applied_df_{FILE_PREFIX}{split}.parquet.gzip', compression='gzip')
+            df_applied_mc.to_parquet(os.path.dirname(signal_path) + f'/applied_mc_df_{FILE_PREFIX}{split}.parquet.gzip', compression='gzip')
             
         ml_application = ModelApplication(N_BODY, df_applied, analysis_res_path, CENT_CLASSES, split)
 
@@ -173,10 +189,10 @@ if APPLICATION:
                         sigscan_eff, sigscan_tsd = ml_application.significance_scan(data_slice, presel_eff, eff_score_array, cclass, ptbin, ctbin, split, mass_bins)
                         eff_score_array = np.append(eff_score_array, [[sigscan_eff], [sigscan_tsd]], axis=1)
 
-                        sigscan_results[f'ct{ctbin[0]}{ctbin[1]}pt{ptbin[0]}{ptbin[1]}{split}'] = [sigscan_eff, sigscan_tsd]
+                        sigscan_results[f'ct{ctbin[0]}{ctbin[1]}pt{ptbin[0]}{ptbin[1]}'] = [sigscan_eff, sigscan_tsd]
 
             sigscan_results = np.asarray(sigscan_results)
-            filename_sigscan = results_dir + f'/Efficiencies/{FILE_PREFIX}_sigscan.npy'
+            filename_sigscan = results_dir + f'/Efficiencies/{FILE_PREFIX}{split}_sigscan.npy'
             np.save(filename_sigscan, sigscan_results)
 
     print (f'--- ML application time: {((time.time() - app_time) / 60):.2f} minutes ---')

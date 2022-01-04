@@ -37,12 +37,12 @@ class TrainingAnalysis:
                 self.df_bkg = self.df_bkg.query(sidebands_selection)
 
         if split == '_antimatter':
-            self.df_bkg = self.df_bkg.query('Matter < 0.5')
+            # self.df_bkg = self.df_bkg.query('Matter < 0.5')
             self.df_signal = self.df_signal.query('Matter < 0.5')
             self.df_generated = self.df_generated.query('matter < 0.5')
 
         if split == '_matter':
-            self.df_bkg = self.df_bkg.query('Matter > 0.5')
+            # self.df_bkg = self.df_bkg.query('Matter > 0.5')
             self.df_signal = self.df_signal.query('Matter > 0.5')
             self.df_generated = self.df_generated.query('matter > 0.5')
 
@@ -73,7 +73,7 @@ class TrainingAnalysis:
         if save:
             path = os.environ['HYPERML_EFFICIENCIES_{}'.format(self.mode)]
 
-            filename = path + f'/{prefix}_preseleff_cent{cent_class[0]}{cent_class[1]}{split}.root'
+            filename = path + f'/{prefix}{split}_preseleff_cent{cent_class[0]}{cent_class[1]}.root'
             t_file = ROOT.TFile(filename, 'recreate')
             
             pres_histo.Write()
@@ -235,7 +235,7 @@ class ModelApplication:
 
     def load_preselection_efficiency(self, cent_class, split, prefix=''):
         efficiencies_path = os.environ['HYPERML_EFFICIENCIES_{}'.format(self.mode)]
-        filename_efficiencies = efficiencies_path + f'/{prefix}_preseleff_cent{cent_class[0]}{cent_class[1]}{split}.root'
+        filename_efficiencies = efficiencies_path + f'/{prefix}{split}_preseleff_cent{cent_class[0]}{cent_class[1]}.root'
 
         tfile = ROOT.TFile(filename_efficiencies)
 
@@ -263,14 +263,6 @@ class ModelApplication:
 
     def get_preselection_efficiency(self, ptbin_index, ctbin_index):
         return self.presel_histo.GetBinContent(ptbin_index, ctbin_index)
-
-    def load_sigma_array(self, cent_class, pt_range, ct_range, split=''):
-        info_string = '_{}{}_{}{}_{}{}{}'.format(cent_class[0], cent_class[1], pt_range[0],
-                                                 pt_range[1], ct_range[0], ct_range[1], split)
-        sigma_path = os.environ['HYPERML_UTILS_{}'.format(
-            self.mode)]+'/FixedSigma'
-        filename_sigma = sigma_path + "/sigma_array" + info_string + '.npy'
-        return np.load(filename_sigma)
 
     def apply_BDT_to_data(self, cent_classes, pt_bins, ct_bins, training_columns, application_columns):
         print('\nApplying BDT to data: ...')

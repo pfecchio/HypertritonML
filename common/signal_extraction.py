@@ -27,6 +27,9 @@ parser.add_argument('-s', '--significance',
                     help='Use the BDTefficiency selection from the significance scan', action='store_true')
 parser.add_argument('-dbshape', '--dbshape',
                     help='Fit using DSCBShape', action='store_true')
+
+parser.add_argument('-matter', '--matter', help='Run with matter', action='store_true')
+parser.add_argument('-antimatter', '--antimatter', help='Run with antimatter', action='store_true')
 args = parser.parse_args()
 
 with open(os.path.expandvars(args.config), 'r') as stream:
@@ -36,9 +39,19 @@ with open(os.path.expandvars(args.config), 'r') as stream:
         print(exc)
 ###############################################################################
 
+SPLIT = ''
+
+if args.matter:
+    SPLIT = '_matter'
+
+if args.antimatter:
+    SPLIT = '_antimatter'
+
 ###############################################################################
+
 # define some globals
-FILE_PREFIX = params['FILE_PREFIX']
+FILE_PREFIX = params['FILE_PREFIX'] + SPLIT
+
 
 DATA_PATH = os.path.expandvars(params['DATA_PATH'])
 MC_PATH = os.path.expandvars(params['MC_PATH'])

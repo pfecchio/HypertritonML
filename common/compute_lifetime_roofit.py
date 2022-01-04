@@ -64,10 +64,10 @@ EFF_MIN, EFF_MAX, EFF_STEP = params['BDT_EFFICIENCY']
 EFF_ARRAY = np.around(np.arange(EFF_MIN, EFF_MAX+EFF_STEP, EFF_STEP), 2)
 
 SIGNIFICANCE_SCAN = args.significance
-SYSTEMATICS = args.systematics
+SYSTEMATICS = False
 DBSHAPE = args.dbshape
 
-SYSTEMATICS_COUNTS = 1
+SYSTEMATICS_COUNTS = 10000
 FIX_EFF = 0.70 if not SIGNIFICANCE_SCAN else 0
 ###############################################################################
 
@@ -136,7 +136,8 @@ def get_presel_eff(ctbin):
 
 
 def get_absorption_correction(ctbin):
-    abso = ABSORPTION.GetBinContent(ABSORPTION.FindBin((ctbin[0] + ctbin[1]) / 2))
+    abso = ABSORPTION.GetBinContent(
+        ABSORPTION.FindBin((ctbin[0] + ctbin[1]) / 2))
     matter_abso = abso * \
         MATTER_ABSORPTION.GetBinContent(
             MATTER_ABSORPTION.FindBin((ctbin[0] + ctbin[1]) / 2))
@@ -165,6 +166,7 @@ def fill_corrected(bkg, ctbin, counts, counts_err, eff):
     bin_idx = CORRECTED_COUNTS_H2[bkg].FindBin(
         (ctbin[0] + ctbin[1]) / 2, round(eff + 0.005, 3))
     bin_idx1d = CORRECTED_COUNTS_BEST[bkg].FindBin((ctbin[0] + ctbin[1]) / 2)
+
     abs_corr = get_absorption_correction(ctbin)
     presel_eff = get_presel_eff(ctbin)
     bin_width = CORRECTED_COUNTS_BEST[bkg].GetBinWidth(bin_idx1d)
@@ -177,6 +179,7 @@ def fill_corrected(bkg, ctbin, counts, counts_err, eff):
 
 def fill_corrected_best(bkg, ctbin, counts, counts_err, eff):
     bin_idx = CORRECTED_COUNTS_BEST[bkg].FindBin((ctbin[0] + ctbin[1]) / 2)
+
     abs_corr = get_absorption_correction(ctbin)
     presel_eff = get_presel_eff(ctbin)
     bin_width = CORRECTED_COUNTS_BEST[bkg].GetBinWidth(bin_idx)
@@ -223,6 +226,23 @@ def get_effscore_dict(ctbin):
     return {round(e[0], 2): e[1] for e in np.load(file_name).T}
 
 
+def expo_fit_Roofit(histo, likelihood=True):
+    # histo.SumW2(False)
+    ct = ROOT.RooRealVar("ct","ct", 1, 35)
+    tau = ROOT.RooRealVar("tau","tau",-0.12 ,-0.13840833825649462, -0.11462683683785295)
+    signal = ROOT.RooExponential("signal pdf", "signal pdf", ct, tau)
+    roo_hist = ROOT.RooDataHist("histo", "histo", ROOT.RooArgList(ct), ROOT.RooFit.Import(histo))
+    signal.fitTo(roo_hist, ROOT.RooFit.Range(1, 35))
+    print("TAU: ", -1/(0.029979245800*tau.getVal()))
+    frame = ct.frame()
+    frame.SetName(f'roofit')
+    roo_hist.plotOn(frame)
+    signal.plotOn(frame)
+    frame.Write()
+
+
+
+
 ###############################################################################
 # significance-scan/fixed efficiencies switch
 
@@ -233,10 +253,12 @@ else:
         CT_BINS[:-1], CT_BINS[1:])]
 
 # efficiency ranges for sampling the systematics
-syst_eff_ranges = np.asarray([list(range(int(x * 100) - 10, int(x * 100) + 11)) for x in eff_best_array]) / 100
+syst_eff_ranges = np.asarray(
+    [list(range(int(x * 100) - 10, int(x * 100) + 11)) for x in eff_best_array]) / 100
 # define the expo function for the lifetime fit
-expo = ROOT.TF1('myexpo', '[0]*exp(-x/([1]*0.029979245800))/((exp(-[2]/([1]*0.029979245800)) - exp(-[3]/([1]*0.029979245800))) * [1]*0.029979245800)', 1, 35)
-expo.SetParLimits(1, 230, 290)
+expo = ROOT.TF1(
+    'myexpo', '[0]*exp(-x/([1]*0.029979245800))/([1]*0.029979245800)', 1, 35)
+expo.SetParLimits(1, 100, 5000)
 #################################################
 
 
@@ -250,7 +272,6 @@ for index, ctbin in enumerate(zip(CT_BINS[:-1], CT_BINS[1:])):
             raw_counts, raw_counts_error = get_measured_h2(
                 RAW_COUNTS_H2, model, ctbin, bdt_eff)
             fill_corrected(model, ctbin, raw_counts, raw_counts_error, bdt_eff)
-            # print("ct bin: ", ctbin, "BDT eff best: ", bdt_eff_best, ", BDT eff: ", bdt_eff, ", Raw counts: ", raw_counts)
             if bdt_eff == bdt_eff_best:
                 print("ct bin: ", ctbin, "BDT eff best: ", bdt_eff_best, ", Presel eff: ", presel_eff, ", Raw counts: ", raw_counts)
 
@@ -259,84 +280,84 @@ for index, ctbin in enumerate(zip(CT_BINS[:-1], CT_BINS[1:])):
 
 tau_syst_array = np.zeros(SYSTEMATICS_COUNTS)
 
-# if SYSTEMATICS:
-#     # systematics histos
-#     lifetime_dist = ROOT.TH1D(
-#         'syst_lifetime', ';#tau ps ;counts', 100, 150, 350)
-#     lifetime_prob = ROOT.TH1D('prob_lifetime', ';prob. ;counts', 100, 0, 1)
+if SYSTEMATICS:
+    # systematics histos
+    lifetime_dist = ROOT.TH1D(
+        'syst_lifetime', ';#tau ps ;counts', 100, 150, 350)
+    lifetime_prob = ROOT.TH1D('prob_lifetime', ';prob. ;counts', 100, 0, 1)
 
-#     tmp_ctdist = CORRECTED_COUNTS_BEST[BKG_MODELS[0]].Clone('tmp_ctdist')
+    tmp_ctdist = CORRECTED_COUNTS_BEST[BKG_MODELS[0]].Clone('tmp_ctdist')
 
-#     combinations = set()
-#     sample_counts = 0   # good fits
-#     iterations = 0  # total fits
+    combinations = set()
+    sample_counts = 0   # good fits
+    iterations = 0  # total fits
 
-#     # stop with SYSTEMATICS_COUNTS number of good B_{Lambda} fits
-#     while sample_counts < SYSTEMATICS_COUNTS:
-#         tmp_ctdist.Reset()
+    # stop with SYSTEMATICS_COUNTS number of good B_{Lambda} fits
+    while sample_counts < SYSTEMATICS_COUNTS:
+        tmp_ctdist.Reset()
 
-#         iterations += 1
+        iterations += 1
 
-#         bkg_list = []
-#         eff_list = []
-#         bkg_idx_list = []
-#         eff_idx_list = []
+        bkg_list = []
+        eff_list = []
+        bkg_idx_list = []
+        eff_idx_list = []
 
-#         # loop over ctbins
-#         for ctbin_idx in range(len(CT_BINS) - 1):
-#             # random bkg model
-#             bkg_index = np.random.randint(0, len(BKG_MODELS))
-#             bkg_idx_list.append(bkg_index)
-#             bkg_list.append(BKG_MODELS[bkg_index])
+        # loop over ctbins
+        for ctbin_idx in range(len(CT_BINS) - 1):
+            # random bkg model
+            bkg_index = np.random.randint(0, len(BKG_MODELS))
+            bkg_idx_list.append(bkg_index)
+            bkg_list.append(BKG_MODELS[bkg_index])
 
-#             # random BDT efficiency in the defined range
-#             eff = np.random.choice(syst_eff_ranges[ctbin_idx])
-#             eff_list.append(eff)
-#             eff_idx = get_eff_index(eff)
-#             eff_idx_list.append(eff_idx)
+            # random BDT efficiency in the defined range
+            eff = np.random.choice(syst_eff_ranges[ctbin_idx])
+            eff_list.append(eff)
+            eff_idx = get_eff_index(eff)
+            eff_idx_list.append(eff_idx)
 
-#         # convert indexes into hash and if already sampled skip this combination
-#         combo = ''.join(map(str, bkg_idx_list + eff_idx_list))
-#         if combo in combinations:
-#             continue
+        # convert indexes into hash and if already sampled skip this combination
+        combo = ''.join(map(str, bkg_idx_list + eff_idx_list))
+        if combo in combinations:
+            continue
 
-#         # if indexes are good measure lifetime
-#         ctbin_idx = 1
-#         ct_bin_it = iter(zip(CT_BINS[:-1], CT_BINS[1:]))
+        # if indexes are good measure lifetime
+        ctbin_idx = 1
+        ct_bin_it = iter(zip(CT_BINS[:-1], CT_BINS[1:]))
 
-#         for model, eff in zip(bkg_list, eff_list):
-#             ctbin = next(ct_bin_it)
+        for model, eff in zip(bkg_list, eff_list):
+            ctbin = next(ct_bin_it)
 
-#             counts, error = get_corrected_counts(model, ctbin, eff)
+            counts, error = get_corrected_counts(model, ctbin, eff)
 
-#             tmp_ctdist.SetBinContent(ctbin_idx, counts)
-#             tmp_ctdist.SetBinError(ctbin_idx, error)
+            tmp_ctdist.SetBinContent(ctbin_idx, counts)
+            tmp_ctdist.SetBinError(ctbin_idx, error)
 
-#             ctbin_idx += 1
+            ctbin_idx += 1
 
-#         tmp_ctdist.Fit(expo, 'QRMIS+', '', 1, 35)
+        tmp_ctdist.Fit(expo, 'QRMIS+', '', 1, 35)
 
-#         # if ct fit is good use it for systematics
-#         if expo.GetChisquare() > 2. * expo.GetNDF():
-#             continue
+        # if ct fit is good use it for systematics
+        if expo.GetChisquare() > 2. * expo.GetNDF():
+            continue
 
-#         lifetime_dist.Fill(expo.GetParameter(1))
-#         lifetime_prob.Fill(expo.GetProb())
+        lifetime_dist.Fill(expo.GetParameter(1))
+        lifetime_prob.Fill(expo.GetProb())
 
-#         combinations.add(combo)
+        combinations.add(combo)
 
-#         tau_syst_array[sample_counts] = expo.GetParameter(1)
-#         sample_counts += 1
+        tau_syst_array[sample_counts] = expo.GetParameter(1)
+        sample_counts += 1
 
-#     output_file.cd()
+    output_file.cd()
 
-#     lifetime_dist.Write()
-#     lifetime_prob.Write()
+    lifetime_dist.Write()
+    lifetime_prob.Write()
 
-    # print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
-    # print(
-    #     f'\nGood iterations / Total iterations -> {SYSTEMATICS_COUNTS/iterations:.4f}')
-    # print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
+    print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
+    print(
+        f'\nGood iterations / Total iterations -> {SYSTEMATICS_COUNTS/iterations:.4f}')
+    print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
 
 
 kBlueC = ROOT.TColor.GetColor('#1f78b4')
@@ -346,7 +367,6 @@ kRedCT = ROOT.TColor.GetColorTransparent(kRedC, 0.5)
 
 likelihood = False
 opt_fit = 'QRMSIL+' if likelihood else 'QRMSI+'
-fit_range = [1,35]
 
 np.save(results_dir + f'/{FILE_PREFIX}_tau_syst_array.npy', tau_syst_array)
 
@@ -361,25 +381,10 @@ for model in BKG_MODELS:
 
     CORRECTED_COUNTS_BEST[model].UseCurrentStyle()
 
-    print('Integral: ', CORRECTED_COUNTS_BEST[model].Integral(fit_range[0],fit_range[1], "width"))
-    expo.FixParameter(0, CORRECTED_COUNTS_BEST[model].Integral(fit_range[0],fit_range[1], "width"))
-    expo.FixParameter(2, fit_range[0])
-    expo.FixParameter(3, fit_range[1])
-    fit_result = CORRECTED_COUNTS_BEST[model].Fit(expo, opt_fit, '', fit_range[0], fit_range[1])
-    print('Function Integral: ', expo.Integral(1,35))
+    
+    fit_result = CORRECTED_COUNTS_BEST[model].Fit(expo, opt_fit, '', 1, 35)
 
-    chi2 = 0
-    for iBin in range(1,CORRECTED_COUNTS_BEST[model].GetNbinsX() + 1):
-        diff = (expo.Integral(CORRECTED_COUNTS_BEST[model].GetBinLowEdge(iBin), CORRECTED_COUNTS_BEST[model].GetXaxis().GetBinUpEdge(iBin)) - CORRECTED_COUNTS_BEST[model].GetBinContent(iBin)*CORRECTED_COUNTS_BEST[model].GetBinWidth(iBin))**2
-        den =  (CORRECTED_COUNTS_BEST[model].GetBinError(iBin)*CORRECTED_COUNTS_BEST[model].GetBinWidth(iBin))**2
-        chi2 += diff/den
-
-
-    print('Chi2: ', chi2/(expo.GetNDF()))
-    print('Chi2 Func: ', expo.GetChisquare()/(expo.GetNDF()))
-
-        
-
+    expo_fit_Roofit(CORRECTED_COUNTS_BEST[model])
     graph_result = ROOT.TGraph()
     graph_result.SetName(f"likelihood_{model}")
     fit_result.Scan(1, graph_result,240, 320)
@@ -391,7 +396,8 @@ for model in BKG_MODELS:
     canvas = ROOT.TCanvas(f'ct_spectra_{model}')
     canvas.SetLogy()
 
-    frame = ROOT.gPad.DrawFrame(-0.5, 1, 35.5, 2000, ';#it{c}t (cm);d#it{N}/d(#it{c}t) [(cm)^{-1}]')
+    frame = ROOT.gPad.DrawFrame(-0.5, 1, 35.5, 2000,
+                                ';#it{c}t (cm);d#it{N}/d(#it{c}t) [(cm)^{-1}]')
 
     pinfo = ROOT.TPaveText(0.5, 0.65, 0.88, 0.86, 'NDC')
     pinfo.SetBorderSize(0)
@@ -403,22 +409,15 @@ for model in BKG_MODELS:
     strings = []
     strings.append('#bf{ALICE Internal}')
     strings.append('Pb-Pb  #sqrt{#it{s}_{NN}} = 5.02 TeV,  0-90%')
-    strings.append(f'#tau = {fit_function.GetParameter(1):.0f} #pm {fit_function.GetParError(1):.0f} ps')
-
-    
-    
-    strings.append(f'Fit Probability = {fit_function.GetProb():.2f}')
+    strings.append(
+        f'#tau = {fit_function.GetParameter(1):.0f} #pm {fit_function.GetParError(1):.0f} ps')
+    strings.append(
+        f'#chi^{{2}} / NDF = {(fit_function.GetChisquare() / fit_function.GetNDF()):.2f}')
 
     for s in strings:
         pinfo.AddText(s)
 
-    new_expo = ROOT.TF1('new_expo2', '[0]*exp(-x/([1]*0.029979245800))/((exp(-[2]/([1]*0.029979245800)) - exp(-[3]/([1]*0.029979245800))) * [1]*0.029979245800)', 1, 35)
-    new_expo.SetParameter(0, fit_function.GetParameter(0))
-    new_expo.SetParameter(1, fit_function.GetParameter(1))
-    new_expo.SetParameter(2, fit_function.GetParameter(2))
-    new_expo.SetParameter(3, fit_function.GetParameter(3))
-    new_expo.Draw('same')
-
+    fit_function.Draw('same')
     CORRECTED_COUNTS_BEST[model].Draw('ex0same')
     CORRECTED_COUNTS_BEST[model].SetMarkerStyle(20)
     CORRECTED_COUNTS_BEST[model].SetMarkerColor(kBlueC)
@@ -432,10 +431,3 @@ for model in BKG_MODELS:
     pinfo.Draw('x0same')
 
     canvas.Write()
-
-output_file.Close()
-
-
-new_out = ROOT.TFile('out2.root', "recreate")
-CORRECTED_COUNTS_BEST['pol1'].Write()
-new_out.Close()
