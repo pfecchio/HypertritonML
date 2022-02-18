@@ -74,7 +74,7 @@ void CollectionPlot()
   // cout << "Chi2 : " << chi2 << endl;
   // cout << "Chi2/(N-1) : " << chi2/(N-1) << endl;
 
-  TCanvas *cv = new TCanvas("cv", "lifetime collection", 876, 767);
+  TCanvas *cv = new TCanvas("cv", "lifetime collection", 800, 800);
   // cv->SetMargin(0.340961, 0.0514874, 0.17, 0.070162);
   cv->SetMargin(0.340961, 0.0514874, 0.121294, 0.140162);
   TH2D *frame = new TH2D("frame", ";{}^{3}_{#Lambda}H lifetime (ps);", 1000, 0, 510, nMeasures, kOffset, kOffset + nMeasures);
@@ -243,7 +243,7 @@ void CollectionPlot()
   leg1->AddEntry(Fcn, "#Lambda lifetime - PDG value", "l");
   // leg1->AddEntry(boxFcn1, "Published world average", "fl");
 
-  TLegend *leg2 = new TLegend(0.341533, 0.87062, 0.949085, 0.985175);
+  TLegend *leg2 = new TLegend(0.340961, 0.87062, 0.949085, 0.995175);
   leg2->SetFillStyle(0);
   leg2->SetMargin(0.16); // separation symbol-text
   leg2->SetBorderSize(0);
@@ -255,7 +255,6 @@ void CollectionPlot()
   leg2->AddEntry(Fcn7, "Nuo. Cim. 51 (1979) 180-186", "l");
   leg2->AddEntry(Fcn6, "J.Phys. G18 (1992) 339-357", "l");
   leg2->AddEntry(Fcn3, "PRC 57 (1998) 1595", "l");
-  // leg2->AddEntry(Fcn5, "PLB 791 (2019) 48-53", "l");
   leg2->AddEntry(Fcn4, "PRC 102 (2020) 064002", "l");
   leg2->AddEntry(boxFcn7, "PLB 811 (2020) 135916", "f");
 

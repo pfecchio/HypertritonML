@@ -267,36 +267,36 @@ def mass_plot_makeup(histo, model, ptbin, split):
 
     canvas = ROOT.TCanvas(f'hyp_mass_{model}{split}')
             
-    pad_range = [-1.1, 1.3]
+    pad_range = [-1.1, 1.7]
     label = 'B_{#Lambda}'
     frame = ROOT.gPad.DrawFrame(ptbin[0], pad_range[0], ptbin[-1], pad_range[1], ';#it{c}t (cm);' + label + ' ( MeV/#it{c}^{2} )')
      
-    pinfo = ROOT.TPaveText(0.142, 0.666, 0.520, 0.850, 'NDC')
+    pinfo = ROOT.TPaveText(0.142, 0.6, 0.520, 0.850, 'NDC')
     pinfo.SetBorderSize(0)
     pinfo.SetFillStyle(0)
-    pinfo.SetTextAlign(11)
+    pinfo.SetTextAlign(22)
     pinfo.SetTextFont(43)
-    pinfo.SetTextSize(26)
+    pinfo.SetTextSize(25)
 
     string_list = []
-    string_list.append('#bf{ALICE Internal}')
-    string_list.append('Pb-Pb  #sqrt{#it{s}_{NN}} = 5.02 TeV,  0-90%')
+    string_list.append('ALICE')
+    string_list.append('Pb#font[122]{-}Pb, 0-90%, #sqrt{#it{s}_{NN}} = 5.02 TeV')
     string_list.append('m_{ {}^{3}_{#Lambda}H}' + f' = {mass:.3f} #pm {mass_error:.3f} MeV')
     string_list.append('B_{#Lambda}' + ' = {:.3f} #pm {:.3f} '.format(round(blambda, 3), round(mass_error, 3)) + 'MeV')
-    string_list.append('#chi^{2} / n.d.f. = ' + f'{chi2_red:.3f}')
+    # string_list.append('#chi^{2} / n.d.f. = ' + f'{chi2_red:.3f}')
         
     for s in string_list:
         pinfo.AddText(s)
 
     mass_line = ROOT.TLine(ROOT.gPad.GetUxmin(), blambda, ROOT.gPad.GetUxmax(), blambda)
-    mass_line.SetLineColor(kRedC)
-    # mass_line.SetLineWidth(1.5)
+    mass_line.SetLineColor(kOrangeC)
+    mass_line.SetLineWidth(2)
 
     mass_box = ROOT.TBox(ROOT.gPad.GetUxmin(), blam_low, ROOT.gPad.GetUxmax(), blam_up)
     mass_box.SetFillColor(ROOT.kOrange)
     mass_box.SetFillStyle(3004)
     mass_box.SetLineWidth(0)
-    mass_box.Draw('same')
+    # mass_box.Draw('same')
 
     mass_line.Draw('same')
     pinfo.Draw('x0same')
@@ -323,10 +323,10 @@ def sigma_plot_makeup(histo, model, ptbin, split):
     pinfo.SetFillStyle(0)
     pinfo.SetTextAlign(11)
     pinfo.SetTextFont(43)
-    pinfo.SetTextSize(24)
+    pinfo.SetTextSize(25)
 
-    pinfo.AddText('#bf{ALICE Internal}')
-    pinfo.AddText('Pb-Pb  #sqrt{#it{s}_{NN}} = 5.02 TeV,  0-90%')
+    pinfo.AddText('#bf{ALICE}')
+    pinfo.AddText('ALICE Pb#font[122]{-}Pb, 0-90%, #sqrt{#it{s}_{NN}} = 5.02 TeV')
 
     pinfo.Draw('x0same')
     histo.Draw('ex0same')

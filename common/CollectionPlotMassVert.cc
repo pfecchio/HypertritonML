@@ -59,9 +59,9 @@ void CollectionPlotMassVert()
     // cout << "Chi2 : " << chi2 << endl;
     // cout << "Chi2/(N-1) : " << chi2/(N-1) << endl;
 
-    TCanvas *cv = new TCanvas("cv", "blam collection", 700, 867);
+    TCanvas *cv = new TCanvas("cv", "blam collection", 800, 800);
     // cv->SetMargin(0.340961, 0.0514874, 0.17, 0.070162);
-    cv->SetMargin(0.300961, 0.0514874, 0.121294, 0.140162);
+    cv->SetMargin(0.0514874, 0.340961, 0.121294, 0.140162);
     TH2D *frame = new TH2D("frame", ";B_{#Lambda} (MeV);", 1000, -0.55, 0.75, nMeasures, kOffset, kOffset + nMeasures);
     std::string names[nMeasures]{"NPB1 (1967) 105", "NPB4 (1968) 511", "PRD1 (1970) 66", "NPB52 (1973) 1", "Nat. Phys 16 (2020)"};
 
@@ -76,7 +76,7 @@ void CollectionPlotMassVert()
             frame->GetYaxis()->SetBinLabel(i + 1, names[i].data());
     }
 
-    frame->Draw("col");
+    frame->Draw("col Y+");
 
     TGraphAsymmErrors *gSpect;
     gSpect = new TGraphAsymmErrors(N, bind, point, err_x_low, err_x_high, err_y, err_y);
@@ -155,7 +155,7 @@ void CollectionPlotMassVert()
     gSpect_alice->Draw("pzsame");
     gSpect2_alice->Draw("spe2");
 
-    TLegend *leg2 = new TLegend(0.30, 0.87062, 0.949085 -0.1, 0.985175);
+    TLegend *leg2 = new TLegend(0.0514874, 0.87062, 0.949085 - 0.340961 + 0.0514874, 0.995175);
     leg2->SetFillStyle(0);
     leg2->SetMargin(0.16); // separation symbol-text
     leg2->SetBorderSize(0);

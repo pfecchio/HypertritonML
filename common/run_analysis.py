@@ -54,8 +54,8 @@ COLUMNS = params['TRAINING_COLUMNS']
 MODEL_PARAMS = params['XGBOOST_PARAMS']
 HYPERPARAMS = params['HYPERPARAMS']
 HYPERPARAMS_RANGE = params['HYPERPARAMS_RANGE']
-
 BKG_MODELS = params['BKG_MODELS']
+MAG_FIELD = params['MAG_FIELD']
 
 EFF_MIN, EFF_MAX, EFF_STEP = params['BDT_EFFICIENCY']
 EFF_ARRAY = np.around(np.arange(EFF_MIN, EFF_MAX+EFF_STEP, EFF_STEP), 2)
@@ -119,8 +119,17 @@ if TRAIN:
 
                     y_pred = model_handler.predict(data[2])
                     data[2].insert(0, 'score', y_pred)
-                    eff, tsd = analysis_utils.bdt_efficiency_array(data[3], y_pred, n_points=1000)
-                    score_from_eff_array = analysis_utils.score_from_efficiency_array(data[3], y_pred, EFF_ARRAY)
+
+                    if split != "":
+                        mc_truth = data[3][data[2]['Matter'] > 0.5] if split=="_matter" else data[3][data[2]['Matter'] < 0.5]
+                        y_pred = y_pred[data[2]['Matter'] > 0.5] if split=="_matter" else y_pred[data[2]['Matter'] < 0.5]
+                    
+                    else:
+                        mc_truth = data[3]
+
+
+                    eff, tsd = analysis_utils.bdt_efficiency_array(mc_truth, y_pred, n_points=1000)
+                    score_from_eff_array = analysis_utils.score_from_efficiency_array(mc_truth, y_pred, EFF_ARRAY)
                     fixed_eff_array = np.vstack((EFF_ARRAY, score_from_eff_array))
 
                     ml_analysis.save_ML_analysis(model_handler, fixed_eff_array, cent_class=cclass, pt_range=ptbin, ct_range=ctbin, split=split)
@@ -139,7 +148,7 @@ if APPLICATION:
     if (N_BODY==3):
         application_columns = ['score', 'm', 'ct', 'pt', 'centrality', 'positive', 'mppi_vert', 'mppi', 'mdpi', 'tpc_ncls_de', 'tpc_ncls_pr', 'tpc_ncls_pi']
     else:
-        application_columns = ['score', 'm', 'ct', 'pt', 'centrality', 'Matter']
+        application_columns = ['score', 'm', 'ct', 'pt', 'centrality', 'Matter', 'magField']
 
     print('\n==================================================')
     print('Application and signal extraction ...', end='\r')
@@ -153,6 +162,10 @@ if APPLICATION:
         else:
             df_applied = hau.get_skimmed_data(data_path, CENT_CLASSES, PT_BINS, CT_BINS, COLUMNS, application_columns, N_BODY, split, LARGE_DATA)
             df_applied_mc = hau.get_applied_mc(signal_path, CENT_CLASSES, PT_BINS, CT_BINS, COLUMNS, application_columns, N_BODY, split)
+
+            if MAG_FIELD!="":
+                df_applied = df_applied.query(f'magField=={MAG_FIELD}')
+                df_applied_mc = df_applied_mc.query(f'magField=={MAG_FIELD}')
 
             if split == '_antimatter':
                 df_applied = df_applied.query('Matter < 0.5')

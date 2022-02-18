@@ -19,8 +19,7 @@
 #include "../../common/GenerateTable/Table2.h"
 
 using std::string;
-      using namespace ROOT::Math;
-
+using namespace ROOT::Math;
 
 void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypTableDir = "", string ptShape = "bw")
 {
@@ -45,18 +44,12 @@ void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypT
   string inFileName = string("HyperTritonTree_") + mcName + otf + ".root";
   string inFileArg = hypDataDir + "/" + inFileName;
 
-  string outFileName = string("SignalTable_mtexp_") + mcName + otf + ".root";
+  string outFileName = string("SignalTable_B_") + mcName + otf + ".root";
   string outFileArg = hypTableDir + "/" + outFileName;
-
-  string absFileName = "AbsorptionHe3.root";
-  string absFileArg = hypUtilsDir + "/" + absFileName;
 
   string bwFileName = "Anti_fits.root";
   string bwFileArg = hypUtilsDir + "/" + bwFileName;
 
-  TFile absFile(absFileArg.data());
-  TH1 *hCorrM = (TH1 *)absFile.Get("hCorrectionHyp");
-  TH1 *hCorrA = (TH1 *)absFile.Get("hCorrectionAntiHyp");
 
   // get the bw functions for the pt rejection
   TFile bwFile(bwFileArg.data());
@@ -70,11 +63,11 @@ void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypT
 
   if (ptShape == "bw")
   {
-    hypPtShape0 = (TF1 *)bwFile.Get("Mt-exp/1/Mt-exp1");
-    hypPtShape1 = (TF1 *)bwFile.Get("Mt-exp/2/Mt-exp2");
-    hypPtShape2 = (TF1 *)bwFile.Get("Mt-exp/3/Mt-exp3");
-    hypPtShape3 = (TF1 *)bwFile.Get("Mt-exp/4/Mt-exp4");
-    hypPtShape4 = (TF1 *)bwFile.Get("Mt-exp/5/Mt-exp5");
+    hypPtShape0 = (TF1 *)bwFile.Get("BGBW/0/BGBW0");
+    hypPtShape1 = (TF1 *)bwFile.Get("BGBW/1/BGBW1");
+    hypPtShape2 = (TF1 *)bwFile.Get("BGBW/2/BGBW2");
+    hypPtShape3 = (TF1 *)bwFile.Get("BGBW/3/BGBW3");
+    hypPtShape4 = (TF1 *)bwFile.Get("BGBW/4/BGBW4");
   }
 
   float max = 0.0;
@@ -92,19 +85,10 @@ void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypT
   TTreeReaderArray<SHyperTritonHe3pi> SHyperVec = {fReader, "SHyperTriton"};
   TTreeReaderValue<RCollision> RColl = {fReader, "RCollision"};
 
-  TH2D *hNSigmaTPCVsPtHe3 =
-      new TH2D("nSigmaTPCvsPTHe3", ";#it{p}_{T} (GeV/#it{c});n#sigma_{TPC}", 32, 2, 10, 128, -8, 8);
-
   // new flat tree with the features
   TFile outFile(outFileArg.data(), "RECREATE");
   Table2 table("SignalTable", "Signal Table");
   GenTable2 genTable("GenTable", "Generated particle table");
-
-  TH1D genHA("genA", ";ct (cm)", 50, 0, 40);
-  TH1D absHA("absA", ";ct (cm)", 50, 0, 40);
-
-  TH1D genHM("genM", ";ct (cm)", 50, 0, 40);
-  TH1D absHM("absM", ";ct (cm)", 50, 0, 40);
 
   while (fReader.Next())
   {
@@ -154,26 +138,16 @@ void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypT
         float hypPtShapeNum = hypPtShape->Eval(pt) / max;
         if (hypPtShapeNum < gRandom->Rndm())
           continue;
-        // // std::cout << TMath::Exp(-Ct / rejCt) / TMath::Exp(-Ct / lamCt) << std::endl;
-        // if (gRandom->Rndm() > TMath::Exp(-Ct / rejCt) / TMath::Exp(-Ct / lamCt))
-        //   continue;
       }
       genTable.Fill(SHyper, *RColl);
       int ind = SHyper.fRecoIndex;
 
-      (genTable.IsMatter() ? genHM : genHA).Fill(genTable.GetCt());
-      float protonPt = pt / 3.;
-      float corrBin = hCorrA->FindBin(protonPt);
-      float threshold = (genTable.IsMatter() ? hCorrM : hCorrA)->GetBinContent(corrBin);
-      if (gRandom->Rndm() < threshold)
-        (genTable.IsMatter() ? absHM : absHA).Fill(genTable.GetCt());
 
       if (ind >= 0)
       {
         auto &RHyper = RHyperVec[ind];
         table.Fill(RHyper, *RColl, useProposeMasses);
         double recpt = std::hypot(RHyper.fPxHe3 + RHyper.fPxPi, RHyper.fPyHe3 + RHyper.fPyPi);
-        hNSigmaTPCVsPtHe3->Fill(recpt, RHyper.fTPCnSigmaHe3);
       }
     }
   }
@@ -182,14 +156,5 @@ void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypT
 
   table.Write();
   genTable.Write();
-  hNSigmaTPCVsPtHe3->Write();
-  absHM.Sumw2();
-  genHM.Sumw2();
-  absHM.Divide(&genHM);
-  absHM.Write();
-  absHA.Sumw2();
-  genHA.Sumw2();
-  absHA.Divide(&genHA);
-  absHA.Write();
   outFile.Close();
 }

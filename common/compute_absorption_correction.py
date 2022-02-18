@@ -97,8 +97,8 @@ for he3 in zip(np_he3['pt'], np_he3['pdg'], np_he3['absCt'], np_he3['eta']):
         if key_counter == 0:
             key_counter += 1
         # rejection sampling to reweight pt
-        if ROOT.gRandom.Rndm()*func_max[key] > func[key].Eval(he3[0]):
-            continue
+        # if ROOT.gRandom.Rndm()*func_max[key] > func[key].Eval(he3[0]):
+        #     continue
         # sample decay ct and ckeck for absorption
         decCt = ROOT.gRandom.Exp(7.6)
         # polar angle from eta
@@ -116,7 +116,7 @@ for he3 in zip(np_he3['pt'], np_he3['pdg'], np_he3['absCt'], np_he3['eta']):
         h_gen_radius[f"{split}_" + key].Fill(dec_radius)
         h_gen_ct[f"{split}_" + key].Fill(decCt)
         # print('gen: ', he3[0])
-        if(decCt < absCt or absCt < 0.5):  # decCt < absCt
+        if(decCt < absCt or absCt < -0.5):  # decCt < absCt
             h_rec_radius[f"{split}_" + key].Fill(dec_radius)
             h_rec_ct[f"{split}_" + key].Fill(decCt)
             h_rec_ct["all_" + key].Fill(decCt)

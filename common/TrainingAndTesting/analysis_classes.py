@@ -7,7 +7,6 @@ from concurrent.futures import ThreadPoolExecutor
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import ROOT
 import uproot
 import xgboost as xgb
 from hipe4ml import analysis_utils, plot_utils
@@ -16,6 +15,8 @@ from sklearn.model_selection import train_test_split
 
 import hyp_analysis_utils as hau
 import hyp_plot_utils as hpu
+
+import ROOT
 
 
 class TrainingAnalysis:
@@ -32,40 +33,52 @@ class TrainingAnalysis:
         if self.mode == 2:
             self.df_signal = uproot.open(mc_file_name)['SignalTable'].arrays(library='pd')
             self.df_generated = uproot.open(mc_file_name)['GenTable'].arrays(library='pd')
-            self.df_bkg = uproot.open(bkg_file_name)['DataTable'].arrays(library='pd', entry_stop=entrystop)
+            self.df_bkg = pd.read_parquet(bkg_file_name) if bkg_file_name[-4:]=='gzip'  else uproot.open(bkg_file_name)['DataTable'].arrays(library='pd')
+
             if sidebands:
                 self.df_bkg = self.df_bkg.query(sidebands_selection)
+        
+        self.split_cut_dict = {}
+
+        if split == "":
+            self.split_cut_dict["reco"] = split
+            self.split_cut_dict["gen"] = split
+
 
         if split == '_antimatter':
-            # self.df_bkg = self.df_bkg.query('Matter < 0.5')
-            self.df_signal = self.df_signal.query('Matter < 0.5')
-            self.df_generated = self.df_generated.query('matter < 0.5')
+            self.split_cut_dict["reco"] = 'Matter < 0.5'
+            self.split_cut_dict["gen"] = 'matter < 0.5'
 
         if split == '_matter':
-            # self.df_bkg = self.df_bkg.query('Matter > 0.5')
-            self.df_signal = self.df_signal.query('Matter > 0.5')
-            self.df_generated = self.df_generated.query('matter > 0.5')
+            self.split_cut_dict["reco"] = 'Matter > 0.5'
+            self.split_cut_dict["gen"] = 'matter > 0.5'
 
         self.df_signal['y'] = 1
         self.df_bkg['y'] = 0
 
     def preselection_efficiency(self, cent_class, ct_bins, pt_bins, split, save=True, prefix=''):
-        cent_cut = f'{cent_class[0]}<=centrality<={cent_class[1]}'
+        total_cut = {}
+    
+        cut = f'{cent_class[0]}<=centrality<={cent_class[1]}'
 
-        if (len(ct_bins)>2):
-            cut  =  f'{pt_bins[0]}<=pt<={pt_bins[1]}'
+        if split!="":
+            total_cut['reco'] = cut + " and " + self.split_cut_dict["reco"] + f' and {pt_bins[0]}<=pt<={pt_bins[1]}'
+            total_cut['gen'] = cut + " and " + self.split_cut_dict["gen"]
+        
         else:
-            cut  =  f'{ct_bins[0]}<=ct<={ct_bins[1]}'            
+            total_cut['reco'] = cut + f' and {pt_bins[0]}<=pt<={pt_bins[1]}'
+            total_cut['gen'] = cut 
+
             
         # rap_cut = ' and abs(rapidity)<0.5'
         pres_histo = hau.h2_preselection_efficiency(pt_bins, ct_bins)
         gen_histo = hau.h2_generated(pt_bins, ct_bins)
 
-        for pt, ct in self.df_signal.query(cent_cut + " and " + cut)[['pt', 'ct']].to_records(index=False):
+        for pt, ct in self.df_signal.query(total_cut['reco'])[['pt', 'ct']].to_records(index=False):
             pres_histo.Fill(pt,ct)
         
         cols = ['gPt', 'gCt'] if "gPt" in list(self.df_generated.columns) else ['pt', 'ct']
-        for pt, ct in self.df_generated.query(cent_cut)[cols].to_records(index=False):
+        for pt, ct in self.df_generated.query(total_cut['gen'])[cols].to_records(index=False):
             gen_histo.Fill(pt,ct)
 
         pres_histo.Divide(gen_histo)
@@ -95,7 +108,7 @@ class TrainingAnalysis:
 
         df = pd.concat([self.df_signal.query(data_range), self.df_bkg.query(data_range)])
 
-        train_set, test_set, y_train, y_test = train_test_split(df[training_columns + ['m']], df['y'], test_size=test_size, random_state=42)
+        train_set, test_set, y_train, y_test = train_test_split(df[training_columns + ['m', 'Matter']], df['y'], test_size=test_size, random_state=42)
 
         return [train_set, y_train, test_set, y_test]
 

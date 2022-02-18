@@ -17,11 +17,13 @@ using namespace std;
 void GenerateTableFromData(bool likeSign = false, bool kInt7 = false, string dataDir = "" , string tableDir = "")
 {
 
-  if (dataDir == "") dataDir = getenv("HYPERML_TREES__2");
+  cout<<"CIAO"<<endl;
+  if (dataDir == "") dataDir = getenv("HYPERML_TREES_2");
   if (tableDir == "") tableDir = getenv("HYPERML_TABLES_2");
 
-  string pass = getenv("HYPERML_PASS");
+  string pass = "3";
   string otf = getenv("HYPERML_OTF");
+
   string passString = "_pass" + pass + otf + ".root";
 
   string kintstring = kInt7 ? "KINT7" : "";

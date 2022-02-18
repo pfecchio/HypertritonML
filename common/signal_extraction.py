@@ -15,6 +15,8 @@ import math
 ROOT.gROOT.LoadMacro('RooCustomPdfs/RooDSCBShape.cxx++')
 from ROOT import RooDSCBShape
 
+kBlueC = ROOT.TColor.GetColor('#1f78b4')
+kOrangeC  = ROOT.TColor.GetColor("#ff7f00")
 
 ROOT.gROOT.SetBatch()
 
@@ -304,13 +306,9 @@ for ctbin in zip(CT_BINS[:-1], CT_BINS[1:]):
             frame = mass.frame(80)
             frame.SetName(f'eff{eff:.2f}_{model}')
 
-            roo_data_slice.plotOn(frame, ROOT.RooFit.Name('data'))
-            fit_function.plotOn(frame, ROOT.RooFit.LineColor(
-                ROOT.kBlue), ROOT.RooFit.Name('model'))
-            fit_function.plotOn(frame, ROOT.RooFit.Components(
-                'signal'), ROOT.RooFit.LineColor(ROOT.kRed))
-            fit_function.plotOn(frame, ROOT.RooFit.Components(
-                'bkg'), ROOT.RooFit.LineStyle(ROOT.kDashed), ROOT.RooFit.LineColor(ROOT.kRed))
+            roo_data_slice.plotOn(frame, ROOT.RooFit.Name('data'), ROOT.RooFit.MarkerSize(1.5))
+            fit_function.plotOn(frame, ROOT.RooFit.Components('bkg'), ROOT.RooFit.LineStyle(9), ROOT.RooFit.LineColor(kOrangeC))
+            fit_function.plotOn(frame, ROOT.RooFit.LineColor(kBlueC))
 
             signal_counts = n.getVal()*roo_data_slice.sumEntries()
             signal_counts_error = (n.getError()/n.getVal())*n.getVal()*roo_data_slice.sumEntries()

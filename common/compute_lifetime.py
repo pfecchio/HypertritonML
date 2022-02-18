@@ -143,7 +143,7 @@ def get_absorption_correction(ctbin):
     if SPLIT == '_antimatter':
         return abso
     if SPLIT == '_matter':
-        return abso
+        return matter_abso
     abso = (abso + matter_abso)/2
     return abso
 
@@ -340,6 +340,7 @@ tau_syst_array = np.zeros(SYSTEMATICS_COUNTS)
 
 
 kBlueC = ROOT.TColor.GetColor('#1f78b4')
+kOrangeC  = ROOT.TColor.GetColor("#ff7f00")
 kBlueCT = ROOT.TColor.GetColorTransparent(kBlueC, 0.5)
 kRedC = ROOT.TColor.GetColor('#e31a1c')
 kRedCT = ROOT.TColor.GetColorTransparent(kRedC, 0.5)
@@ -386,28 +387,30 @@ for model in BKG_MODELS:
     graph_result.Write()
 
     fit_function = CORRECTED_COUNTS_BEST[model].GetFunction('myexpo')
-    fit_function.SetLineColor(kRedC)
+    fit_function.SetLineColor(kOrangeC)
+    fit_function.SetLineWidth(2)
+
 
     canvas = ROOT.TCanvas(f'ct_spectra_{model}')
     canvas.SetLogy()
 
-    frame = ROOT.gPad.DrawFrame(-0.5, 1, 35.5, 2000, ';#it{c}t (cm);d#it{N}/d(#it{c}t) [(cm)^{-1}]')
+    frame = ROOT.gPad.DrawFrame(-0.5, 1, 35.5, 1000, ';#it{c}t (cm);d#it{N}/d(#it{c}t) [(cm)^{-1}]')
 
-    pinfo = ROOT.TPaveText(0.5, 0.65, 0.88, 0.86, 'NDC')
+    pinfo = ROOT.TPaveText(0.5, 0.65, 0.88, 0.85, 'NDC')
     pinfo.SetBorderSize(0)
     pinfo.SetFillStyle(0)
     pinfo.SetTextAlign(22)
     pinfo.SetTextFont(43)
-    pinfo.SetTextSize(22)
+    pinfo.SetTextSize(25)
 
     strings = []
-    strings.append('#bf{ALICE Internal}')
-    strings.append('Pb-Pb  #sqrt{#it{s}_{NN}} = 5.02 TeV,  0-90%')
+    strings.append('ALICE')
+    strings.append('Pb#font[122]{-}Pb, 0-90%, #sqrt{#it{s}_{NN}} = 5.02 TeV')
     strings.append(f'#tau = {fit_function.GetParameter(1):.0f} #pm {fit_function.GetParError(1):.0f} ps')
 
     
     
-    strings.append(f'Fit Probability = {fit_function.GetProb():.2f}')
+    # strings.append(f'Fit Probability = {fit_function.GetProb():.2f}')
 
     for s in strings:
         pinfo.AddText(s)
@@ -427,7 +430,7 @@ for model in BKG_MODELS:
     CORRECTED_COUNTS_BEST[model].SetMaximum(1000)
     CORRECTED_COUNTS_BEST[model].SetStats(0)
 
-    frame.GetYaxis().SetRangeUser(7, 5000)
+    frame.GetYaxis().SetRangeUser(7, 2000)
     frame.GetXaxis().SetRangeUser(0.5, 35.5)
     pinfo.Draw('x0same')
 
@@ -436,6 +439,6 @@ for model in BKG_MODELS:
 output_file.Close()
 
 
-new_out = ROOT.TFile('out2.root', "recreate")
-CORRECTED_COUNTS_BEST['pol1'].Write()
-new_out.Close()
+# new_out = ROOT.TFile('out2.root', "recreate")
+# CORRECTED_COUNTS_BEST['pol1'].Write()
+# new_out.Close()

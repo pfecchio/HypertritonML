@@ -1,6 +1,6 @@
 
 NBODY: 2
-FILE_PREFIX: '2body_analysis_matter'
+FILE_PREFIX: '2body_analysis_Bmatt'
 
 
 CENTRALITY_CLASS:
@@ -10,20 +10,17 @@ CT_BINS: [1, 2, 4, 6, 8, 10, 14, 18, 23, 35]
 PT_BINS: [2, 10]
 
 BKG_MODELS: ['pol2', 'pol1', 'expo']
-
 BDT_EFFICIENCY: [0.30, 0.99, 0.01] ##min, max ,step
-
+MAG_FIELD: ""
 
 LARGE_DATA: False
 LOAD_APPLIED_DATA: False
 
-SPLIT: True
 
-
-MC_PATH: $HYPERML_TABLES_2/SignalTable_new_20g7.root
-BKG_PATH: "/data/fmazzasc/PbPb_2body/DataTable_18qr_pass3_LS.root"
-DATA_PATH: "/data/fmazzasc/PbPb_2body/no_pt_cut/DataTable_18qr.parquet.gzip"
-ANALYSIS_RESULTS_PATH: "/data/fmazzasc/PbPb_2body/no_pt_cut/AnalysisResults_18qr.root"
+MC_PATH: $HYPERML_TABLES_2/TablesWithB/SignalTable_B_20g7.root
+BKG_PATH: "/data/fmazzasc/PbPb_2body/2018/DataTable_18qr_pass3_LS.root"
+DATA_PATH: $HYPERML_TABLES_2/TablesWithB/DataTable_18qr_B.parquet.gzip
+ANALYSIS_RESULTS_PATH: "/data/fmazzasc/PbPb_2body/2018/AnalysisResults_18qr.root"
 
 
 XGBOOST_PARAMS:

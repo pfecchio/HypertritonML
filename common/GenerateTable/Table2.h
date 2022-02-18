@@ -52,6 +52,7 @@ private:
   float TOFnSigmaPi;
   float TPCmomHe3;
   float TPCsignalHe3;
+  bool magField;
 };
 
 Table2::Table2(std::string name, std::string title)
@@ -94,11 +95,14 @@ Table2::Table2(std::string name, std::string title)
   tree->Branch("TOFnSigmaPi", &TOFnSigmaPi);
   tree->Branch("TPCmomHe3", &TPCmomHe3);
   tree->Branch("TPCsignalHe3", &TPCsignalHe3);
+  tree->Branch("magField", &magField);
+
 };
 
 void Table2::Fill(const RHyperTritonHe3pi &RHyper, const RCollision &RColl, bool properHe3Mass)
 {
   centrality = RColl.fCent;
+  magField = bool(RColl.fTrigger & 8);
   const float he3mass = properHe3Mass ? 2.80839160743 : 2.80923;
   double eHe3 = Hypote(RHyper.fPxHe3, RHyper.fPyHe3, RHyper.fPzHe3, he3mass);
   double ePi = Hypote(RHyper.fPxPi, RHyper.fPyPi, RHyper.fPzPi, AliPID::ParticleMass(AliPID::kPion));
