@@ -12,9 +12,9 @@
 #include <TROOT.h>
 #include <TStyle.h>
 
-constexpr double kAliceResult{0.077};
-constexpr double kAliceResultStat[2]{0.063, 0.063}; // first + then -
-constexpr double kAliceResultSyst[2]{0.031, 0.031}; // first + then -
+constexpr double kAliceResult{0.049};
+constexpr double kAliceResultStat[2]{0.061, 0.061}; // first + then -
+constexpr double kAliceResultSyst[2]{0.09, 0.09}; // first + then -
 
 void CollectionPlotMassVert()
 {
@@ -61,11 +61,11 @@ void CollectionPlotMassVert()
 
     TCanvas *cv = new TCanvas("cv", "blam collection", 800, 800);
     // cv->SetMargin(0.340961, 0.0514874, 0.17, 0.070162);
-    cv->SetMargin(0.0514874, 0.340961, 0.121294, 0.140162);
+    cv->SetMargin(0.0514874, 0.390961, 0.121294, 0.140162);
     TH2D *frame = new TH2D("frame", ";B_{#Lambda} (MeV);", 1000, -0.55, 0.75, nMeasures, kOffset, kOffset + nMeasures);
-    std::string names[nMeasures]{"NPB1 (1967) 105", "NPB4 (1968) 511", "PRD1 (1970) 66", "NPB52 (1973) 1", "Nat. Phys 16 (2020)"};
+    std::string names[nMeasures]{"NPB1 (1967) 105", "NPB4 (1968) 511", "PRD1 (1970) 66", "NPB52 (1973) 1", "STAR, Nat. Phys 16 (2020)"};
 
-    names[nMeasures - 1] = "ALICE Pb#minusPb 5.02 TeV";
+    names[nMeasures - 1] = "ALICE Preliminary Pb#minusPb 5.02 TeV";
 
     std::reverse(std::begin(names), std::end(names));
     for (int i{0}; i < nMeasures; ++i)

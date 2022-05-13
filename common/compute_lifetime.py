@@ -362,6 +362,12 @@ for model in BKG_MODELS:
 
     CORRECTED_COUNTS_BEST[model].UseCurrentStyle()
 
+
+
+
+
+
+
     print('Integral: ', CORRECTED_COUNTS_BEST[model].Integral(fit_range[0],fit_range[1], "width"))
     expo.FixParameter(0, CORRECTED_COUNTS_BEST[model].Integral(fit_range[0],fit_range[1], "width"))
     expo.FixParameter(2, fit_range[0])
@@ -392,25 +398,30 @@ for model in BKG_MODELS:
 
 
     canvas = ROOT.TCanvas(f'ct_spectra_{model}')
+    canvas.SetTopMargin(0.03)
+    canvas.SetRightMargin(0.01)
+
     canvas.SetLogy()
 
     frame = ROOT.gPad.DrawFrame(-0.5, 1, 35.5, 1000, ';#it{c}t (cm);d#it{N}/d(#it{c}t) [(cm)^{-1}]')
 
-    pinfo = ROOT.TPaveText(0.5, 0.65, 0.88, 0.85, 'NDC')
+    frame.GetXaxis().SetTitleSize(0.07)
+    frame.GetYaxis().SetTitleSize(0.07)
+    frame.GetXaxis().SetTitleOffset(0.8)
+    frame.GetYaxis().SetTitleOffset(0.8)
+
+    pinfo = ROOT.TPaveText(0.4, 0.6, 0.88, 0.85, 'NDC')
     pinfo.SetBorderSize(0)
     pinfo.SetFillStyle(0)
     pinfo.SetTextAlign(22)
     pinfo.SetTextFont(43)
-    pinfo.SetTextSize(25)
+    pinfo.SetTextSize(29)
 
     strings = []
     strings.append('ALICE')
     strings.append('Pb#font[122]{-}Pb, 0-90%, #sqrt{#it{s}_{NN}} = 5.02 TeV')
-    strings.append(f'#tau = {fit_function.GetParameter(1):.0f} #pm {fit_function.GetParError(1):.0f} ps')
-
-    
-    
-    # strings.append(f'Fit Probability = {fit_function.GetProb():.2f}')
+    strings.append(f'#tau = {fit_function.GetParameter(1):.0f} #pm 11 (stat.) #pm 6 (syst.) ps')
+    strings.append(f'Fit Probability = {fit_function.GetProb():.2f}')
 
     for s in strings:
         pinfo.AddText(s)
@@ -421,6 +432,7 @@ for model in BKG_MODELS:
     new_expo.SetParameter(2, fit_function.GetParameter(2))
     new_expo.SetParameter(3, fit_function.GetParameter(3))
     new_expo.Draw('same')
+
 
     CORRECTED_COUNTS_BEST[model].Draw('ex0same')
     CORRECTED_COUNTS_BEST[model].SetMarkerStyle(20)

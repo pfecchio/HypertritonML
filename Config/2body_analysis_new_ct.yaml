@@ -19,9 +19,10 @@ LOAD_APPLIED_DATA: False
 
 
 MC_PATH: $HYPERML_TABLES_2/SignalTable_new_ct_20g7.root
-BKG_PATH: "/data/fmazzasc/PbPb_2body/DataTable_18qr_pass3_LS.root"
-DATA_PATH: "/data/fmazzasc/PbPb_2body/no_pt_cut/DataTable_18qr.parquet.gzip"
-ANALYSIS_RESULTS_PATH: "/data/fmazzasc/PbPb_2body/no_pt_cut/AnalysisResults_18qr.root"
+BKG_PATH: "/data/fmazzasc/PbPb_2body/2018/DataTable_18qr_pass3_LS.root"
+DATA_PATH: "/data/fmazzasc/PbPb_2body/2018/DataTable_18qr.parquet.gzip"
+ANALYSIS_RESULTS_PATH: "/data/fmazzasc/PbPb_2body/2018/AnalysisResults_18qr.root"
+MAG_FIELD: ""
 
 
 XGBOOST_PARAMS:
