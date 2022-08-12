@@ -239,10 +239,13 @@ def plot_confusion_matrix(y_true, df, mode, score, normalize=False, title=None, 
     return ax
 
 
-def mass_plot_makeup(histo, model, ptbin, split):
+def mass_plot_makeup(histo, model, ptbin, split, keV_plot=True):
     blam_histo = histo.Clone()
+    keV_factor = 1e3 if keV_plot else 1
     for iBin in range(1, histo.GetNbinsX() + 1):
-        blam_histo.SetBinContent(iBin, 1115.68 + 0.036 + 1875.61294257 - histo.GetBinContent(iBin))
+        blam_histo.SetBinContent(iBin, (1115.68 + 0.036 + 1875.61294257 - histo.GetBinContent(iBin)) * keV_factor)
+        blam_histo.SetBinError(iBin, histo.GetBinError(iBin) * keV_factor)
+
     pol0 = ROOT.TF1('blfunction', '[0]', 0, 10)
     blam_histo.Fit(pol0, "0")
 
@@ -251,8 +254,9 @@ def mass_plot_makeup(histo, model, ptbin, split):
 
     # blambda, blambda_error = hau.h_weighted_average(blam_histo)
 
-    mass = 1115.68 + 0.036 + 1875.61294257 - blambda
+    mass = (1115.68 + 0.036 + 1875.61294257)*keV_factor - blambda
     mass_error = blambda_error
+    syst_error = 0.035 * keV_factor
 
     blam_low = blambda - mass_error
     blam_up = blambda + mass_error
@@ -266,28 +270,41 @@ def mass_plot_makeup(histo, model, ptbin, split):
     blam_histo.SetLineColor(kBlueC)
 
     canvas = ROOT.TCanvas(f'hyp_mass_{model}{split}')
-    canvas.SetTopMargin(0.03)
+    canvas.SetTopMargin(0.052)
     canvas.SetRightMargin(0.03)
+    canvas.SetLeftMargin(0.13)
             
-    pad_range = [-1.1, 1.7]
+    pad_range = [-0.85*keV_factor, 2*keV_factor]
     label = 'B_{#Lambda}'
-    frame = ROOT.gPad.DrawFrame(ptbin[0], pad_range[0], ptbin[-1], pad_range[1], ';#it{c}t (cm);' + label + ' ( MeV/#it{c}^{2} )')
+    energy = 'keV' if keV_plot else 'MeV'
+    frame = ROOT.gPad.DrawFrame(ptbin[0], pad_range[0], ptbin[-1], pad_range[1], ';#it{c}t (cm);' + label + f' ( {energy}' + '/#it{c}^{2} )')
     frame.GetXaxis().SetTitleSize(0.07)
     frame.GetYaxis().SetTitleSize(0.07)
-    frame.GetXaxis().SetTitleOffset(0.8)
-    frame.GetYaxis().SetTitleOffset(0.8)
+    frame.GetXaxis().SetTitleOffset(0.9)
+    frame.GetYaxis().SetTitleOffset(0.9)
+    frame.GetYaxis().SetMaxDigits(2)
+    frame.GetYaxis().SetLabelSize(0.05)
+    frame.GetXaxis().SetLabelSize(0.05)
+
+
+
+    ROOT.TGaxis.SetMaxDigits(2)
+    ROOT.TGaxis.SetExponentOffset(0,0)
+    ROOT.gROOT.ForceStyle()
+
+
      
-    pinfo = ROOT.TPaveText(0.142, 0.6, 0.65, 0.850, 'NDC')
+    pinfo = ROOT.TPaveText(0.161, 0.63, 0.8, 0.91, 'NDC')
     pinfo.SetBorderSize(0)
     pinfo.SetFillStyle(0)
     pinfo.SetTextAlign(22)
     pinfo.SetTextFont(43)
-    pinfo.SetTextSize(29)
+    pinfo.SetTextSize(36)
 
     string_list = []
     string_list.append('ALICE')
     string_list.append('Pb#font[122]{-}Pb, 0-90%, #sqrt{#it{s}_{NN}} = 5.02 TeV')
-    string_list.append('B_{#Lambda}' + ' = {:.3f} #pm {:.3f} (stat.) #pm 0.033 (syst.) MeV'.format(round(blambda, 3), round(mass_error, 3)))
+    string_list.append('B_{#Lambda}' + f' = {round(blambda)} #pm {round(mass_error)} (stat.) #pm {round(syst_error)} (syst.) {energy}')
     string_list.append('Fit Probability: ' + f'{pol0.GetProb():.2f}')
         
     for s in string_list:
@@ -306,7 +323,7 @@ def mass_plot_makeup(histo, model, ptbin, split):
     mass_line.Draw('same')
     pinfo.Draw('x0same')
     blam_histo.Draw('ex0same')
-    # ROOT.gPad.Update()
+    ROOT.gPad.Update()
 
     canvas.Write()
 
@@ -322,6 +339,7 @@ def sigma_plot_makeup(histo, model, ptbin, split):
     frame = ROOT.gPad.DrawFrame(ptbin[0], pad_range[0], ptbin[-1], pad_range[1], ';#it{p}_{T} (GeV/#it{c});' + label + ' [ MeV/#it{c}^{2} ]')
     frame.GetYaxis().SetTitleSize(22)
     frame.GetYaxis().SetTitleOffset(1.1)
+
      
     pinfo = ROOT.TPaveText(0.141, 0.716, 0.521, 0.848, 'NDC')
     pinfo.SetBorderSize(0)

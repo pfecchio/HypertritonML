@@ -63,7 +63,7 @@ void signal_extraction_plot()
   frame->GetYaxis()->SetTitleOffset(0.9);
   frame->GetXaxis()->SetTitleOffset(1.1);
   frame->GetYaxis()->SetTitle("Entries / (2.35 MeV/#it{c}^{2})");
-  frame->GetXaxis()->SetTitle("#it{M}(^{3}He + #pi^{-}) + #it{M}(^{3}#bar{He} + #pi^{+})  (GeV/#it{c}^{2})");
+  frame->GetXaxis()->SetTitle("#it{M}(^{3}He + #pi^{-} and c.c.)   (GeV/#it{c}^{2})");
   frame->SetMinimum(0.01);
   // frame->SetMarkerSize();
 

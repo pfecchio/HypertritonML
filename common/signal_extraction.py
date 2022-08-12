@@ -12,7 +12,7 @@ import yaml
 
 import math
 
-ROOT.gROOT.LoadMacro('RooCustomPdfs/RooDSCBShape.cxx+')
+ROOT.gROOT.LoadMacro('RooCustomPdfs/RooDSCBShape.cxx++')
 # ROOT.gInterpreter.ProcessLine('RooCustomPdfs/RooDSCBShape.h')
 
 from ROOT import RooDSCBShape

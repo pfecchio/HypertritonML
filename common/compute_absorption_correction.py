@@ -19,8 +19,8 @@ if not os.path.isdir('../Results/2Body/absorption_correction'):
 split_list = ['antimatter', 'matter']
 
 # mc input file
-mc_file = '/data/fmazzasc/PbPb_2body/absorption_studies/AnalysisResults_nominal.root'
-outfile = ROOT.TFile("../Results/2Body/He3_abs_nominal.root", "recreate")
+mc_file = '/data/fmazzasc/PbPb_2body/absorption_studies/AnalysisResults_extr.root'
+outfile = ROOT.TFile("../Results/2Body/He3_abs_extr.root", "recreate")
 
 ##################################################################
 # functions

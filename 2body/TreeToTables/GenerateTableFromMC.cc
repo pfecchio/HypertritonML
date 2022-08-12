@@ -24,8 +24,6 @@ using namespace ROOT::Math;
 void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypTableDir = "", string ptShape = "bw")
 {
 
-  double lamCt = 262.5 * 0.029979245800;
-  double rejCt = 210 * 0.029979245800;
   gRandom->SetSeed(1989);
   if (hypDataDir == "")
     hypDataDir = getenv("HYPERML_TREES__2");
@@ -63,11 +61,11 @@ void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypT
 
   if (ptShape == "bw")
   {
-    hypPtShape0 = (TF1 *)bwFile.Get("BGBW/0/BGBW0");
-    hypPtShape1 = (TF1 *)bwFile.Get("BGBW/1/BGBW1");
-    hypPtShape2 = (TF1 *)bwFile.Get("BGBW/2/BGBW2");
-    hypPtShape3 = (TF1 *)bwFile.Get("BGBW/3/BGBW3");
-    hypPtShape4 = (TF1 *)bwFile.Get("BGBW/4/BGBW4");
+    hypPtShape0 = (TF1 *)bwFile.Get("BGBW/1/BGBW1");
+    hypPtShape1 = (TF1 *)bwFile.Get("BGBW/2/BGBW2");
+    hypPtShape2 = (TF1 *)bwFile.Get("BGBW/3/BGBW3");
+    hypPtShape3 = (TF1 *)bwFile.Get("BGBW/4/BGBW4");
+    hypPtShape4 = (TF1 *)bwFile.Get("BGBW/5/BGBW5");
   }
 
   float max = 0.0;
@@ -99,7 +97,7 @@ void GenerateTableFromMC(bool reject = true, string hypDataDir = "", string hypT
       hypPtShape = hypPtShape0;
       max = max0;
     }
-    if (cent <= 10)
+    else if (cent <= 10)
     {
       hypPtShape = hypPtShape1;
       max = max1;

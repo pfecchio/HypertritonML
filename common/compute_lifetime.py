@@ -67,7 +67,7 @@ SIGNIFICANCE_SCAN = args.significance
 SYSTEMATICS = args.systematics
 DBSHAPE = args.dbshape
 
-SYSTEMATICS_COUNTS = 1
+SYSTEMATICS_COUNTS = 100
 FIX_EFF = 0.70 if not SIGNIFICANCE_SCAN else 0
 ###############################################################################
 
@@ -95,10 +95,12 @@ input_file = ROOT.TFile(file_name)
 ###############################################################################
 
 file_name = efficiency_dir + f'/{FILE_PREFIX}_preseleff_cent090.root'
-efficiency_file = ROOT.TFile(file_name, 'read')
-EFFICIENCY = efficiency_file.Get('PreselEff').ProjectionY()
+# efficiency_file = ROOT.TFile(file_name, 'read')
+# EFFICIENCY = efficiency_file.Get('PreselEff').ProjectionY()
+# EFFICIENCY.SetDirectory(0)
+efficiency_file = ROOT.TFile('../2body/Macro/eff_ct_090_rew.root', 'read')
+EFFICIENCY = efficiency_file.Get('eff_ct_090_rew')
 EFFICIENCY.SetDirectory(0)
-
 
 file_name = results_dir + '/He3_abs_1.5.root'
 abs_file = ROOT.TFile(file_name, 'read')
@@ -243,8 +245,6 @@ expo.SetParLimits(1, 230, 290)
 for index, ctbin in enumerate(zip(CT_BINS[:-1], CT_BINS[1:])):
     bdt_eff_best = round(sigscan_dict[f'ct{ctbin[0]}{ctbin[1]}pt210'][0], 2)
     presel_eff = get_presel_eff(ctbin)
-    print()
-    print()
     for bdt_eff in syst_eff_ranges[index]:
         for model in BKG_MODELS:
             raw_counts, raw_counts_error = get_measured_h2(
@@ -259,84 +259,84 @@ for index, ctbin in enumerate(zip(CT_BINS[:-1], CT_BINS[1:])):
 
 tau_syst_array = np.zeros(SYSTEMATICS_COUNTS)
 
-# if SYSTEMATICS:
-#     # systematics histos
-#     lifetime_dist = ROOT.TH1D(
-#         'syst_lifetime', ';#tau ps ;counts', 100, 150, 350)
-#     lifetime_prob = ROOT.TH1D('prob_lifetime', ';prob. ;counts', 100, 0, 1)
+if SYSTEMATICS:
+    # systematics histos
+    lifetime_dist = ROOT.TH1D(
+        'syst_lifetime', ';#tau ps ;counts', 100, 150, 350)
+    lifetime_prob = ROOT.TH1D('prob_lifetime', ';prob. ;counts', 100, 0, 1)
 
-#     tmp_ctdist = CORRECTED_COUNTS_BEST[BKG_MODELS[0]].Clone('tmp_ctdist')
+    tmp_ctdist = CORRECTED_COUNTS_BEST[BKG_MODELS[0]].Clone('tmp_ctdist')
 
-#     combinations = set()
-#     sample_counts = 0   # good fits
-#     iterations = 0  # total fits
+    combinations = set()
+    sample_counts = 0   # good fits;
+    iterations = 0  # total fits
 
-#     # stop with SYSTEMATICS_COUNTS number of good B_{Lambda} fits
-#     while sample_counts < SYSTEMATICS_COUNTS:
-#         tmp_ctdist.Reset()
+    # stop with SYSTEMATICS_COUNTS number of good B_{Lambda} fits
+    while sample_counts < SYSTEMATICS_COUNTS:
+        tmp_ctdist.Reset()
 
-#         iterations += 1
+        iterations += 1
 
-#         bkg_list = []
-#         eff_list = []
-#         bkg_idx_list = []
-#         eff_idx_list = []
+        bkg_list = []
+        eff_list = []
+        bkg_idx_list = []
+        eff_idx_list = []
 
-#         # loop over ctbins
-#         for ctbin_idx in range(len(CT_BINS) - 1):
-#             # random bkg model
-#             bkg_index = np.random.randint(0, len(BKG_MODELS))
-#             bkg_idx_list.append(bkg_index)
-#             bkg_list.append(BKG_MODELS[bkg_index])
+        # loop over ctbins
+        for ctbin_idx in range(len(CT_BINS) - 1):
+            # random bkg model
+            bkg_index = np.random.randint(0, len(BKG_MODELS))
+            bkg_idx_list.append(bkg_index)
+            bkg_list.append(BKG_MODELS[bkg_index])
 
-#             # random BDT efficiency in the defined range
-#             eff = np.random.choice(syst_eff_ranges[ctbin_idx])
-#             eff_list.append(eff)
-#             eff_idx = get_eff_index(eff)
-#             eff_idx_list.append(eff_idx)
+            # random BDT efficiency in the defined range
+            eff = np.random.choice(syst_eff_ranges[ctbin_idx])
+            eff_list.append(eff)
+            eff_idx = get_eff_index(eff)
+            eff_idx_list.append(eff_idx)
 
-#         # convert indexes into hash and if already sampled skip this combination
-#         combo = ''.join(map(str, bkg_idx_list + eff_idx_list))
-#         if combo in combinations:
-#             continue
+        # convert indexes into hash and if already sampled skip this combination
+        combo = ''.join(map(str, bkg_idx_list + eff_idx_list))
+        if combo in combinations:
+            continue
 
-#         # if indexes are good measure lifetime
-#         ctbin_idx = 1
-#         ct_bin_it = iter(zip(CT_BINS[:-1], CT_BINS[1:]))
+        # if indexes are good measure lifetime
+        ctbin_idx = 1
+        ct_bin_it = iter(zip(CT_BINS[:-1], CT_BINS[1:]))
 
-#         for model, eff in zip(bkg_list, eff_list):
-#             ctbin = next(ct_bin_it)
+        for model, eff in zip(bkg_list, eff_list):
+            ctbin = next(ct_bin_it)
 
-#             counts, error = get_corrected_counts(model, ctbin, eff)
+            counts, error = get_corrected_counts(model, ctbin, eff)
 
-#             tmp_ctdist.SetBinContent(ctbin_idx, counts)
-#             tmp_ctdist.SetBinError(ctbin_idx, error)
+            tmp_ctdist.SetBinContent(ctbin_idx, counts)
+            tmp_ctdist.SetBinError(ctbin_idx, error)
 
-#             ctbin_idx += 1
+            ctbin_idx += 1
 
-#         tmp_ctdist.Fit(expo, 'QRMIS+', '', 1, 35)
+        tmp_ctdist.Fit(expo, 'QRMSI+', '', 1, 35)
 
-#         # if ct fit is good use it for systematics
-#         if expo.GetChisquare() > 2. * expo.GetNDF():
-#             continue
+        # if ct fit is good use it for systematics
+        if expo.GetChisquare() > 2. * expo.GetNDF():
+            continue
 
-#         lifetime_dist.Fill(expo.GetParameter(1))
-#         lifetime_prob.Fill(expo.GetProb())
+        lifetime_dist.Fill(expo.GetParameter(1))
+        lifetime_prob.Fill(expo.GetProb())
 
-#         combinations.add(combo)
+        combinations.add(combo)
 
-#         tau_syst_array[sample_counts] = expo.GetParameter(1)
-#         sample_counts += 1
+        tau_syst_array[sample_counts] = expo.GetParameter(1)
+        sample_counts += 1
 
-#     output_file.cd()
+    output_file.cd()
 
-#     lifetime_dist.Write()
-#     lifetime_prob.Write()
+    lifetime_dist.Write()
+    lifetime_prob.Write()
 
-    # print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
-    # print(
-    #     f'\nGood iterations / Total iterations -> {SYSTEMATICS_COUNTS/iterations:.4f}')
-    # print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
+    print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
+    print(
+        f'\nGood iterations / Total iterations -> {SYSTEMATICS_COUNTS/iterations:.4f}')
+    print('\n++++++++++++++++++++++++++++++++++++++++++++++++++')
 
 
 kBlueC = ROOT.TColor.GetColor('#1f78b4')
@@ -396,10 +396,11 @@ for model in BKG_MODELS:
     fit_function.SetLineColor(kOrangeC)
     fit_function.SetLineWidth(2)
 
-
     canvas = ROOT.TCanvas(f'ct_spectra_{model}')
-    canvas.SetTopMargin(0.03)
+    canvas.SetTopMargin(0.052)
     canvas.SetRightMargin(0.01)
+    canvas.SetLeftMargin(0.13)
+
 
     canvas.SetLogy()
 
@@ -407,15 +408,18 @@ for model in BKG_MODELS:
 
     frame.GetXaxis().SetTitleSize(0.07)
     frame.GetYaxis().SetTitleSize(0.07)
-    frame.GetXaxis().SetTitleOffset(0.8)
-    frame.GetYaxis().SetTitleOffset(0.8)
+    frame.GetXaxis().SetTitleOffset(0.9)
+    frame.GetYaxis().SetTitleOffset(0.9)
 
-    pinfo = ROOT.TPaveText(0.4, 0.6, 0.88, 0.85, 'NDC')
+    frame.GetYaxis().SetLabelSize(0.05)
+    frame.GetXaxis().SetLabelSize(0.05)
+
+    pinfo = ROOT.TPaveText(0.4, 0.63, 0.88, 0.91, 'NDC')
     pinfo.SetBorderSize(0)
     pinfo.SetFillStyle(0)
     pinfo.SetTextAlign(22)
     pinfo.SetTextFont(43)
-    pinfo.SetTextSize(29)
+    pinfo.SetTextSize(36)
 
     strings = []
     strings.append('ALICE')
